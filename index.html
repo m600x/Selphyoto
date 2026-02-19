@@ -11,31 +11,50 @@
   </head>
   <body>
     <div id="app">
-      <h1 id="page-title">SelphYoto - MYO design printing template</h1>
+      <div id="page-header">
+        <div id="header-left"></div>
+        <div id="header-center">
+          <h1 id="page-title" data-i18n="page.title">SelphYoto - MYO label printing template</h1>
+          <p id="page-subtitle" data-i18n="page.subtitle">for Canon Selphy CP1500/CP1300 printer with <strong>POSTCARD</strong> paper (borderless printing)</p>
+        </div>
+        <div id="header-right">
+          <select id="lang-select" title="Language">
+            <option value="en">EN</option>
+            <option value="zh">中文</option>
+            <option value="hi">हिन्दी</option>
+            <option value="es">ES</option>
+            <option value="fr">FR</option>
+            <option value="ar">عربي</option>
+          </select>
+        </div>
+      </div>
       <header id="toolbar">
         <div class="tool-group">
-          <label>Guidelines</label>
-          <button id="guidelines-btn" class="toggle-btn active">ON</button>
+          <label data-i18n="toolbar.guidelines">Guidelines</label>
+          <button id="guidelines-btn" class="toggle-btn active" data-i18n="toolbar.guidelines.on">ON</button>
         </div>
 
         <div class="tool-group">
-          <label>Background</label>
+          <label data-i18n="toolbar.background">Background</label>
           <div class="bg-buttons">
             <button
               class="bg-btn active"
               data-bg="#ffffff"
+              data-i18n-title="color.white"
               title="White"
               style="background: #ffffff"
             ></button>
             <button
               class="bg-btn"
               data-bg="#808080"
+              data-i18n-title="color.grey"
               title="Grey"
               style="background: #808080"
             ></button>
             <button
               class="bg-btn"
               data-bg="#000000"
+              data-i18n-title="color.black"
               title="Black"
               style="background: #000000"
             ></button>
@@ -43,29 +62,33 @@
         </div>
 
         <div class="tool-group">
-          <label>Cutting marks</label>
+          <label data-i18n="toolbar.cuttingMarks">Cutting marks</label>
           <div class="mark-buttons">
             <button
               class="mark-btn"
               data-mark="#000000"
+              data-i18n-title="color.black"
               title="Black"
               style="background: #000000"
             ></button>
             <button
               class="mark-btn"
               data-mark="#ffffff"
+              data-i18n-title="color.white"
               title="White"
               style="background: #ffffff"
             ></button>
             <button
               class="mark-btn active"
               data-mark="#cc0000"
+              data-i18n-title="color.red"
               title="Red"
               style="background: #cc0000"
             ></button>
             <button
               class="mark-btn"
               data-mark="#cccc00"
+              data-i18n-title="color.yellow"
               title="Yellow"
               style="background: #cccc00"
             ></button>
@@ -73,7 +96,7 @@
         </div>
 
         <div class="tool-group">
-          <label for="correction-x">Corr. X</label>
+          <label for="correction-x" data-i18n="toolbar.corrX">Corr. X</label>
           <input
             type="number"
             id="correction-x"
@@ -84,7 +107,7 @@
         </div>
 
         <div class="tool-group">
-          <label for="correction-y">Corr. Y</label>
+          <label for="correction-y" data-i18n="toolbar.corrY">Corr. Y</label>
           <input
             type="number"
             id="correction-y"
@@ -96,11 +119,11 @@
 
         <div class="tool-actions">
           <div class="split-btn">
-            <button id="export-btn" class="action-btn primary export-image-btn">Export image</button>
+            <button id="export-btn" class="action-btn primary export-image-btn" data-i18n="export.button">Export image</button>
             <button id="export-dropdown-btn" class="action-btn primary split-btn-arrow">&#9662;</button>
             <div id="export-menu" class="split-btn-menu">
-              <button class="split-btn-option" data-format="png">Export as PNG</button>
-              <button class="split-btn-option" data-format="jpeg">Export as JPEG</button>
+              <button class="split-btn-option" data-format="png" data-i18n="export.asPng">Export as PNG</button>
+              <button class="split-btn-option" data-format="jpeg" data-i18n="export.asJpeg">Export as JPEG</button>
             </div>
           </div>
         </div>
@@ -110,32 +133,60 @@
         <section id="layer-panel">
           <div id="layer-panel-handle"></div>
           <div class="add-buttons">
-            <button id="import-btn" class="action-btn green-btn"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add image</button>
-            <button id="new-group-btn" class="action-btn primary">Add group</button>
+            <button id="import-btn" class="action-btn green-btn"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> <span data-i18n="sidebar.addImage">Add image</span></button>
+            <button id="new-group-btn" class="action-btn primary" data-i18n="sidebar.addGroup">Add group</button>
           </div>
           <input type="file" id="file-input" accept="image/*" multiple hidden />
           <input type="file" id="project-file-input" accept=".zip" hidden />
-          <h3>Layers</h3>
+          <h3 data-i18n="sidebar.layers">Layers</h3>
           <div id="layer-list"></div>
-          <p id="layer-empty">Background color and cutting marks are exported.<br/>Green guidelines are not exported, only used as visual reference.</p>
+          <p id="layer-empty" data-i18n="sidebar.emptyMsg">Background color and cutting marks are exported.<br/>Green guidelines are not exported, only used as visual reference.</p>
           <div class="project-buttons">
-            <button id="load-project-btn" class="action-btn violet-btn"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Import</button>
-            <button id="save-project-btn" class="action-btn violet-btn"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Export</button>
+            <button id="load-project-btn" class="action-btn violet-btn"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> <span data-i18n="sidebar.import">Import</span></button>
+            <button id="save-project-btn" class="action-btn violet-btn"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> <span data-i18n="sidebar.export">Export</span></button>
           </div>
-          <button id="clear-canvas-btn" class="action-btn danger-btn">Clear Canvas</button>
+          <button id="clear-canvas-btn" class="action-btn danger-btn" data-i18n="sidebar.clearCanvas">Clear Canvas</button>
           <div id="sidebar-footer">
-            <span id="app-version"></span>
+            <a id="app-version" href="https://github.com/m600x/Selphyoto" target="_blank" rel="noopener noreferrer"></a>
             <span id="autosave-status"></span>
           </div>
         </section>
 
         <main id="canvas-wrapper">
           <div id="canvas-container">
+            <div id="drop-overlay" data-i18n="canvas.dropHere">Drop images here</div>
             <canvas id="main-canvas"></canvas>
           </div>
         </main>
       </div>
     </div>
+    <div id="export-modal-overlay" class="modal-overlay hidden">
+      <div class="modal-box">
+        <h3 class="modal-title" data-i18n="exportModal.title">Instructions</h3>
+        <p class="modal-content" data-i18n="exportModal.content">
+          Send the exported image to your smartphone and load it into the Selphy app.
+          Make sure that the printing setting is set to "borderless printing".<br>
+          Happy printing!
+        </p>
+        <label class="modal-checkbox-label">
+          <input type="checkbox" id="export-modal-dismiss">
+          <span data-i18n="exportModal.dontShowAgain">Don't show again</span>
+        </label>
+        <button id="export-modal-ok" class="action-btn modal-ok-btn" data-i18n="exportModal.ok">OK</button>
+      </div>
+    </div>
+
+    <div id="confirm-modal-overlay" class="modal-overlay hidden">
+      <div class="modal-box">
+        <h3 id="confirm-modal-title" class="modal-title"></h3>
+        <p id="confirm-modal-message" class="modal-content"></p>
+        <div class="modal-buttons">
+          <button id="confirm-modal-cancel" class="action-btn modal-cancel-btn" data-i18n="confirm.cancel">Cancel</button>
+          <button id="confirm-modal-ok" class="action-btn modal-danger-btn" data-i18n="confirm.confirm">Confirm</button>
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -1,5 +1,6 @@
 import { Canvas, Rect, Line, FabricImage, FabricObject } from 'fabric';
 import * as C from './constants';
+import { t } from './i18n';
 
 export interface ImageEntry {
   fabricImage: FabricImage;
@@ -435,7 +436,7 @@ export class CanvasManager {
   createGroup(): string {
     this._groupCounter++;
     const id = `group-${this._groupCounter}`;
-    this._groups.push({ id, name: `Group ${this._groupCounter}`, visible: true });
+    this._groups.push({ id, name: t('group.defaultName', { n: this._groupCounter }), visible: true });
     this.onListChange?.();
     return id;
   }

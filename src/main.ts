@@ -4,6 +4,21 @@ import { LayerManager } from './layer-manager';
 import { DEFAULT_CORRECTION_X, DEFAULT_CORRECTION_Y } from './constants';
 import { exportProject, importProject, type ProjectSettings } from './project-io';
 import { saveAutoState, loadAutoState, clearAutoState, collectState, type AutoSaveSettings } from './auto-save';
+import { t, setLocale, getLocale, detectLocale, applyI18n, registerLocale } from './i18n';
+import fr from './locales/fr';
+import zh from './locales/zh';
+import hi from './locales/hi';
+import es from './locales/es';
+import ar from './locales/ar';
+
+// ── i18n setup ──
+
+registerLocale('fr', fr);
+registerLocale('zh', zh);
+registerLocale('hi', hi);
+registerLocale('es', es);
+registerLocale('ar', ar);
+setLocale(detectLocale());
 
 // ── Init ──
 
@@ -24,6 +39,7 @@ const exportDropdownBtn = document.getElementById('export-dropdown-btn') as HTML
 const exportMenu = document.getElementById('export-menu')!;
 const canvasContainer = document.getElementById('canvas-container')!;
 const bgButtons = document.querySelectorAll<HTMLButtonElement>('.bg-btn');
+const langSelect = document.getElementById('lang-select') as HTMLSelectElement;
 
 // ── Export format state ──
 
@@ -32,7 +48,18 @@ let exportFormat: 'png' | 'jpeg' = 'png';
 // ── Version display ──
 
 const appVersionEl = document.getElementById('app-version')!;
-appVersionEl.textContent = `v${__APP_VERSION__} (${__COMMIT_HASH__})`;
+appVersionEl.textContent = `M600 — v${__APP_VERSION__} (${__COMMIT_HASH__})`;
+
+// ── Language selector ──
+
+langSelect.value = getLocale();
+
+langSelect.addEventListener('change', () => {
+  setLocale(langSelect.value);
+  applyI18n();
+  captureButtonLabels();
+  refreshLayers();
+});
 
 // ── Auto-save (debounced) ──
 
@@ -61,19 +88,19 @@ function flushSave() {
 
 function updateAutosaveDisplay() {
   if (lastSaveTime === null) {
-    autosaveStatusEl.textContent = '-';
+    autosaveStatusEl.textContent = t('autosave.none');
     return;
   }
   const seconds = Math.floor((Date.now() - lastSaveTime) / 1000);
-  if (seconds < 5) autosaveStatusEl.textContent = 'Autosaved just now';
-  else if (seconds < 60) autosaveStatusEl.textContent = `Autosaved ${seconds}s ago`;
+  if (seconds < 5) autosaveStatusEl.textContent = t('autosave.justNow');
+  else if (seconds < 60) autosaveStatusEl.textContent = t('autosave.secondsAgo', { seconds });
   else {
     const minutes = Math.floor(seconds / 60);
-    autosaveStatusEl.textContent = `Autosaved ${minutes}m ago`;
+    autosaveStatusEl.textContent = t('autosave.minutesAgo', { minutes });
   }
 }
 
-setInterval(updateAutosaveDisplay, 10_000);
+setInterval(updateAutosaveDisplay, 1_000);
 
 // ── Layer manager ──
 
@@ -86,9 +113,9 @@ const lm = new LayerManager('layer-list', 'layer-empty', {
     cm.toggleLock(i);
     refreshLayers();
   },
-  onDelete: (i) => {
+  onDelete: async (i) => {
     const name = cm.images[i]?.filename ?? 'this image';
-    if (!confirm(`Delete "${name}"?`)) return;
+    if (!await showConfirmModal('', t('deleteImage.message', { name }))) return;
     cm.removeImage(i);
     refreshLayers();
   },
@@ -187,7 +214,7 @@ corrYInput.addEventListener('change', () => {
 guidelinesBtn.addEventListener('click', () => {
   const nowVisible = !cm.getGuidelinesVisible();
   cm.setGuidelinesVisible(nowVisible);
-  guidelinesBtn.textContent = nowVisible ? 'ON' : 'OFF';
+  guidelinesBtn.textContent = nowVisible ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
   guidelinesBtn.classList.toggle('active', nowVisible);
   scheduleSave();
 });
@@ -229,29 +256,34 @@ importBtn.addEventListener('click', () => fileInput.click());
 
 // ── Clear canvas ──
 
-clearCanvasBtn.addEventListener('click', () => {
-  if (confirm('Are you sure you want to clear the entire canvas? All images and groups will be removed.')) {
-    cm.clearAll();
-    refreshLayers();
-    clearAutoState().catch(() => {});
-    lastSaveTime = null;
-    updateAutosaveDisplay();
-  }
+clearCanvasBtn.addEventListener('click', async () => {
+  if (!await showConfirmModal(t('clearCanvas.title'), t('clearCanvas.message'))) return;
+  cm.clearAll();
+  refreshLayers();
+  clearAutoState().catch(() => {});
+  indexedDB.deleteDatabase('selphyoto');
+  lastSaveTime = null;
+  updateAutosaveDisplay();
 });
 
 // ── Save / Load Project ──
 
-const saveProjectLabel = saveProjectBtn.innerHTML;
-const loadProjectLabel = loadProjectBtn.innerHTML;
+let saveProjectLabel = '';
+let loadProjectLabel = '';
+
+function captureButtonLabels() {
+  saveProjectLabel = saveProjectBtn.innerHTML;
+  loadProjectLabel = loadProjectBtn.innerHTML;
+}
 
 saveProjectBtn.addEventListener('click', async () => {
   saveProjectBtn.disabled = true;
-  saveProjectBtn.textContent = 'Exporting…';
+  saveProjectBtn.textContent = t('project.exporting');
   try {
     await exportProject(cm, { exportFormat });
   } catch (err) {
     console.error('Failed to export project:', err);
-    alert('Failed to export project.');
+    alert(t('project.exportFailed'));
   } finally {
     saveProjectBtn.disabled = false;
     saveProjectBtn.innerHTML = saveProjectLabel;
@@ -266,14 +298,14 @@ projectFileInput.addEventListener('change', async () => {
   projectFileInput.value = '';
 
   loadProjectBtn.disabled = true;
-  loadProjectBtn.textContent = 'Importing…';
+  loadProjectBtn.textContent = t('project.importing');
   try {
     await importProject(file, cm, applyUIState);
     refreshLayers();
     flushSave();
   } catch (err) {
     console.error('Failed to import project:', err);
-    alert('Failed to import project. The file may be invalid.');
+    alert(t('project.importFailed'));
   } finally {
     loadProjectBtn.disabled = false;
     loadProjectBtn.innerHTML = loadProjectLabel;
@@ -292,7 +324,7 @@ function applyUIState(settings: ProjectSettings | AutoSaveSettings) {
     btn.classList.toggle('active', btn.dataset.mark === settings.markColor);
   });
 
-  guidelinesBtn.textContent = settings.guidelinesVisible ? 'ON' : 'OFF';
+  guidelinesBtn.textContent = settings.guidelinesVisible ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
   guidelinesBtn.classList.toggle('active', settings.guidelinesVisible);
 
   exportFormat = settings.exportFormat;
@@ -309,9 +341,83 @@ fileInput.addEventListener('change', () => {
   fileInput.value = '';
 });
 
+// ── Confirm modal (replaces browser confirm()) ──
+
+const confirmOverlay = document.getElementById('confirm-modal-overlay')!;
+const confirmTitle = document.getElementById('confirm-modal-title')!;
+const confirmMessage = document.getElementById('confirm-modal-message')!;
+const confirmOkBtn = document.getElementById('confirm-modal-ok') as HTMLButtonElement;
+const confirmCancelBtn = document.getElementById('confirm-modal-cancel') as HTMLButtonElement;
+
+function showConfirmModal(title: string, message: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    confirmTitle.textContent = title;
+    confirmTitle.style.display = title ? '' : 'none';
+    confirmMessage.textContent = message;
+    confirmOverlay.classList.remove('hidden');
+    confirmOkBtn.focus();
+
+    const cleanup = () => {
+      confirmOverlay.classList.add('hidden');
+      confirmOkBtn.removeEventListener('click', onOk);
+      confirmCancelBtn.removeEventListener('click', onCancel);
+      confirmOverlay.removeEventListener('click', onBackdrop);
+      document.removeEventListener('keydown', onKey);
+    };
+
+    const onOk = () => { cleanup(); resolve(true); };
+    const onCancel = () => { cleanup(); resolve(false); };
+    const onBackdrop = (e: Event) => { if (e.target === confirmOverlay) { cleanup(); resolve(false); } };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') { e.preventDefault(); onOk(); }
+      else if (e.key === 'Escape') { e.preventDefault(); onCancel(); }
+    };
+
+    confirmOkBtn.addEventListener('click', onOk);
+    confirmCancelBtn.addEventListener('click', onCancel);
+    confirmOverlay.addEventListener('click', onBackdrop);
+    document.addEventListener('keydown', onKey);
+  });
+}
+
+// ── Export modal ──
+
+const EXPORT_DISMISS_KEY = 'selphyoto_export_modal_dismissed';
+const exportModalOverlay = document.getElementById('export-modal-overlay')!;
+const exportModalDismiss = document.getElementById('export-modal-dismiss') as HTMLInputElement;
+const exportModalOk = document.getElementById('export-modal-ok') as HTMLButtonElement;
+
+function showExportModal(format: 'png' | 'jpeg') {
+  cm.exportImage(format);
+  if (localStorage.getItem(EXPORT_DISMISS_KEY) === 'true') return;
+  exportModalDismiss.checked = false;
+  exportModalOverlay.classList.remove('hidden');
+}
+
+function closeExportModal() {
+  if (exportModalDismiss.checked) {
+    localStorage.setItem(EXPORT_DISMISS_KEY, 'true');
+  }
+  exportModalOverlay.classList.add('hidden');
+}
+
+exportModalOk.addEventListener('click', closeExportModal);
+
+exportModalOverlay.addEventListener('click', (e) => {
+  if (e.target === exportModalOverlay) closeExportModal();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (exportModalOverlay.classList.contains('hidden')) return;
+  if (e.key === 'Enter' || e.key === 'Escape') {
+    e.preventDefault();
+    closeExportModal();
+  }
+});
+
 // ── Export split button ──
 
-exportBtn.addEventListener('click', () => cm.exportImage(exportFormat));
+exportBtn.addEventListener('click', () => showExportModal(exportFormat));
 
 exportDropdownBtn.addEventListener('click', (e) => {
   e.stopPropagation();
@@ -322,7 +428,7 @@ exportMenu.querySelectorAll<HTMLButtonElement>('.split-btn-option').forEach((opt
   opt.addEventListener('click', () => {
     exportFormat = opt.dataset.format as 'png' | 'jpeg';
     exportMenu.classList.remove('open');
-    cm.exportImage(exportFormat);
+    showExportModal(exportFormat);
   });
 });
 
@@ -394,9 +500,11 @@ document.addEventListener('keydown', (e) => {
       const idx = cm.getSelectedIndex();
       if (idx < 0) break;
       const name = cm.images[idx]?.filename ?? 'this image';
-      if (!confirm(`Delete "${name}"?`)) break;
-      cm.deleteSelected();
-      refreshLayers();
+      showConfirmModal('', t('deleteImage.message', { name })).then((ok) => {
+        if (!ok) return;
+        cm.deleteSelected();
+        refreshLayers();
+      });
       break;
     }
     case 'ArrowUp':
@@ -504,6 +612,8 @@ async function restoreAutoSave() {
 }
 
 restoreAutoSave().then(() => {
+  applyI18n();
+  captureButtonLabels();
   refreshLayers();
   fitCanvas();
 });

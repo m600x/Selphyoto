@@ -1,0 +1,71 @@
+import type { LocaleKey } from './en';
+
+const ar: Record<LocaleKey, string> = {
+  'page.title': 'SelphYoto - قالب طباعة ملصقات MYO',
+  'page.subtitle': 'لطابعة Canon Selphy CP1500/CP1300 مع ورق <strong>بطاقة بريدية</strong> (طباعة بلا حدود)',
+
+  'toolbar.guidelines': 'خطوط إرشادية',
+  'toolbar.guidelines.on': 'تشغيل',
+  'toolbar.guidelines.off': 'إيقاف',
+  'toolbar.background': 'الخلفية',
+  'toolbar.cuttingMarks': 'علامات القص',
+  'toolbar.corrX': 'تصحيح X',
+  'toolbar.corrY': 'تصحيح Y',
+
+  'color.white': 'أبيض',
+  'color.grey': 'رمادي',
+  'color.black': 'أسود',
+  'color.red': 'أحمر',
+  'color.yellow': 'أصفر',
+
+  'export.button': 'تصدير الصورة',
+  'export.asPng': 'تصدير كـ PNG',
+  'export.asJpeg': 'تصدير كـ JPEG',
+
+  'sidebar.addImage': 'إضافة صورة',
+  'sidebar.addGroup': 'إضافة مجموعة',
+  'sidebar.layers': 'الطبقات',
+  'sidebar.import': 'استيراد',
+  'sidebar.export': 'تصدير',
+  'sidebar.clearCanvas': 'مسح اللوحة',
+  'sidebar.emptyMsg': 'يتم تصدير لون الخلفية وعلامات القص.<br/>الخطوط الإرشادية الخضراء لا تُصدّر، وتُستخدم كمرجع بصري فقط.',
+
+  'layer.hideLayer': 'إخفاء الطبقة',
+  'layer.showLayer': 'إظهار الطبقة',
+  'layer.lockLayer': 'قفل الطبقة',
+  'layer.unlockLayer': 'فتح قفل الطبقة',
+  'layer.removeLayer': 'حذف الطبقة',
+  'layer.removeFromGroup': 'إزالة من المجموعة',
+  'layer.hideGroup': 'إخفاء المجموعة',
+  'layer.showGroup': 'إظهار المجموعة',
+  'layer.deleteGroup': 'حذف المجموعة وصورها',
+
+  'group.defaultName': 'مجموعة {{n}}',
+
+  'autosave.none': '-',
+  'autosave.justNow': 'تم الحفظ تلقائياً الآن',
+  'autosave.secondsAgo': 'تم الحفظ منذ {{seconds}} ثانية',
+  'autosave.minutesAgo': 'تم الحفظ منذ {{minutes}} دقيقة',
+
+  'exportModal.title': 'تعليمات',
+  'exportModal.content': 'أرسل الصورة المصدّرة إلى هاتفك الذكي وحمّلها في تطبيق Selphy. تأكد من ضبط إعداد الطباعة على "طباعة بلا حدود".<br>طباعة سعيدة!',
+  'exportModal.dontShowAgain': 'لا تظهر مرة أخرى',
+  'exportModal.ok': 'موافق',
+
+  'confirm.cancel': 'إلغاء',
+  'confirm.confirm': 'تأكيد',
+
+  'clearCanvas.title': 'مسح اللوحة',
+  'clearCanvas.message': 'سيتم حذف جميع الصور والمجموعات. هل أنت متأكد؟',
+
+  'deleteImage.message': 'حذف "{{name}}"؟',
+
+  'project.exporting': 'جارٍ التصدير…',
+  'project.exportFailed': 'فشل تصدير المشروع.',
+  'project.importing': 'جارٍ الاستيراد…',
+  'project.importFailed': 'فشل استيراد المشروع. قد يكون الملف غير صالح.',
+
+  'canvas.dropHere': 'أفلت الصور هنا',
+};
+
+export default ar;

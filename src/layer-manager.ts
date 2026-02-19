@@ -1,4 +1,5 @@
 import type { ImageEntry, GroupEntry } from './canvas-manager';
+import { t } from './i18n';
 
 export interface LayerCallbacks {
   onToggleVisibility: (index: number) => void;
@@ -114,7 +115,7 @@ export class LayerManager {
     const visBtn = document.createElement('button');
     visBtn.className = 'vis-btn' + (group.visible ? '' : ' hidden');
     visBtn.innerHTML = group.visible ? SVG_EYE : SVG_EYE_OFF;
-    visBtn.title = group.visible ? 'Hide group' : 'Show group';
+    visBtn.title = group.visible ? t('layer.hideGroup') : t('layer.showGroup');
     visBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       this.callbacks.onToggleGroupVisibility(group.id);
@@ -156,7 +157,7 @@ export class LayerManager {
     const delBtn = document.createElement('button');
     delBtn.className = 'del-btn';
     delBtn.innerHTML = SVG_TRASH;
-    delBtn.title = 'Delete group and its images';
+    delBtn.title = t('layer.deleteGroup');
     delBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       this.callbacks.onDeleteGroup(group.id);
@@ -263,7 +264,7 @@ export class LayerManager {
     const visBtn = document.createElement('button');
     visBtn.className = 'vis-btn' + (entry.visible ? '' : ' hidden');
     visBtn.innerHTML = entry.visible ? SVG_EYE : SVG_EYE_OFF;
-    visBtn.title = entry.visible ? 'Hide layer' : 'Show layer';
+    visBtn.title = entry.visible ? t('layer.hideLayer') : t('layer.showLayer');
     visBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       this.callbacks.onToggleVisibility(index);
@@ -308,7 +309,7 @@ export class LayerManager {
       const ungroupBtn = document.createElement('button');
       ungroupBtn.className = 'ungroup-btn';
       ungroupBtn.innerHTML = SVG_UNGROUP;
-      ungroupBtn.title = 'Remove from group';
+      ungroupBtn.title = t('layer.removeFromGroup');
       ungroupBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.callbacks.onRemoveFromGroup(index);
@@ -319,7 +320,7 @@ export class LayerManager {
     const lockBtn = document.createElement('button');
     lockBtn.className = 'lock-btn' + (entry.locked ? ' locked' : '');
     lockBtn.innerHTML = entry.locked ? SVG_LOCK : SVG_UNLOCK;
-    lockBtn.title = entry.locked ? 'Unlock layer' : 'Lock layer';
+    lockBtn.title = entry.locked ? t('layer.unlockLayer') : t('layer.lockLayer');
     lockBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       this.callbacks.onToggleLock(index);
@@ -329,7 +330,7 @@ export class LayerManager {
     const delBtn = document.createElement('button');
     delBtn.className = 'del-btn';
     delBtn.innerHTML = SVG_TRASH;
-    delBtn.title = 'Remove layer';
+    delBtn.title = t('layer.removeLayer');
     delBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       this.callbacks.onDelete(index);
