@@ -4,6 +4,8 @@ const fr: Record<LocaleKey, string> = {
   'page.title': 'SelphYoto - Gabarit d\'impression MYO',
   'page.subtitle': 'pour Canon Selphy CP1500/CP1300 avec papier <strong>CARTE POSTALE</strong> (impression sans marge)',
 
+  'toolbar.undo': 'Annuler (Ctrl+Z)',
+  'toolbar.redo': 'Rétablir (Ctrl+Y)',
   'toolbar.guidelines': 'Repères',
   'toolbar.guidelines.on': 'OUI',
   'toolbar.guidelines.off': 'NON',

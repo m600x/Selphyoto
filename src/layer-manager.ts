@@ -58,7 +58,22 @@ export class LayerManager {
 
     const renderedGroups = new Set<string>();
 
+    const emptyGroupQueue: GroupEntry[] = [];
+    for (const g of groups) {
+      if (!images.some(img => img.groupId === g.id)) {
+        emptyGroupQueue.push(g);
+      }
+    }
+    emptyGroupQueue.sort((a, b) => (a.position ?? Infinity) - (b.position ?? Infinity));
+    let eqIdx = 0;
+
     for (let i = 0; i < images.length; i++) {
+      while (eqIdx < emptyGroupQueue.length && (emptyGroupQueue[eqIdx].position ?? Infinity) <= i) {
+        renderedGroups.add(emptyGroupQueue[eqIdx].id);
+        this.appendGroupHeader(emptyGroupQueue[eqIdx]);
+        eqIdx++;
+      }
+
       const entry = images[i];
 
       if (entry.groupId && !renderedGroups.has(entry.groupId)) {
@@ -75,6 +90,12 @@ export class LayerManager {
       } else if (!entry.groupId) {
         this.appendImageRow(entry, i, selectedIndex, false);
       }
+    }
+
+    while (eqIdx < emptyGroupQueue.length) {
+      renderedGroups.add(emptyGroupQueue[eqIdx].id);
+      this.appendGroupHeader(emptyGroupQueue[eqIdx]);
+      eqIdx++;
     }
 
     for (const group of groups) {
@@ -187,7 +208,6 @@ export class LayerManager {
 
       const rect = row.getBoundingClientRect();
       const relY = (e.clientY - rect.top) / rect.height;
-      const range = this.getGroupImageRange(group.id);
 
       if (this.dragFromGroupId !== null) {
         if (relY < 0.5) {
@@ -196,9 +216,7 @@ export class LayerManager {
           row.classList.add('drag-over-below');
         }
       } else {
-        if (!range) {
-          row.classList.add('drag-over-group');
-        } else if (relY < 0.25) {
+        if (relY < 0.25) {
           row.classList.add('drag-over-above');
         } else if (relY > 0.75) {
           row.classList.add('drag-over-below');
@@ -227,10 +245,12 @@ export class LayerManager {
 
         if (wasGroup) {
           this.callbacks.onAddToGroup(from, group.id);
-        } else if (wasAbove && range) {
-          this.callbacks.onReorder(from, this.computeReorderTarget(from, range.first, true));
-        } else if (wasBelow && range) {
-          this.callbacks.onReorder(from, this.computeReorderTarget(from, range.last, false));
+        } else if (wasAbove) {
+          const refIdx = range ? range.first : (group.position ?? this._currentImages.length);
+          this.callbacks.onReorder(from, this.computeReorderTarget(from, refIdx, true));
+        } else if (wasBelow) {
+          const refIdx = range ? range.last : (group.position ?? this._currentImages.length);
+          this.callbacks.onReorder(from, this.computeReorderTarget(from, refIdx, false));
         }
       } else if (this.dragFromGroupId !== null) {
         const gid = this.dragFromGroupId;
@@ -331,10 +351,14 @@ export class LayerManager {
     delBtn.className = 'del-btn';
     delBtn.innerHTML = SVG_TRASH;
     delBtn.title = t('layer.removeLayer');
-    delBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.callbacks.onDelete(index);
-    });
+    if (entry.locked) {
+      delBtn.disabled = true;
+    } else {
+      delBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.callbacks.onDelete(index);
+      });
+    }
     buttons.push(delBtn);
 
     row.addEventListener('click', () => {

@@ -4,6 +4,8 @@ const es: Record<LocaleKey, string> = {
   'page.title': 'SelphYoto - Plantilla de impresión MYO',
   'page.subtitle': 'para Canon Selphy CP1500/CP1300 con papel <strong>POSTAL</strong> (impresión sin bordes)',
 
+  'toolbar.undo': 'Deshacer (Ctrl+Z)',
+  'toolbar.redo': 'Rehacer (Ctrl+Y)',
   'toolbar.guidelines': 'Guías',
   'toolbar.guidelines.on': 'SÍ',
   'toolbar.guidelines.off': 'NO',

@@ -29,10 +29,14 @@ export interface AutoSaveState {
   settings: AutoSaveSettings;
 }
 
+import type { PersistedHistory } from './history-manager';
+
 const DB_NAME = 'selphyoto';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'state';
 const STATE_KEY = 'current';
+const HISTORY_STORE = 'history';
+const HISTORY_KEY = 'current';
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -41,6 +45,9 @@ function openDB(): Promise<IDBDatabase> {
       const db = req.result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME);
+      }
+      if (!db.objectStoreNames.contains(HISTORY_STORE)) {
+        db.createObjectStore(HISTORY_STORE);
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -73,6 +80,36 @@ export async function clearAutoState(): Promise<void> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
     tx.objectStore(STORE_NAME).delete(STATE_KEY);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+  });
+}
+
+export async function saveHistoryState(data: PersistedHistory): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(HISTORY_STORE, 'readwrite');
+    tx.objectStore(HISTORY_STORE).put(data, HISTORY_KEY);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+  });
+}
+
+export async function loadHistoryState(): Promise<PersistedHistory | null> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(HISTORY_STORE, 'readonly');
+    const req = tx.objectStore(HISTORY_STORE).get(HISTORY_KEY);
+    req.onsuccess = () => { db.close(); resolve(req.result ?? null); };
+    req.onerror = () => { db.close(); reject(req.error); };
+  });
+}
+
+export async function clearHistoryState(): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(HISTORY_STORE, 'readwrite');
+    tx.objectStore(HISTORY_STORE).delete(HISTORY_KEY);
     tx.oncomplete = () => { db.close(); resolve(); };
     tx.onerror = () => { db.close(); reject(tx.error); };
   });

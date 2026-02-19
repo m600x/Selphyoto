@@ -4,6 +4,8 @@ const zh: Record<LocaleKey, string> = {
   'page.title': 'SelphYoto - MYO 标签打印模板',
   'page.subtitle': '适用于 Canon Selphy CP1500/CP1300 打印机，使用<strong>明信片</strong>纸张（无边框打印）',
 
+  'toolbar.undo': '撤销 (Ctrl+Z)',
+  'toolbar.redo': '重做 (Ctrl+Y)',
   'toolbar.guidelines': '参考线',
   'toolbar.guidelines.on': '开',
   'toolbar.guidelines.off': '关',

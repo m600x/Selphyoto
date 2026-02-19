@@ -29,6 +29,15 @@
         </div>
       </div>
       <header id="toolbar">
+        <div class="tool-group undo-redo-group">
+          <button id="undo-btn" class="action-btn undo-redo-btn" data-i18n-title="toolbar.undo" title="Undo (Ctrl+Z)" disabled>
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+          </button>
+          <button id="redo-btn" class="action-btn undo-redo-btn" data-i18n-title="toolbar.redo" title="Redo (Ctrl+Y)" disabled>
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/></svg>
+          </button>
+        </div>
+
         <div class="tool-group">
           <label data-i18n="toolbar.guidelines">Guidelines</label>
           <button id="guidelines-btn" class="toggle-btn active" data-i18n="toolbar.guidelines.on">ON</button>

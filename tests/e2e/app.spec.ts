@@ -57,7 +57,13 @@ test.describe('Page load', () => {
   test('app version is displayed', async ({ page }) => {
     await page.goto('/');
     const versionText = await page.locator('#app-version').textContent();
-    expect(versionText).toMatch(/^v\d+\.\d+\.\d+/);
+    expect(versionText).toMatch(/^M600/);
+  });
+
+  test('undo and redo buttons are disabled initially', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('#undo-btn')).toBeDisabled();
+    await expect(page.locator('#redo-btn')).toBeDisabled();
   });
 });
 
@@ -106,15 +112,17 @@ test.describe('Layer operations', () => {
   });
 
   test('delete with confirmation removes layer', async ({ page }) => {
-    page.on('dialog', dialog => dialog.accept());
     await page.locator('.layer-row .del-btn').first().click();
+    await expect(page.locator('#confirm-modal-overlay')).not.toHaveClass(/hidden/);
+    await page.click('#confirm-modal-ok');
     await expect(page.locator('.layer-row')).toHaveCount(0);
     await expect(page.locator('#layer-empty')).toBeVisible();
   });
 
   test('delete cancel keeps the layer', async ({ page }) => {
-    page.on('dialog', dialog => dialog.dismiss());
     await page.locator('.layer-row .del-btn').first().click();
+    await expect(page.locator('#confirm-modal-overlay')).not.toHaveClass(/hidden/);
+    await page.click('#confirm-modal-cancel');
     await expect(page.locator('.layer-row')).toHaveCount(1);
   });
 
@@ -236,8 +244,9 @@ test.describe('Clear canvas', () => {
     await addImageViaButton(page);
     await page.click('#new-group-btn');
 
-    page.on('dialog', dialog => dialog.accept());
     await page.click('#clear-canvas-btn');
+    await expect(page.locator('#confirm-modal-overlay')).not.toHaveClass(/hidden/);
+    await page.click('#confirm-modal-ok');
 
     await expect(page.locator('.layer-row')).toHaveCount(0);
     await expect(page.locator('.group-header')).toHaveCount(0);
@@ -249,8 +258,9 @@ test.describe('Clear canvas', () => {
     await page.goto('/');
     await addImageViaButton(page);
 
-    page.on('dialog', dialog => dialog.dismiss());
     await page.click('#clear-canvas-btn');
+    await expect(page.locator('#confirm-modal-overlay')).not.toHaveClass(/hidden/);
+    await page.click('#confirm-modal-cancel');
 
     await expect(page.locator('.layer-row')).toHaveCount(1);
   });
@@ -262,10 +272,10 @@ test.describe('Keyboard shortcuts', () => {
     await addImageViaButton(page);
 
     await page.locator('.layer-row').first().click();
-
-    page.on('dialog', dialog => dialog.accept());
     await page.keyboard.press('Delete');
 
+    await expect(page.locator('#confirm-modal-overlay')).not.toHaveClass(/hidden/);
+    await page.click('#confirm-modal-ok');
     await expect(page.locator('.layer-row')).toHaveCount(0);
   });
 });
@@ -299,8 +309,172 @@ test.describe('Autosave status', () => {
     await addImageViaButton(page);
     await page.waitForTimeout(1500);
 
-    page.on('dialog', dialog => dialog.accept());
     await page.click('#clear-canvas-btn');
+    await page.click('#confirm-modal-ok');
     await expect(page.locator('#autosave-status')).toHaveText('-');
+  });
+});
+
+test.describe('Undo / Redo', () => {
+  test('undo button becomes enabled after adding an image', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('#undo-btn')).toBeDisabled();
+    await addImageViaButton(page);
+    await page.waitForTimeout(300);
+    await expect(page.locator('#undo-btn')).toBeEnabled();
+  });
+
+  test('undo after group creation removes the group', async ({ page }) => {
+    await page.goto('/');
+    await page.click('#new-group-btn');
+    await expect(page.locator('.group-header')).toHaveCount(1);
+    await page.waitForTimeout(100);
+
+    await page.click('#undo-btn');
+    await page.waitForTimeout(500);
+    await expect(page.locator('.group-header')).toHaveCount(0);
+  });
+
+  test('redo restores after undo', async ({ page }) => {
+    await page.goto('/');
+    await page.click('#new-group-btn');
+    await expect(page.locator('.group-header')).toHaveCount(1);
+    await page.waitForTimeout(100);
+
+    await page.click('#undo-btn');
+    await page.waitForTimeout(500);
+    await expect(page.locator('.group-header')).toHaveCount(0);
+
+    await page.click('#redo-btn');
+    await page.waitForTimeout(500);
+    await expect(page.locator('.group-header')).toHaveCount(1);
+  });
+
+  test('Ctrl+Z triggers undo', async ({ page }) => {
+    await page.goto('/');
+    await page.click('#new-group-btn');
+    await expect(page.locator('.group-header')).toHaveCount(1);
+    await page.waitForTimeout(100);
+
+    await page.keyboard.press('ControlOrMeta+z');
+    await page.waitForTimeout(500);
+    await expect(page.locator('.group-header')).toHaveCount(0);
+  });
+
+  test('Ctrl+Y triggers redo', async ({ page }) => {
+    await page.goto('/');
+    await page.click('#new-group-btn');
+    await page.waitForTimeout(100);
+
+    await page.keyboard.press('ControlOrMeta+z');
+    await page.waitForTimeout(500);
+
+    await page.keyboard.press('ControlOrMeta+y');
+    await page.waitForTimeout(500);
+    await expect(page.locator('.group-header')).toHaveCount(1);
+  });
+
+  test('background color change does not enable undo', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('#undo-btn')).toBeDisabled();
+    await page.click('.bg-btn[data-bg="#000000"]');
+    await page.waitForTimeout(100);
+    await expect(page.locator('#undo-btn')).toBeDisabled();
+  });
+
+  test('guidelines toggle does not enable undo', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('#undo-btn')).toBeDisabled();
+    await page.click('#guidelines-btn');
+    await page.waitForTimeout(100);
+    await expect(page.locator('#undo-btn')).toBeDisabled();
+  });
+
+  test('undo after delete restores the image', async ({ page }) => {
+    await page.goto('/');
+    await addImageViaButton(page);
+    await page.waitForTimeout(300);
+
+    await page.locator('.layer-row .del-btn').first().click();
+    await page.click('#confirm-modal-ok');
+    await expect(page.locator('.layer-row')).toHaveCount(0);
+
+    await page.click('#undo-btn');
+    await page.waitForTimeout(500);
+    await expect(page.locator('.layer-row')).toHaveCount(1);
+  });
+
+  test('clear canvas disables undo/redo', async ({ page }) => {
+    await page.goto('/');
+    await addImageViaButton(page);
+    await page.waitForTimeout(300);
+
+    await page.click('#clear-canvas-btn');
+    await page.click('#confirm-modal-ok');
+    await page.waitForTimeout(300);
+
+    await expect(page.locator('#undo-btn')).toBeDisabled();
+    await expect(page.locator('#redo-btn')).toBeDisabled();
+  });
+
+  test('clear canvas is enabled when canvas is empty but history exists', async ({ page }) => {
+    await page.goto('/');
+    await addImageViaButton(page);
+    await page.waitForTimeout(300);
+
+    await page.locator('.layer-row .del-btn').first().click();
+    await page.click('#confirm-modal-ok');
+    await expect(page.locator('.layer-row')).toHaveCount(0);
+
+    await expect(page.locator('#clear-canvas-btn')).toBeEnabled();
+  });
+
+  test('clear canvas after undo fully resets history in IDB', async ({ page }) => {
+    await page.goto('/');
+    await addImageViaButton(page);
+    await page.waitForTimeout(300);
+
+    await page.click('#clear-canvas-btn');
+    await page.click('#confirm-modal-ok');
+    await page.waitForTimeout(500);
+
+    await addImageViaButton(page);
+    await page.waitForTimeout(300);
+    await expect(page.locator('#undo-btn')).toBeEnabled();
+
+    await page.click('#undo-btn');
+    await page.waitForTimeout(500);
+    await expect(page.locator('.layer-row')).toHaveCount(0);
+
+    const hasOldImages = await page.evaluate(() => {
+      return document.querySelectorAll('.layer-row').length;
+    });
+    expect(hasOldImages).toBe(0);
+  });
+});
+
+test.describe('Locked image', () => {
+  test('delete button is disabled when image is locked', async ({ page }) => {
+    await page.goto('/');
+    await addImageViaButton(page);
+
+    const lockBtn = page.locator('.layer-row .lock-btn').first();
+    await lockBtn.click();
+    await expect(lockBtn).toHaveClass(/locked/);
+
+    const delBtn = page.locator('.layer-row .del-btn').first();
+    await expect(delBtn).toBeDisabled();
+  });
+
+  test('delete button is re-enabled when image is unlocked', async ({ page }) => {
+    await page.goto('/');
+    await addImageViaButton(page);
+
+    const lockBtn = page.locator('.layer-row .lock-btn').first();
+    await lockBtn.click();
+    await expect(page.locator('.layer-row .del-btn').first()).toBeDisabled();
+
+    await lockBtn.click();
+    await expect(page.locator('.layer-row .del-btn').first()).toBeEnabled();
   });
 });

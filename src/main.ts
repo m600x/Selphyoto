@@ -3,7 +3,8 @@ import { CanvasManager } from './canvas-manager';
 import { LayerManager } from './layer-manager';
 import { DEFAULT_CORRECTION_X, DEFAULT_CORRECTION_Y } from './constants';
 import { exportProject, importProject, type ProjectSettings } from './project-io';
-import { saveAutoState, loadAutoState, clearAutoState, collectState, type AutoSaveSettings } from './auto-save';
+import { saveAutoState, loadAutoState, clearAutoState, collectState, saveHistoryState, loadHistoryState, clearHistoryState, type AutoSaveSettings } from './auto-save';
+import { HistoryManager, type HistorySnapshot } from './history-manager';
 import { t, setLocale, getLocale, detectLocale, applyI18n, registerLocale } from './i18n';
 import fr from './locales/fr';
 import zh from './locales/zh';
@@ -23,6 +24,7 @@ setLocale(detectLocale());
 // ── Init ──
 
 const cm = new CanvasManager('main-canvas');
+const history = new HistoryManager();
 
 const corrXInput = document.getElementById('correction-x') as HTMLInputElement;
 const corrYInput = document.getElementById('correction-y') as HTMLInputElement;
@@ -40,10 +42,110 @@ const exportMenu = document.getElementById('export-menu')!;
 const canvasContainer = document.getElementById('canvas-container')!;
 const bgButtons = document.querySelectorAll<HTMLButtonElement>('.bg-btn');
 const langSelect = document.getElementById('lang-select') as HTMLSelectElement;
+const undoBtn = document.getElementById('undo-btn') as HTMLButtonElement;
+const redoBtn = document.getElementById('redo-btn') as HTMLButtonElement;
 
 // ── Export format state ──
 
 let exportFormat: 'png' | 'jpeg' = 'png';
+
+// ── History (undo/redo) ──
+
+let isRestoring = false;
+let lastSnapshotTime = 0;
+const COALESCE_MS = 500;
+
+function captureSnapshot(): HistorySnapshot {
+  const state = collectState(cm, exportFormat);
+  return {
+    images: state.images.map((img, i) => {
+      const entry = cm.images[i];
+      const key = entry?.id ?? `img-fallback-${Date.now()}-${i}`;
+      history.registerImageData(key, img.dataUrl);
+      return {
+        dataKey: key,
+        filename: img.filename,
+        visible: img.visible,
+        locked: img.locked,
+        groupId: img.groupId,
+        left: img.left,
+        top: img.top,
+        scaleX: img.scaleX,
+        scaleY: img.scaleY,
+        angle: img.angle,
+      };
+    }),
+    groups: state.groups,
+    groupCounter: state.groupCounter,
+  };
+}
+
+function pushSnapshot() {
+  if (isRestoring) return;
+  history.push(captureSnapshot());
+  updateUndoRedoButtons();
+}
+
+function pushSnapshotCoalesced() {
+  if (isRestoring) return;
+  const now = Date.now();
+  if (now - lastSnapshotTime < COALESCE_MS) return;
+  lastSnapshotTime = now;
+  pushSnapshot();
+}
+
+async function restoreFromSnapshot(snapshot: HistorySnapshot): Promise<void> {
+  isRestoring = true;
+  cm.clearAll();
+  for (const img of snapshot.images) {
+    const dataUrl = history.resolveDataUrl(img.dataKey);
+    if (!dataUrl) continue;
+    await cm.addImageFromDataURL(dataUrl, {
+      id: img.dataKey,
+      filename: img.filename,
+      visible: img.visible,
+      locked: img.locked,
+      groupId: img.groupId ?? undefined,
+      left: img.left,
+      top: img.top,
+      scaleX: img.scaleX,
+      scaleY: img.scaleY,
+      angle: img.angle,
+    });
+  }
+  cm.restoreGroups(snapshot.groups, snapshot.groupCounter);
+  cm.finalizeRestore();
+  refreshLayers();
+  scheduleSave();
+  isRestoring = false;
+}
+
+function updateUndoRedoButtons() {
+  undoBtn.disabled = !history.canUndo();
+  redoBtn.disabled = !history.canRedo();
+}
+
+let historySaveTimer: ReturnType<typeof setTimeout> | null = null;
+history.onDirty = () => {
+  if (historySaveTimer) clearTimeout(historySaveTimer);
+  historySaveTimer = setTimeout(() => {
+    saveHistoryState(history.toSerializable()).catch(err =>
+      console.warn('History save failed:', err)
+    );
+  }, 500);
+};
+
+undoBtn.addEventListener('click', async () => {
+  const snapshot = history.undo(captureSnapshot());
+  if (snapshot) await restoreFromSnapshot(snapshot);
+  updateUndoRedoButtons();
+});
+
+redoBtn.addEventListener('click', async () => {
+  const snapshot = history.redo(captureSnapshot());
+  if (snapshot) await restoreFromSnapshot(snapshot);
+  updateUndoRedoButtons();
+});
 
 // ── Version display ──
 
@@ -116,10 +218,12 @@ const lm = new LayerManager('layer-list', 'layer-empty', {
   onDelete: async (i) => {
     const name = cm.images[i]?.filename ?? 'this image';
     if (!await showConfirmModal('', t('deleteImage.message', { name }))) return;
+    pushSnapshot();
     cm.removeImage(i);
     refreshLayers();
   },
   onReorder: (from, to) => {
+    pushSnapshot();
     cm.reorderImages(from, to);
     refreshLayers();
   },
@@ -133,10 +237,12 @@ const lm = new LayerManager('layer-list', 'layer-empty', {
     scheduleSave();
   },
   onCreateGroup: () => {
+    pushSnapshot();
     cm.createGroup();
     refreshLayers();
   },
   onDeleteGroup: (groupId) => {
+    pushSnapshot();
     cm.deleteGroup(groupId);
     refreshLayers();
   },
@@ -157,6 +263,7 @@ const lm = new LayerManager('layer-list', 'layer-empty', {
     refreshLayers();
   },
   onReorderGroup: (groupId, beforeIndex, targetGroupId?, above?) => {
+    pushSnapshot();
     cm.moveGroupToPosition(groupId, beforeIndex, targetGroupId, above);
     refreshLayers();
   },
@@ -173,7 +280,7 @@ function updateExportState() {
   const hasVisible = hasImages && cm.images.some((e) => e.visible);
   exportBtn.disabled = !hasVisible;
   exportDropdownBtn.disabled = !hasVisible;
-  clearCanvasBtn.disabled = !hasImages;
+  clearCanvasBtn.disabled = !hasImages && !history.canUndo() && !history.canRedo();
   saveProjectBtn.disabled = !hasImages;
 }
 
@@ -184,9 +291,26 @@ cm.onSelectionChange = (index) => {
   lm.highlightRow(index ?? -1);
 };
 
-// ── Canvas object transform → auto-save ──
+// ── Canvas object transform → auto-save + history ──
+// Capture state BEFORE the transform starts (mouse:down), push it when
+// the transform ends (object:modified). This avoids the "first undo does
+// nothing" bug caused by saving the post-modification state.
 
-cm.canvas.on('object:modified', () => scheduleSave());
+let pendingTransformSnapshot: HistorySnapshot | null = null;
+
+cm.canvas.on('mouse:down', () => {
+  if (isRestoring) return;
+  pendingTransformSnapshot = captureSnapshot();
+});
+
+cm.canvas.on('object:modified', () => {
+  if (pendingTransformSnapshot && !isRestoring) {
+    history.push(pendingTransformSnapshot);
+    updateUndoRedoButtons();
+  }
+  pendingTransformSnapshot = null;
+  scheduleSave();
+});
 
 // ── Correction factors ──
 
@@ -222,6 +346,7 @@ guidelinesBtn.addEventListener('click', () => {
 // ── New Group button ──
 
 newGroupBtn.addEventListener('click', () => {
+  pushSnapshot();
   cm.createGroup();
   refreshLayers();
 });
@@ -259,8 +384,12 @@ importBtn.addEventListener('click', () => fileInput.click());
 clearCanvasBtn.addEventListener('click', async () => {
   if (!await showConfirmModal(t('clearCanvas.title'), t('clearCanvas.message'))) return;
   cm.clearAll();
+  history.clear();
+  if (historySaveTimer) { clearTimeout(historySaveTimer); historySaveTimer = null; }
+  updateUndoRedoButtons();
   refreshLayers();
   clearAutoState().catch(() => {});
+  clearHistoryState().catch(() => {});
   indexedDB.deleteDatabase('selphyoto');
   lastSaveTime = null;
   updateAutosaveDisplay();
@@ -301,6 +430,9 @@ projectFileInput.addEventListener('change', async () => {
   loadProjectBtn.textContent = t('project.importing');
   try {
     await importProject(file, cm, applyUIState);
+    history.clear();
+    updateUndoRedoButtons();
+    pushSnapshot();
     refreshLayers();
     flushSave();
   } catch (err) {
@@ -333,6 +465,7 @@ function applyUIState(settings: ProjectSettings | AutoSaveSettings) {
 fileInput.addEventListener('change', () => {
   const files = fileInput.files;
   if (!files) return;
+  pushSnapshot();
   for (const file of files) {
     if (file.type.startsWith('image/')) {
       cm.addImage(file);
@@ -457,6 +590,7 @@ canvasContainer.addEventListener('drop', (e) => {
 
   const files = e.dataTransfer?.files;
   if (!files) return;
+  pushSnapshot();
   for (const file of files) {
     if (file.type.startsWith('image/')) {
       cm.addImage(file);
@@ -471,6 +605,7 @@ cm.canvas.on('mouse:wheel', (opt) => {
   if (cm.getSelectedIndex() < 0) return;
   e.preventDefault();
   e.stopPropagation();
+  pushSnapshotCoalesced();
   const delta = e.deltaY;
   const factor = delta < 0 ? 1.02 : 1 / 1.02;
   cm.scaleSelected(factor);
@@ -493,6 +628,18 @@ const NUDGE_PX = 1;
 document.addEventListener('keydown', (e) => {
   if (isInputFocused()) return;
 
+  // Undo / Redo shortcuts
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') {
+    e.preventDefault();
+    undoBtn.click();
+    return;
+  }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) {
+    e.preventDefault();
+    redoBtn.click();
+    return;
+  }
+
   switch (e.key) {
     case 'Delete':
     case 'Backspace': {
@@ -502,6 +649,7 @@ document.addEventListener('keydown', (e) => {
       const name = cm.images[idx]?.filename ?? 'this image';
       showConfirmModal('', t('deleteImage.message', { name })).then((ok) => {
         if (!ok) return;
+        pushSnapshot();
         cm.deleteSelected();
         refreshLayers();
       });
@@ -509,21 +657,25 @@ document.addEventListener('keydown', (e) => {
     }
     case 'ArrowUp':
       e.preventDefault();
+      pushSnapshotCoalesced();
       cm.nudgeSelected(0, -NUDGE_PX);
       scheduleSave();
       break;
     case 'ArrowDown':
       e.preventDefault();
+      pushSnapshotCoalesced();
       cm.nudgeSelected(0, NUDGE_PX);
       scheduleSave();
       break;
     case 'ArrowLeft':
       e.preventDefault();
+      pushSnapshotCoalesced();
       cm.nudgeSelected(-NUDGE_PX, 0);
       scheduleSave();
       break;
     case 'ArrowRight':
       e.preventDefault();
+      pushSnapshotCoalesced();
       cm.nudgeSelected(NUDGE_PX, 0);
       scheduleSave();
       break;
@@ -611,7 +763,19 @@ async function restoreAutoSave() {
   }
 }
 
-restoreAutoSave().then(() => {
+restoreAutoSave().then(async () => {
+  try {
+    const histData = await loadHistoryState();
+    if (histData) {
+      history.restoreFrom(histData);
+    }
+  } catch (err) {
+    console.warn('Failed to restore history:', err);
+  }
+  if (!history.canUndo() && cm.images.length > 0) {
+    history.push(captureSnapshot());
+  }
+  updateUndoRedoButtons();
   applyI18n();
   captureButtonLabels();
   refreshLayers();

@@ -196,6 +196,44 @@ body {
   color: #1e1e1e;
 }
 
+.undo-redo-group {
+  gap: 4px;
+}
+
+.undo-redo-btn {
+  width: 36px;
+  height: 36px;
+  padding: 6px !important;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.undo-redo-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--text-dim);
+}
+
+.undo-redo-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.undo-redo-btn:disabled:hover {
+  background: var(--bg);
+  border-color: var(--border);
+}
+
+.undo-redo-btn .btn-icon {
+  width: 18px;
+  height: 18px;
+}
+
 .tool-actions {
   display: flex;
   gap: 8px;
@@ -581,9 +619,14 @@ body {
   opacity: 0.5;
 }
 
-.del-btn:hover {
+.del-btn:hover:not(:disabled) {
   background: rgba(244, 71, 71, 0.2);
   color: var(--red);
+}
+
+.del-btn:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
 }
 
 .lock-btn {

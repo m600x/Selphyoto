@@ -3,6 +3,7 @@ import * as C from './constants';
 import { t } from './i18n';
 
 export interface ImageEntry {
+  id: string;
   fabricImage: FabricImage;
   filename: string;
   visible: boolean;
@@ -15,6 +16,7 @@ export interface GroupEntry {
   id: string;
   name: string;
   visible: boolean;
+  position?: number;
 }
 
 export class CanvasManager {
@@ -38,6 +40,7 @@ export class CanvasManager {
   private _images: ImageEntry[] = [];
   private _groups: GroupEntry[] = [];
   private _groupCounter = 0;
+  private _nextImageId = 0;
   private corrX = C.DEFAULT_CORRECTION_X;
   private corrY = C.DEFAULT_CORRECTION_Y;
 
@@ -297,16 +300,54 @@ export class CanvasManager {
     return this._images;
   }
 
+  private generateImageId(): string {
+    return `img-${++this._nextImageId}`;
+  }
+
+  private static readonly MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+  static async constrainDataUrl(
+    dataUrl: string,
+    maxBytes: number = CanvasManager.MAX_IMAGE_BYTES,
+  ): Promise<string> {
+    if (dataUrl.length <= maxBytes) return dataUrl;
+
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.naturalWidth;
+        let h = img.naturalHeight;
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d')!;
+
+        for (;;) {
+          canvas.width = w;
+          canvas.height = h;
+          ctx.drawImage(img, 0, 0, w, h);
+          const result = canvas.toDataURL('image/jpeg', 0.92);
+          if (result.length <= maxBytes || w < 100) {
+            resolve(result);
+            return;
+          }
+          w = Math.round(w * 0.75);
+          h = Math.round(h * 0.75);
+        }
+      };
+      img.src = dataUrl;
+    });
+  }
+
   async addImage(file: File): Promise<void> {
     const blobUrl = URL.createObjectURL(file);
-    const dataUrl = await CanvasManager.fileToDataURL(file);
+    let dataUrl = await CanvasManager.fileToDataURL(file);
+    dataUrl = await CanvasManager.constrainDataUrl(dataUrl);
     try {
       const img = await FabricImage.fromURL(blobUrl);
       URL.revokeObjectURL(blobUrl);
 
       const iw = img.width ?? 1;
       const ih = img.height ?? 1;
-      const scale = Math.min(C.CROP_W / iw, C.CROP_H / ih, 1);
+      const scale = Math.min(C.CROP_W / iw, C.CROP_H / ih);
 
       img.set({
         scaleX: scale,
@@ -317,7 +358,7 @@ export class CanvasManager {
         originY: 'top',
       });
 
-      this._images.unshift({ fabricImage: img, filename: file.name, visible: true, locked: false, originalDataUrl: dataUrl });
+      this._images.unshift({ id: this.generateImageId(), fabricImage: img, filename: file.name, visible: true, locked: false, originalDataUrl: dataUrl });
       this.canvas.add(img);
       this.rebuildZOrder();
       this.canvas.setActiveObject(img);
@@ -486,6 +527,7 @@ export class CanvasManager {
   }
 
   moveGroupToPosition(groupId: string, beforeIndex: number, targetGroupId?: string, above?: boolean) {
+    const group = this._groups.find(g => g.id === groupId);
     const members: ImageEntry[] = [];
     const memberIndices: number[] = [];
 
@@ -507,6 +549,19 @@ export class CanvasManager {
       }
       adjusted = Math.max(0, Math.min(adjusted, this._images.length));
       this._images.splice(adjusted, 0, ...members);
+      if (group) group.position = undefined;
+    } else if (group) {
+      if (targetGroupId) {
+        const target = this._groups.find(g => g.id === targetGroupId);
+        const targetHasMembers = this._images.some(img => img.groupId === targetGroupId);
+        if (target && !targetHasMembers && target.position !== undefined) {
+          group.position = target.position;
+        } else {
+          group.position = beforeIndex;
+        }
+      } else {
+        group.position = beforeIndex;
+      }
     }
 
     if (targetGroupId) {
@@ -558,6 +613,7 @@ export class CanvasManager {
   async addImageFromDataURL(
     dataUrl: string,
     props: {
+      id?: string;
       filename: string;
       visible: boolean;
       locked?: boolean;
@@ -569,6 +625,7 @@ export class CanvasManager {
       angle: number;
     },
   ): Promise<void> {
+    dataUrl = await CanvasManager.constrainDataUrl(dataUrl);
     const locked = props.locked ?? false;
     const img = await FabricImage.fromURL(dataUrl);
     img.set({
@@ -585,6 +642,7 @@ export class CanvasManager {
     });
 
     this._images.push({
+      id: props.id ?? this.generateImageId(),
       fabricImage: img,
       filename: props.filename,
       visible: props.visible,
