@@ -1,8 +1,13 @@
 # SelphYoto
 
+Available (for now) at: https://selphyoto.m600.fr
+
 A web application for designing and printing precisely-sized YOTO card labels using a Canon Selphy CP1500 dye-sublimation printer with postcard paper (100 × 148 mm, borderless).
 
 The core challenge this app solves: the Selphy's borderless printing mode slightly enlarges images (~3.5–4%), making it impossible to get accurate real-life dimensions without compensation. This tool pre-corrects for that zoom so your printed cards come out at the exact right size.
+
+![Screenshot](./example.png)
+![Deskview](./example2.jpg)
 
 **100% client-side** — no data is ever sent to a server. All image processing happens in your browser.
 
