@@ -3,7 +3,7 @@ WORKDIR /app
 ARG COMMIT_HASH=dev
 ENV COMMIT_HASH=${COMMIT_HASH}
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm install
 COPY . .
 RUN npm run build
 
