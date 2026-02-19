@@ -1,0 +1,13 @@
+node_modules
+dist
+bun.lock
+*.local
+
+# Editor / OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Vite cache
+node_modules/.vite

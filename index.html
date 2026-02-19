@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SelphYoto</title>
+  </head>
+  <body>
+    <div id="app">
+      <h1 id="page-title">SelphYoto - MYO printing template</h1>
+      <header id="toolbar">
+        <div class="tool-group">
+          <label>Guidelines</label>
+          <button id="guidelines-btn" class="toggle-btn active">ON</button>
+        </div>
+
+        <div class="tool-group">
+          <label>Background</label>
+          <div class="bg-buttons">
+            <button
+              class="bg-btn active"
+              data-bg="#ffffff"
+              title="White"
+              style="background: #ffffff"
+            ></button>
+            <button
+              class="bg-btn"
+              data-bg="#808080"
+              title="Grey"
+              style="background: #808080"
+            ></button>
+            <button
+              class="bg-btn"
+              data-bg="#000000"
+              title="Black"
+              style="background: #000000"
+            ></button>
+          </div>
+        </div>
+
+        <div class="tool-group">
+          <label>Cutting marks</label>
+          <div class="mark-buttons">
+            <button
+              class="mark-btn"
+              data-mark="#000000"
+              title="Black"
+              style="background: #000000"
+            ></button>
+            <button
+              class="mark-btn"
+              data-mark="#ffffff"
+              title="White"
+              style="background: #ffffff"
+            ></button>
+            <button
+              class="mark-btn active"
+              data-mark="#cc0000"
+              title="Red"
+              style="background: #cc0000"
+            ></button>
+            <button
+              class="mark-btn"
+              data-mark="#cccc00"
+              title="Yellow"
+              style="background: #cccc00"
+            ></button>
+          </div>
+        </div>
+
+        <div class="tool-group">
+          <label for="correction-x">Corr. X</label>
+          <input
+            type="number"
+            id="correction-x"
+            step="0.0001"
+            min="0.5"
+            max="1.5"
+          />
+        </div>
+
+        <div class="tool-group">
+          <label for="correction-y">Corr. Y</label>
+          <input
+            type="number"
+            id="correction-y"
+            step="0.0001"
+            min="0.5"
+            max="1.5"
+          />
+        </div>
+
+        <div class="tool-actions">
+          <div class="split-btn">
+            <button id="export-btn" class="action-btn primary export-image-btn">Export image</button>
+            <button id="export-dropdown-btn" class="action-btn primary split-btn-arrow">&#9662;</button>
+            <div id="export-menu" class="split-btn-menu">
+              <button class="split-btn-option" data-format="png">Export as PNG</button>
+              <button class="split-btn-option" data-format="jpeg">Export as JPEG</button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div id="main-area">
+        <section id="layer-panel">
+          <div id="layer-panel-handle"></div>
+          <div class="add-buttons">
+            <button id="import-btn" class="action-btn primary"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add image</button>
+            <button id="new-group-btn" class="action-btn green-btn">Add group</button>
+          </div>
+          <input type="file" id="file-input" accept="image/*" multiple hidden />
+          <input type="file" id="project-file-input" accept=".zip" hidden />
+          <h3>Layers</h3>
+          <div id="layer-list"></div>
+          <p id="layer-empty">Background color and cutting marks are exported.<br/>Green guidelines are not exported, only used as visual reference.</p>
+          <div class="project-buttons">
+            <button id="load-project-btn" class="action-btn violet-btn"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Import</button>
+            <button id="save-project-btn" class="action-btn violet-btn"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Export</button>
+          </div>
+          <button id="clear-canvas-btn" class="action-btn danger-btn">Clear Canvas</button>
+        </section>
+
+        <main id="canvas-wrapper">
+          <div id="canvas-container">
+            <canvas id="main-canvas"></canvas>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

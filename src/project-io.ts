@@ -1,0 +1,176 @@
+import JSZip from 'jszip';
+import type { CanvasManager, GroupEntry } from './canvas-manager';
+
+export interface ProjectImageEntry {
+  file: string;
+  filename: string;
+  visible: boolean;
+  groupId: string | null;
+  left: number;
+  top: number;
+  scaleX: number;
+  scaleY: number;
+  angle: number;
+}
+
+export interface ProjectSettings {
+  correctionX: number;
+  correctionY: number;
+  backgroundColor: string;
+  markColor: string;
+  guidelinesVisible: boolean;
+  exportFormat: 'png' | 'jpeg';
+}
+
+export interface ProjectManifest {
+  version: 1;
+  images: ProjectImageEntry[];
+  groups: GroupEntry[];
+  groupCounter: number;
+  settings: ProjectSettings;
+}
+
+function pad2(n: number): string {
+  return String(n).padStart(2, '0');
+}
+
+function timestamp(): string {
+  const d = new Date();
+  return `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}_${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;
+}
+
+function sanitizeFilename(name: string): string {
+  return name.replace(/[^a-zA-Z0-9._-]/g, '_');
+}
+
+export async function exportProject(
+  cm: CanvasManager,
+  uiState: { exportFormat: 'png' | 'jpeg' },
+): Promise<void> {
+  const zip = new JSZip();
+  const imagesFolder = zip.folder('images')!;
+  const images = cm.images;
+  const manifestImages: ProjectImageEntry[] = [];
+
+  for (let i = 0; i < images.length; i++) {
+    const entry = images[i];
+    const fi = entry.fabricImage;
+
+    const ext = 'png';
+    const safeName = sanitizeFilename(entry.filename);
+    const zipPath = `${i}_${safeName}${safeName.includes('.') ? '' : '.' + ext}`;
+
+    const origSx = fi.scaleX ?? 1;
+    const origSy = fi.scaleY ?? 1;
+    const origAngle = fi.angle ?? 0;
+    fi.set({ scaleX: 1, scaleY: 1, angle: 0 });
+    const dataUrl = fi.toDataURL({ format: 'png' as 'png' });
+    fi.set({ scaleX: origSx, scaleY: origSy, angle: origAngle });
+    const base64 = dataUrl.split(',')[1];
+    imagesFolder.file(zipPath, base64, { base64: true });
+
+    manifestImages.push({
+      file: `images/${zipPath}`,
+      filename: entry.filename,
+      visible: entry.visible,
+      groupId: entry.groupId ?? null,
+      left: fi.left ?? 0,
+      top: fi.top ?? 0,
+      scaleX: fi.scaleX ?? 1,
+      scaleY: fi.scaleY ?? 1,
+      angle: fi.angle ?? 0,
+    });
+  }
+
+  const manifest: ProjectManifest = {
+    version: 1,
+    images: manifestImages,
+    groups: cm.groups.map(g => ({ ...g })),
+    groupCounter: cm.groups.length,
+    settings: {
+      correctionX: cm.getCorrectionX(),
+      correctionY: cm.getCorrectionY(),
+      backgroundColor: cm.getBackgroundColor(),
+      markColor: cm.getMarkColor(),
+      guidelinesVisible: cm.getGuidelinesVisible(),
+      exportFormat: uiState.exportFormat,
+    },
+  };
+
+  zip.file('project.json', JSON.stringify(manifest, null, 2));
+
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const link = document.createElement('a');
+  link.download = `project_${timestamp()}.zip`;
+  link.href = URL.createObjectURL(blob);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
+}
+
+export async function importProject(
+  file: File,
+  cm: CanvasManager,
+  applyUI: (settings: ProjectSettings) => void,
+): Promise<void> {
+  const zip = await JSZip.loadAsync(file);
+  const manifestFile = zip.file('project.json');
+  if (!manifestFile) throw new Error('Invalid project: missing project.json');
+
+  const manifestText = await manifestFile.async('string');
+  const manifest: ProjectManifest = JSON.parse(manifestText);
+
+  if (manifest.version !== 1) {
+    throw new Error(`Unsupported project version: ${manifest.version}`);
+  }
+
+  cm.clearAll();
+
+  for (const imgEntry of manifest.images) {
+    const imgFile = zip.file(imgEntry.file);
+    if (!imgFile) {
+      console.warn(`Missing image in zip: ${imgEntry.file}`);
+      continue;
+    }
+
+    const imgBlob = await imgFile.async('blob');
+    const dataUrl = await blobToDataURL(imgBlob);
+
+    await cm.addImageFromDataURL(dataUrl, {
+      filename: imgEntry.filename,
+      visible: imgEntry.visible,
+      groupId: imgEntry.groupId ?? undefined,
+      left: imgEntry.left,
+      top: imgEntry.top,
+      scaleX: imgEntry.scaleX,
+      scaleY: imgEntry.scaleY,
+      angle: imgEntry.angle,
+    });
+  }
+
+  const maxCounter = manifest.groupCounter ??
+    manifest.groups.reduce((max, g) => {
+      const num = parseInt(g.id.replace('group-', ''), 10);
+      return isNaN(num) ? max : Math.max(max, num);
+    }, 0);
+
+  cm.restoreGroups(manifest.groups, maxCounter);
+  cm.setCorrectionX(manifest.settings.correctionX);
+  cm.setCorrectionY(manifest.settings.correctionY);
+  cm.setBackground(manifest.settings.backgroundColor);
+  cm.setMarkColor(manifest.settings.markColor);
+  cm.setGuidelinesVisible(manifest.settings.guidelinesVisible);
+  cm.finalizeRestore();
+
+  applyUI(manifest.settings);
+}
+
+function blobToDataURL(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}

@@ -1,0 +1,10 @@
+node_modules
+dist
+bun.lock
+.git
+.gitignore
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+*.md
