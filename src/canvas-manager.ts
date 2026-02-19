@@ -5,7 +5,9 @@ export interface ImageEntry {
   fabricImage: FabricImage;
   filename: string;
   visible: boolean;
+  locked: boolean;
   groupId?: string;
+  originalDataUrl: string;
 }
 
 export interface GroupEntry {
@@ -295,10 +297,11 @@ export class CanvasManager {
   }
 
   async addImage(file: File): Promise<void> {
-    const url = URL.createObjectURL(file);
+    const blobUrl = URL.createObjectURL(file);
+    const dataUrl = await CanvasManager.fileToDataURL(file);
     try {
-      const img = await FabricImage.fromURL(url);
-      URL.revokeObjectURL(url);
+      const img = await FabricImage.fromURL(blobUrl);
+      URL.revokeObjectURL(blobUrl);
 
       const iw = img.width ?? 1;
       const ih = img.height ?? 1;
@@ -313,15 +316,24 @@ export class CanvasManager {
         originY: 'top',
       });
 
-      this._images.unshift({ fabricImage: img, filename: file.name, visible: true });
+      this._images.unshift({ fabricImage: img, filename: file.name, visible: true, locked: false, originalDataUrl: dataUrl });
       this.canvas.add(img);
       this.rebuildZOrder();
       this.canvas.setActiveObject(img);
       this.onListChange?.();
     } catch (err) {
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(blobUrl);
       console.error('Failed to load image:', err);
     }
+  }
+
+  private static fileToDataURL(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   }
 
   removeImage(index: number) {
@@ -371,6 +383,21 @@ export class CanvasManager {
     this.onListChange?.();
   }
 
+  toggleLock(index: number) {
+    if (index < 0 || index >= this._images.length) return;
+    const entry = this._images[index];
+    entry.locked = !entry.locked;
+    entry.fabricImage.set({
+      selectable: !entry.locked,
+      evented: !entry.locked,
+    });
+    if (entry.locked && this.canvas.getActiveObject() === entry.fabricImage) {
+      this.canvas.discardActiveObject();
+    }
+    this.canvas.requestRenderAll();
+    this.onListChange?.();
+  }
+
   reorderImages(fromIndex: number, toIndex: number) {
     if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 ||
         fromIndex >= this._images.length || toIndex >= this._images.length) return;
@@ -383,7 +410,7 @@ export class CanvasManager {
   selectImage(index: number) {
     if (index < 0 || index >= this._images.length) return;
     const entry = this._images[index];
-    if (entry.visible) {
+    if (entry.visible && !entry.locked) {
       this.canvas.setActiveObject(entry.fabricImage);
       this.canvas.requestRenderAll();
     }
@@ -399,6 +426,10 @@ export class CanvasManager {
 
   get groups(): ReadonlyArray<GroupEntry> {
     return this._groups;
+  }
+
+  getGroupCounter(): number {
+    return this._groupCounter;
   }
 
   createGroup(): string {
@@ -453,7 +484,7 @@ export class CanvasManager {
     this.onListChange?.();
   }
 
-  moveGroupToPosition(groupId: string, beforeIndex: number) {
+  moveGroupToPosition(groupId: string, beforeIndex: number, targetGroupId?: string, above?: boolean) {
     const members: ImageEntry[] = [];
     const memberIndices: number[] = [];
 
@@ -463,19 +494,30 @@ export class CanvasManager {
         memberIndices.push(i);
       }
     }
-    if (members.length === 0) return;
 
-    for (let i = memberIndices.length - 1; i >= 0; i--) {
-      this._images.splice(memberIndices[i], 1);
+    if (members.length > 0) {
+      for (let i = memberIndices.length - 1; i >= 0; i--) {
+        this._images.splice(memberIndices[i], 1);
+      }
+
+      let adjusted = beforeIndex;
+      for (const idx of memberIndices) {
+        if (idx < beforeIndex) adjusted--;
+      }
+      adjusted = Math.max(0, Math.min(adjusted, this._images.length));
+      this._images.splice(adjusted, 0, ...members);
     }
 
-    let adjusted = beforeIndex;
-    for (const idx of memberIndices) {
-      if (idx < beforeIndex) adjusted--;
+    if (targetGroupId) {
+      const srcIdx = this._groups.findIndex(g => g.id === groupId);
+      const tgtIdx = this._groups.findIndex(g => g.id === targetGroupId);
+      if (srcIdx !== -1 && tgtIdx !== -1 && srcIdx !== tgtIdx) {
+        const [src] = this._groups.splice(srcIdx, 1);
+        const newTgtIdx = this._groups.findIndex(g => g.id === targetGroupId);
+        this._groups.splice(above ? newTgtIdx : newTgtIdx + 1, 0, src);
+      }
     }
-    adjusted = Math.max(0, Math.min(adjusted, this._images.length));
 
-    this._images.splice(adjusted, 0, ...members);
     this.rebuildZOrder();
     this.onListChange?.();
   }
@@ -517,6 +559,7 @@ export class CanvasManager {
     props: {
       filename: string;
       visible: boolean;
+      locked?: boolean;
       groupId?: string;
       left: number;
       top: number;
@@ -525,6 +568,7 @@ export class CanvasManager {
       angle: number;
     },
   ): Promise<void> {
+    const locked = props.locked ?? false;
     const img = await FabricImage.fromURL(dataUrl);
     img.set({
       left: props.left,
@@ -533,6 +577,8 @@ export class CanvasManager {
       scaleY: props.scaleY,
       angle: props.angle,
       visible: props.visible,
+      selectable: !locked,
+      evented: !locked,
       originX: 'left',
       originY: 'top',
     });
@@ -541,7 +587,9 @@ export class CanvasManager {
       fabricImage: img,
       filename: props.filename,
       visible: props.visible,
+      locked,
       groupId: props.groupId,
+      originalDataUrl: dataUrl,
     });
     this.canvas.add(img);
   }
@@ -656,7 +704,7 @@ export class CanvasManager {
     const ext = format === 'jpeg' ? 'jpg' : 'png';
 
     const link = document.createElement('a');
-    link.download = `exported_image_${ts}.${ext}`;
+    link.download = `selphyoto_exported_${ts}.${ext}`;
     link.href = dataUrl;
     document.body.appendChild(link);
     link.click();

@@ -7,7 +7,7 @@
   </head>
   <body>
     <div id="app">
-      <h1 id="page-title">SelphYoto - MYO printing template</h1>
+      <h1 id="page-title">SelphYoto - MYO design printing template</h1>
       <header id="toolbar">
         <div class="tool-group">
           <label>Guidelines</label>
@@ -106,8 +106,8 @@
         <section id="layer-panel">
           <div id="layer-panel-handle"></div>
           <div class="add-buttons">
-            <button id="import-btn" class="action-btn primary"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add image</button>
-            <button id="new-group-btn" class="action-btn green-btn">Add group</button>
+            <button id="import-btn" class="action-btn green-btn"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add image</button>
+            <button id="new-group-btn" class="action-btn primary">Add group</button>
           </div>
           <input type="file" id="file-input" accept="image/*" multiple hidden />
           <input type="file" id="project-file-input" accept=".zip" hidden />
@@ -119,6 +119,10 @@
             <button id="save-project-btn" class="action-btn violet-btn"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Export</button>
           </div>
           <button id="clear-canvas-btn" class="action-btn danger-btn">Clear Canvas</button>
+          <div id="sidebar-footer">
+            <span id="app-version"></span>
+            <span id="autosave-status"></span>
+          </div>
         </section>
 
         <main id="canvas-wrapper">

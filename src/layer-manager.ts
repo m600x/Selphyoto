@@ -2,6 +2,7 @@ import type { ImageEntry, GroupEntry } from './canvas-manager';
 
 export interface LayerCallbacks {
   onToggleVisibility: (index: number) => void;
+  onToggleLock: (index: number) => void;
   onDelete: (index: number) => void;
   onReorder: (fromIndex: number, toIndex: number) => void;
   onSelect: (index: number) => void;
@@ -12,13 +13,15 @@ export interface LayerCallbacks {
   onRenameGroup: (groupId: string, newName: string) => void;
   onAddToGroup: (imageIndex: number, groupId: string) => void;
   onRemoveFromGroup: (imageIndex: number) => void;
-  onReorderGroup: (groupId: string, beforeIndex: number) => void;
+  onReorderGroup: (groupId: string, beforeIndex: number, targetGroupId?: string, above?: boolean) => void;
 }
 
 const SVG_EYE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
 const SVG_EYE_OFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
 const SVG_TRASH = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
 const SVG_UNGROUP = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+const SVG_LOCK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+const SVG_UNLOCK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>`;
 
 export class LayerManager {
   private container: HTMLElement;
@@ -234,9 +237,9 @@ export class LayerManager {
 
         if (range) {
           const beforeIdx = wasAbove ? range.first : range.last + 1;
-          this.callbacks.onReorderGroup(gid, beforeIdx);
-        } else if (wasAbove || wasBelow) {
-          this.callbacks.onReorderGroup(gid, this._currentImages.length);
+          this.callbacks.onReorderGroup(gid, beforeIdx, group.id, wasAbove);
+        } else {
+          this.callbacks.onReorderGroup(gid, this._currentImages.length, group.id, wasAbove);
         }
       }
     });
@@ -312,6 +315,16 @@ export class LayerManager {
       });
       buttons.push(ungroupBtn);
     }
+
+    const lockBtn = document.createElement('button');
+    lockBtn.className = 'lock-btn' + (entry.locked ? ' locked' : '');
+    lockBtn.innerHTML = entry.locked ? SVG_LOCK : SVG_UNLOCK;
+    lockBtn.title = entry.locked ? 'Unlock layer' : 'Lock layer';
+    lockBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.callbacks.onToggleLock(index);
+    });
+    buttons.push(lockBtn);
 
     const delBtn = document.createElement('button');
     delBtn.className = 'del-btn';

@@ -6,14 +6,24 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test --config tests/e2e/playwright.config.ts",
+    "test:all": "vitest run && playwright test --config tests/e2e/playwright.config.ts"
   },
   "dependencies": {
-    "fabric": "^6.5.0",
+    "fabric": "^7.1.0",
     "jszip": "^3.10.1"
   },
   "devDependencies": {
-    "typescript": "^5.7.0",
-    "vite": "^6.1.0"
+    "@playwright/test": "^1.58.2",
+    "@vitest/coverage-v8": "^4.0.18",
+    "fake-indexeddb": "^6.2.5",
+    "jsdom": "^28.1.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18"
   }
 }

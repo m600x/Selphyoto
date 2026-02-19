@@ -3,6 +3,7 @@ import { CanvasManager } from './canvas-manager';
 import { LayerManager } from './layer-manager';
 import { DEFAULT_CORRECTION_X, DEFAULT_CORRECTION_Y } from './constants';
 import { exportProject, importProject, type ProjectSettings } from './project-io';
+import { saveAutoState, loadAutoState, clearAutoState, collectState, type AutoSaveSettings } from './auto-save';
 
 // ── Init ──
 
@@ -24,6 +25,56 @@ const exportMenu = document.getElementById('export-menu')!;
 const canvasContainer = document.getElementById('canvas-container')!;
 const bgButtons = document.querySelectorAll<HTMLButtonElement>('.bg-btn');
 
+// ── Export format state ──
+
+let exportFormat: 'png' | 'jpeg' = 'png';
+
+// ── Version display ──
+
+const appVersionEl = document.getElementById('app-version')!;
+appVersionEl.textContent = `v${__APP_VERSION__} (${__COMMIT_HASH__})`;
+
+// ── Auto-save (debounced) ──
+
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+let lastSaveTime: number | null = null;
+const autosaveStatusEl = document.getElementById('autosave-status')!;
+
+function scheduleSave() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(performSave, 500);
+}
+
+function performSave() {
+  saveTimer = null;
+  const state = collectState(cm, exportFormat);
+  saveAutoState(state)
+    .then(() => { lastSaveTime = Date.now(); updateAutosaveDisplay(); })
+    .catch(err => console.warn('Auto-save failed:', err));
+}
+
+function flushSave() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = null;
+  performSave();
+}
+
+function updateAutosaveDisplay() {
+  if (lastSaveTime === null) {
+    autosaveStatusEl.textContent = '-';
+    return;
+  }
+  const seconds = Math.floor((Date.now() - lastSaveTime) / 1000);
+  if (seconds < 5) autosaveStatusEl.textContent = 'Autosaved just now';
+  else if (seconds < 60) autosaveStatusEl.textContent = `Autosaved ${seconds}s ago`;
+  else {
+    const minutes = Math.floor(seconds / 60);
+    autosaveStatusEl.textContent = `Autosaved ${minutes}m ago`;
+  }
+}
+
+setInterval(updateAutosaveDisplay, 10_000);
+
 // ── Layer manager ──
 
 const lm = new LayerManager('layer-list', 'layer-empty', {
@@ -31,7 +82,13 @@ const lm = new LayerManager('layer-list', 'layer-empty', {
     cm.toggleVisibility(i);
     refreshLayers();
   },
+  onToggleLock: (i) => {
+    cm.toggleLock(i);
+    refreshLayers();
+  },
   onDelete: (i) => {
+    const name = cm.images[i]?.filename ?? 'this image';
+    if (!confirm(`Delete "${name}"?`)) return;
     cm.removeImage(i);
     refreshLayers();
   },
@@ -46,6 +103,7 @@ const lm = new LayerManager('layer-list', 'layer-empty', {
   onRename: (i, newName) => {
     const entry = cm.images[i];
     if (entry) (entry as { filename: string }).filename = newName;
+    scheduleSave();
   },
   onCreateGroup: () => {
     cm.createGroup();
@@ -61,6 +119,7 @@ const lm = new LayerManager('layer-list', 'layer-empty', {
   },
   onRenameGroup: (groupId, newName) => {
     cm.renameGroup(groupId, newName);
+    scheduleSave();
   },
   onAddToGroup: (imageIndex, groupId) => {
     cm.setImageGroup(imageIndex, groupId);
@@ -70,8 +129,8 @@ const lm = new LayerManager('layer-list', 'layer-empty', {
     cm.setImageGroup(imageIndex, undefined);
     refreshLayers();
   },
-  onReorderGroup: (groupId, beforeIndex) => {
-    cm.moveGroupToPosition(groupId, beforeIndex);
+  onReorderGroup: (groupId, beforeIndex, targetGroupId?, above?) => {
+    cm.moveGroupToPosition(groupId, beforeIndex, targetGroupId, above);
     refreshLayers();
   },
 });
@@ -79,6 +138,7 @@ const lm = new LayerManager('layer-list', 'layer-empty', {
 function refreshLayers() {
   lm.render(cm.images, cm.groups, cm.getSelectedIndex());
   updateExportState();
+  scheduleSave();
 }
 
 function updateExportState() {
@@ -97,6 +157,10 @@ cm.onSelectionChange = (index) => {
   lm.highlightRow(index ?? -1);
 };
 
+// ── Canvas object transform → auto-save ──
+
+cm.canvas.on('object:modified', () => scheduleSave());
+
 // ── Correction factors ──
 
 corrXInput.value = String(DEFAULT_CORRECTION_X);
@@ -104,12 +168,18 @@ corrYInput.value = String(DEFAULT_CORRECTION_Y);
 
 corrXInput.addEventListener('change', () => {
   const val = parseFloat(corrXInput.value);
-  if (!isNaN(val) && val > 0) cm.setCorrectionX(val);
+  if (!isNaN(val) && val > 0) {
+    cm.setCorrectionX(val);
+    scheduleSave();
+  }
 });
 
 corrYInput.addEventListener('change', () => {
   const val = parseFloat(corrYInput.value);
-  if (!isNaN(val) && val > 0) cm.setCorrectionY(val);
+  if (!isNaN(val) && val > 0) {
+    cm.setCorrectionY(val);
+    scheduleSave();
+  }
 });
 
 // ── Guidelines toggle ──
@@ -119,6 +189,7 @@ guidelinesBtn.addEventListener('click', () => {
   cm.setGuidelinesVisible(nowVisible);
   guidelinesBtn.textContent = nowVisible ? 'ON' : 'OFF';
   guidelinesBtn.classList.toggle('active', nowVisible);
+  scheduleSave();
 });
 
 // ── New Group button ──
@@ -135,6 +206,7 @@ bgButtons.forEach((btn) => {
     bgButtons.forEach((b) => b.classList.remove('active'));
     btn.classList.add('active');
     cm.setBackground(btn.dataset.bg!);
+    scheduleSave();
   });
 });
 
@@ -147,6 +219,7 @@ markButtons.forEach((btn) => {
     markButtons.forEach((b) => b.classList.remove('active'));
     btn.classList.add('active');
     cm.setMarkColor(btn.dataset.mark!);
+    scheduleSave();
   });
 });
 
@@ -160,6 +233,9 @@ clearCanvasBtn.addEventListener('click', () => {
   if (confirm('Are you sure you want to clear the entire canvas? All images and groups will be removed.')) {
     cm.clearAll();
     refreshLayers();
+    clearAutoState().catch(() => {});
+    lastSaveTime = null;
+    updateAutosaveDisplay();
   }
 });
 
@@ -194,6 +270,7 @@ projectFileInput.addEventListener('change', async () => {
   try {
     await importProject(file, cm, applyUIState);
     refreshLayers();
+    flushSave();
   } catch (err) {
     console.error('Failed to import project:', err);
     alert('Failed to import project. The file may be invalid.');
@@ -203,32 +280,23 @@ projectFileInput.addEventListener('change', async () => {
   }
 });
 
-function applyUIState(settings: ProjectSettings) {
-  // Correction inputs
+function applyUIState(settings: ProjectSettings | AutoSaveSettings) {
   corrXInput.value = String(settings.correctionX);
   corrYInput.value = String(settings.correctionY);
 
-  // Background buttons
   bgButtons.forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.bg === settings.backgroundColor);
   });
 
-  // Cutting mark buttons
   markButtons.forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.mark === settings.markColor);
   });
 
-  // Guidelines toggle
   guidelinesBtn.textContent = settings.guidelinesVisible ? 'ON' : 'OFF';
   guidelinesBtn.classList.toggle('active', settings.guidelinesVisible);
 
-  // Export format
   exportFormat = settings.exportFormat;
 }
-
-// ── Export format state (used by save/load project and export button) ──
-
-let exportFormat: 'png' | 'jpeg' = 'png';
 
 fileInput.addEventListener('change', () => {
   const files = fileInput.files;
@@ -300,6 +368,7 @@ cm.canvas.on('mouse:wheel', (opt) => {
   const delta = e.deltaY;
   const factor = delta < 0 ? 1.02 : 1 / 1.02;
   cm.scaleSelected(factor);
+  scheduleSave();
 });
 
 // ── Keyboard shortcuts (only when not typing in an input) ──
@@ -320,26 +389,35 @@ document.addEventListener('keydown', (e) => {
 
   switch (e.key) {
     case 'Delete':
-    case 'Backspace':
+    case 'Backspace': {
       e.preventDefault();
+      const idx = cm.getSelectedIndex();
+      if (idx < 0) break;
+      const name = cm.images[idx]?.filename ?? 'this image';
+      if (!confirm(`Delete "${name}"?`)) break;
       cm.deleteSelected();
       refreshLayers();
       break;
+    }
     case 'ArrowUp':
       e.preventDefault();
       cm.nudgeSelected(0, -NUDGE_PX);
+      scheduleSave();
       break;
     case 'ArrowDown':
       e.preventDefault();
       cm.nudgeSelected(0, NUDGE_PX);
+      scheduleSave();
       break;
     case 'ArrowLeft':
       e.preventDefault();
       cm.nudgeSelected(-NUDGE_PX, 0);
+      scheduleSave();
       break;
     case 'ArrowRight':
       e.preventDefault();
       cm.nudgeSelected(NUDGE_PX, 0);
+      scheduleSave();
       break;
   }
 });
@@ -382,6 +460,50 @@ const resizeObserver = new ResizeObserver(fitCanvas);
 resizeObserver.observe(canvasWrapper);
 fitCanvas();
 
-// ── Initial render ──
+// ── Restore from auto-save, then initial render ──
 
-refreshLayers();
+async function restoreAutoSave() {
+  try {
+    const state = await loadAutoState();
+    if (!state) return;
+
+    const validImages = state.images.filter(img => img.dataUrl && typeof img.dataUrl === 'string');
+    if (validImages.length === 0 && state.groups.length === 0) return;
+
+    for (const img of validImages) {
+      try {
+        await cm.addImageFromDataURL(img.dataUrl, {
+          filename: img.filename,
+          visible: img.visible,
+          locked: img.locked ?? false,
+          groupId: img.groupId ?? undefined,
+          left: img.left,
+          top: img.top,
+          scaleX: img.scaleX,
+          scaleY: img.scaleY,
+          angle: img.angle,
+        });
+      } catch (imgErr) {
+        console.warn('Skipping corrupt auto-saved image:', img.filename, imgErr);
+      }
+    }
+
+    cm.restoreGroups(state.groups, state.groupCounter);
+    if (state.settings) {
+      cm.setCorrectionX(state.settings.correctionX);
+      cm.setCorrectionY(state.settings.correctionY);
+      cm.setBackground(state.settings.backgroundColor);
+      cm.setMarkColor(state.settings.markColor);
+      cm.setGuidelinesVisible(state.settings.guidelinesVisible);
+      applyUIState(state.settings);
+    }
+    cm.finalizeRestore();
+  } catch (err) {
+    console.warn('Failed to restore auto-save:', err);
+  }
+}
+
+restoreAutoSave().then(() => {
+  refreshLayers();
+  fitCanvas();
+});

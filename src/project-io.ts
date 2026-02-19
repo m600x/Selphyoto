@@ -1,10 +1,12 @@
 import JSZip from 'jszip';
 import type { CanvasManager, GroupEntry } from './canvas-manager';
+import { timestamp, sanitizeFilename } from './utils';
 
 export interface ProjectImageEntry {
   file: string;
   filename: string;
   visible: boolean;
+  locked: boolean;
   groupId: string | null;
   left: number;
   top: number;
@@ -28,19 +30,6 @@ export interface ProjectManifest {
   groups: GroupEntry[];
   groupCounter: number;
   settings: ProjectSettings;
-}
-
-function pad2(n: number): string {
-  return String(n).padStart(2, '0');
-}
-
-function timestamp(): string {
-  const d = new Date();
-  return `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}_${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;
-}
-
-function sanitizeFilename(name: string): string {
-  return name.replace(/[^a-zA-Z0-9._-]/g, '_');
 }
 
 export async function exportProject(
@@ -73,6 +62,7 @@ export async function exportProject(
       file: `images/${zipPath}`,
       filename: entry.filename,
       visible: entry.visible,
+      locked: entry.locked ?? false,
       groupId: entry.groupId ?? null,
       left: fi.left ?? 0,
       top: fi.top ?? 0,
@@ -101,7 +91,7 @@ export async function exportProject(
 
   const blob = await zip.generateAsync({ type: 'blob' });
   const link = document.createElement('a');
-  link.download = `project_${timestamp()}.zip`;
+  link.download = `selphyoto_project_${timestamp()}.zip`;
   link.href = URL.createObjectURL(blob);
   document.body.appendChild(link);
   link.click();
@@ -140,6 +130,7 @@ export async function importProject(
     await cm.addImageFromDataURL(dataUrl, {
       filename: imgEntry.filename,
       visible: imgEntry.visible,
+      locked: imgEntry.locked ?? false,
       groupId: imgEntry.groupId ?? undefined,
       left: imgEntry.left,
       top: imgEntry.top,

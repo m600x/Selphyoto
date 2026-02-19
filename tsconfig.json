@@ -16,5 +16,5 @@
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src"]
+  "include": ["src", "tests/unit", "tests/integration", "tests/setup.ts"]
 }
