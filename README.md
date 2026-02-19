@@ -91,6 +91,32 @@ npm run preview
 
 The built files are output to the `dist/` directory. This is a fully static site that can be hosted anywhere.
 
+## Linting
+
+The project uses [ESLint](https://eslint.org/) v9 with the TypeScript plugin (flat config).
+
+```bash
+npx eslint .
+```
+
+Or with Make:
+
+```bash
+make lint
+```
+
+To auto-fix issues:
+
+```bash
+npx eslint . --fix
+```
+
+Or with Make:
+
+```bash
+make lint-fix
+```
+
 ## Testing
 
 The project includes a comprehensive test suite across three layers: unit tests, integration tests, and end-to-end browser tests.
@@ -229,6 +255,8 @@ Run `make` (with no arguments) to see all available targets:
 make help                Show this help
 make install             Install npm dependencies and Playwright browsers
 make install-playwright  Download Playwright browsers only (after upgrade)
+make lint                Lint all TypeScript and JavaScript files (ESLint)
+make lint-fix            Lint and auto-fix issues
 make dev                 Start the Vite dev server (http://localhost:5173)
 make unit-tests          Run unit tests only (Vitest)
 make integration-tests   Run integration tests only (Vitest + jsdom)
@@ -240,6 +268,38 @@ make run                 Run the Docker container (http://localhost:8080)
 make stop                Stop and remove the Docker container
 make clean               Remove node_modules and dist
 ```
+
+## CI / CD
+
+A GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push and pull request to `master`/`main`:
+
+| Job | When | What it does |
+|-----|------|-------------|
+| **Vulnerability scan** | Always | `npm audit --omit=dev` to flag known vulnerabilities in production dependencies |
+| **Tests** | Always | ESLint, TypeScript check, unit tests, integration tests, and Playwright E2E tests |
+| **Docker build & push** | Push to master/main | Builds the image and pushes to `ghcr.io` with tags `latest`, the version from `package.json`, and the short SHA |
+| **GitHub Release** | Push to master/main | If the version in `package.json` doesn't have a matching Git tag, creates a new tag and GitHub Release with auto-generated release notes |
+
+### Docker image tags
+
+Every push to master/main produces these tags:
+
+- `latest` — always points to the most recent build
+- `<version>` — matches the `version` field in `package.json` (e.g. `0.1.0`)
+- `<short-sha>` — the commit hash
+
+```bash
+docker pull ghcr.io/<owner>/selphy-yoto-templater:latest
+docker pull ghcr.io/<owner>/selphy-yoto-templater:0.1.0
+```
+
+### Releasing a new version
+
+1. Bump the `version` in `package.json` (e.g. `0.1.0` to `0.2.0`)
+2. Commit and push to master/main
+3. The workflow automatically creates a `v0.2.0` Git tag, a GitHub Release, and pushes the Docker image tagged `0.2.0` + `latest`
+
+Test artifacts (screenshots on failure, reports) are uploaded as workflow artifacts with 7-day retention.
 
 ## Calibration workflow
 
@@ -273,6 +333,9 @@ selphyoto/
 ├── Makefile                    Make targets for dev, test, build, run
 ├── Dockerfile                  Multi-stage build (Node + nginx)
 ├── .dockerignore
+├── .github/
+│   └── workflows/
+│       └── ci.yml              GitHub Actions CI/CD pipeline
 ├── src/
 │   ├── main.ts                 Entry point, DOM event wiring, auto-save
 │   ├── canvas-manager.ts       Fabric.js canvas, guides, export logic
@@ -310,7 +373,7 @@ selphyoto/
 | Corner radius | 3.18 mm |
 | Print DPI | 300 (11.811 px/mm) |
 | Export resolution | 1748 × 1181 px |
-| Canvas library | Fabric.js v6 |
+| Canvas library | Fabric.js v7 |
 | Build tool | Vite |
 | Language | TypeScript |
 | Unit/Integration tests | Vitest + jsdom + fake-indexeddb |

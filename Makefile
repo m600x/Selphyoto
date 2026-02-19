@@ -1,4 +1,4 @@
-.PHONY: help dev install install-playwright unit-tests integration-tests e2e-tests tests tests-coverage build run stop clean
+.PHONY: help dev install install-playwright lint lint-fix unit-tests integration-tests e2e-tests tests tests-coverage build run stop clean
 
 DOCKER_IMAGE := selphyoto
 DOCKER_CONTAINER := selphyoto
@@ -17,6 +17,12 @@ install: ## Install npm dependencies and Playwright browsers
 
 install-playwright: ## Download Playwright browsers only (after upgrade)
 	npx playwright install chromium
+
+lint: ## Lint all TypeScript and JavaScript files (ESLint)
+	npx eslint .
+
+lint-fix: ## Lint and auto-fix issues
+	npx eslint . --fix
 
 dev: ## Start the Vite dev server (http://localhost:5173)
 	npx vite

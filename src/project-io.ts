@@ -53,7 +53,7 @@ export async function exportProject(
     const origSy = fi.scaleY ?? 1;
     const origAngle = fi.angle ?? 0;
     fi.set({ scaleX: 1, scaleY: 1, angle: 0 });
-    const dataUrl = fi.toDataURL({ format: 'png' as 'png' });
+    const dataUrl = fi.toDataURL({ format: 'png' as const });
     fi.set({ scaleX: origSx, scaleY: origSy, angle: origAngle });
     const base64 = dataUrl.split(',')[1];
     imagesFolder.file(zipPath, base64, { base64: true });
