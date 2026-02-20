@@ -17,7 +17,8 @@ function makeMockCM() {
     correctionY: 0.961,
     backgroundColor: '#ffffff',
     markColor: '#cc0000',
-    guidelinesVisible: true,
+    outlineVisible: true,
+    centerLinesVisible: false,
     textCounter: 0,
   };
 
@@ -75,7 +76,8 @@ function makeMockCM() {
     setCorrectionY: mock((v: number) => { state.correctionY = v; }),
     setBackground: mock((c: string) => { state.backgroundColor = c; }),
     setMarkColor: mock((c: string) => { state.markColor = c; }),
-    setGuidelinesVisible: mock((v: boolean) => { state.guidelinesVisible = v; }),
+    setOutlineVisible: mock((v: boolean) => { state.outlineVisible = v; }),
+    setCenterLinesVisible: mock((v: boolean) => { state.centerLinesVisible = v; }),
     setTextCounter: mock((v: number) => { state.textCounter = v; }),
     getTextCounter: mock(() => state.textCounter),
     finalizeRestore: mock(() => {}),
@@ -117,7 +119,8 @@ function makeExportCM(overrides: Partial<{
   corrY: number;
   bgColor: string;
   markColor: string;
-  guidelinesVisible: boolean;
+  outlineVisible: boolean;
+  centerLinesVisible: boolean;
 }> = {}) {
   const images = overrides.images ?? [];
   const groups = overrides.groups ?? [];
@@ -130,7 +133,8 @@ function makeExportCM(overrides: Partial<{
     getCorrectionY: mock(() => overrides.corrY ?? 0.961),
     getBackgroundColor: mock(() => overrides.bgColor ?? '#ffffff'),
     getMarkColor: mock(() => overrides.markColor ?? '#cc0000'),
-    getGuidelinesVisible: mock(() => overrides.guidelinesVisible ?? true),
+    getOutlineVisible: mock(() => overrides.outlineVisible ?? true),
+    getCenterLinesVisible: mock(() => overrides.centerLinesVisible ?? false),
   };
 }
 
@@ -203,7 +207,8 @@ describe('project import', () => {
         correctionY: 0.96,
         backgroundColor: '#000000',
         markColor: '#ffffff',
-        guidelinesVisible: false,
+        outlineVisible: false,
+        centerLinesVisible: true,
         exportFormat: 'jpeg',
       },
     };
@@ -243,7 +248,8 @@ describe('project import', () => {
     expect(cm.setCorrectionY).toHaveBeenCalledWith(0.96);
     expect(cm.setBackground).toHaveBeenCalledWith('#000000');
     expect(cm.setMarkColor).toHaveBeenCalledWith('#ffffff');
-    expect(cm.setGuidelinesVisible).toHaveBeenCalledWith(false);
+    expect(cm.setOutlineVisible).toHaveBeenCalledWith(false);
+    expect(cm.setCenterLinesVisible).toHaveBeenCalledWith(true);
     expect(cm.finalizeRestore).toHaveBeenCalled();
 
     expect(appliedSettings).not.toBeNull();
@@ -278,7 +284,7 @@ describe('project import', () => {
       ],
       groups: [],
       groupCounter: 0,
-      settings: { correctionX: 0.961, correctionY: 0.961, backgroundColor: '#ffffff', markColor: '#cc0000', guidelinesVisible: true, exportFormat: 'png' },
+      settings: { correctionX: 0.961, correctionY: 0.961, backgroundColor: '#ffffff', markColor: '#cc0000', outlineVisible: true, centerLinesVisible: false, exportFormat: 'png' },
     };
 
     const consoleSpy = spyOn(console, 'warn').mockImplementation(() => {});
@@ -324,7 +330,7 @@ describe('project import', () => {
       groups: [],
       groupCounter: 0,
       textCounter: 1,
-      settings: { correctionX: 0.961, correctionY: 0.961, backgroundColor: '#ffffff', markColor: '#cc0000', guidelinesVisible: true, exportFormat: 'png' },
+      settings: { correctionX: 0.961, correctionY: 0.961, backgroundColor: '#ffffff', markColor: '#cc0000', outlineVisible: true, centerLinesVisible: false, exportFormat: 'png' },
     };
 
     const file = await buildProjectZip(manifest, { '0_bg.png': TINY_PNG_B64 });
@@ -345,7 +351,7 @@ describe('project import', () => {
       images: [],
       groups: [{ id: 'group-1', name: 'Empty', visible: true }],
       groupCounter: 1,
-      settings: { correctionX: 0.961, correctionY: 0.961, backgroundColor: '#ffffff', markColor: '#cc0000', guidelinesVisible: true, exportFormat: 'png' },
+      settings: { correctionX: 0.961, correctionY: 0.961, backgroundColor: '#ffffff', markColor: '#cc0000', outlineVisible: true, centerLinesVisible: false, exportFormat: 'png' },
     };
 
     const file = await buildProjectZip(manifest);
@@ -382,7 +388,7 @@ describe('project import', () => {
       ],
       groups: [{ id: 'group-1', name: 'G1', visible: true }],
       groupCounter: 1,
-      settings: { correctionX: 0.95, correctionY: 0.96, backgroundColor: '#000000', markColor: '#ffffff', guidelinesVisible: false, exportFormat: 'jpeg' },
+      settings: { correctionX: 0.95, correctionY: 0.96, backgroundColor: '#000000', markColor: '#ffffff', outlineVisible: false, centerLinesVisible: true, exportFormat: 'jpeg' },
     };
 
     const file = await buildProjectZip(manifest, {
@@ -414,7 +420,8 @@ describe('project import', () => {
     expect(cm.setCorrectionX).toHaveBeenCalledWith(0.95);
     expect(cm.setBackground).toHaveBeenCalledWith('#000000');
     expect(cm.setMarkColor).toHaveBeenCalledWith('#ffffff');
-    expect(cm.setGuidelinesVisible).toHaveBeenCalledWith(false);
+    expect(cm.setOutlineVisible).toHaveBeenCalledWith(false);
+    expect(cm.setCenterLinesVisible).toHaveBeenCalledWith(true);
     expect(cm.finalizeRestore).toHaveBeenCalled();
 
     expect(appliedSettings).not.toBeNull();
@@ -430,7 +437,7 @@ describe('project import', () => {
         { id: 'group-3', name: 'A', visible: true },
         { id: 'group-7', name: 'B', visible: true },
       ],
-      settings: { correctionX: 0.961, correctionY: 0.961, backgroundColor: '#ffffff', markColor: '#cc0000', guidelinesVisible: true, exportFormat: 'png' as const },
+      settings: { correctionX: 0.961, correctionY: 0.961, backgroundColor: '#ffffff', markColor: '#cc0000', outlineVisible: true, centerLinesVisible: false, exportFormat: 'png' as const },
     };
 
     const zip = new JSZip();
@@ -466,7 +473,8 @@ describe('project export', () => {
       corrY: 0.96,
       bgColor: '#000000',
       markColor: '#ffffff',
-      guidelinesVisible: false,
+      outlineVisible: false,
+      centerLinesVisible: true,
     });
 
     const zip = await captureExportedZip(() =>

@@ -28,12 +28,13 @@ export class CanvasManager {
   private dividerLine!: Line;
   private cuttingMarks: Line[] = [];
 
-  // Visual-only guides (rebuilt when correction changes)
+  // Subframe outline rectangles (rebuilt when correction changes)
   private guideObjects: FabricObject[] = [];
+  private outlineVisible = true;
 
-  // Optional guideline lines inside subframes (never exported)
+  // Center lines inside subframes (rebuilt when correction changes)
   private guidelineObjects: FabricObject[] = [];
-  private guidelinesVisible = true;
+  private centerLinesVisible = false;
 
   // Static visual guides (dimming + crop border, never change)
   private staticGuides: FabricObject[] = [];
@@ -213,7 +214,8 @@ export class CanvasManager {
       ));
     }
 
-    this.guidelineObjects.forEach((o) => o.set('visible', this.guidelinesVisible));
+    this.guideObjects.forEach((o) => o.set('visible', this.outlineVisible));
+    this.guidelineObjects.forEach((o) => o.set('visible', this.centerLinesVisible));
   }
 
   private makeCuttingMarks(sfPaperX: number, sfPaperY: number): Line[] {
@@ -1022,17 +1024,26 @@ export class CanvasManager {
     return (this.dividerLine.stroke as string) ?? C.GUIDE_LINE_COLOR;
   }
 
-  // ── Guidelines toggle ──
+  // ── Outline & center-lines toggles ──
 
-  setGuidelinesVisible(visible: boolean) {
-    this.guidelinesVisible = visible;
+  setOutlineVisible(visible: boolean) {
+    this.outlineVisible = visible;
     this.guideObjects.forEach((o) => o.set('visible', visible));
+    this.canvas.requestRenderAll();
+  }
+
+  getOutlineVisible(): boolean {
+    return this.outlineVisible;
+  }
+
+  setCenterLinesVisible(visible: boolean) {
+    this.centerLinesVisible = visible;
     this.guidelineObjects.forEach((o) => o.set('visible', visible));
     this.canvas.requestRenderAll();
   }
 
-  getGuidelinesVisible(): boolean {
-    return this.guidelinesVisible;
+  getCenterLinesVisible(): boolean {
+    return this.centerLinesVisible;
   }
 
   // ── Correction factors ──
@@ -1077,9 +1088,9 @@ export class CanvasManager {
       enableRetinaScaling: false,
     });
 
-    this.guideObjects.forEach((o) => o.set('visible', this.guidelinesVisible));
+    this.guideObjects.forEach((o) => o.set('visible', this.outlineVisible));
     this.staticGuides.forEach((o) => o.set('visible', true));
-    this.guidelineObjects.forEach((o) => o.set('visible', this.guidelinesVisible));
+    this.guidelineObjects.forEach((o) => o.set('visible', this.centerLinesVisible));
 
     this.canvas.setDimensions({ width: displayW, height: displayH });
     this.canvas.setZoom(displayZoom);

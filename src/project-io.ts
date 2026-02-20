@@ -35,7 +35,9 @@ export interface ProjectSettings {
   correctionY: number;
   backgroundColor: string;
   markColor: string;
-  guidelinesVisible: boolean;
+  outlineVisible: boolean;
+  centerLinesVisible: boolean;
+  guidelinesVisible?: boolean;
   exportFormat: 'png' | 'jpeg';
 }
 
@@ -54,6 +56,15 @@ export interface ProjectManifest {
   groupCounter: number;
   textCounter?: number;
   settings: ProjectSettings;
+}
+
+function migrateGuideSettings(s: ProjectSettings): void {
+  if (s.outlineVisible === undefined && s.guidelinesVisible !== undefined) {
+    s.outlineVisible = s.guidelinesVisible;
+    s.centerLinesVisible = s.guidelinesVisible;
+  }
+  if (s.outlineVisible === undefined) s.outlineVisible = true;
+  if (s.centerLinesVisible === undefined) s.centerLinesVisible = false;
 }
 
 function serializeCanvasPage(
@@ -250,7 +261,8 @@ export async function exportProject(
         correctionY: cm.getCorrectionY(),
         backgroundColor: cm.getBackgroundColor(),
         markColor: cm.getMarkColor(),
-        guidelinesVisible: cm.getGuidelinesVisible(),
+        outlineVisible: cm.getOutlineVisible(),
+        centerLinesVisible: cm.getCenterLinesVisible(),
         exportFormat: uiState.exportFormat,
       },
     };
@@ -269,7 +281,8 @@ export async function exportProject(
         correctionY: cm.getCorrectionY(),
         backgroundColor: cm.getBackgroundColor(),
         markColor: cm.getMarkColor(),
-        guidelinesVisible: cm.getGuidelinesVisible(),
+        outlineVisible: cm.getOutlineVisible(),
+        centerLinesVisible: cm.getCenterLinesVisible(),
         exportFormat: uiState.exportFormat,
       },
     };
@@ -331,7 +344,9 @@ export async function importProject(
     cm.setCorrectionY(manifest.settings.correctionY);
     cm.setBackground(manifest.settings.backgroundColor);
     cm.setMarkColor(manifest.settings.markColor);
-    cm.setGuidelinesVisible(manifest.settings.guidelinesVisible);
+    migrateGuideSettings(manifest.settings);
+    cm.setOutlineVisible(manifest.settings.outlineVisible);
+    cm.setCenterLinesVisible(manifest.settings.centerLinesVisible);
     cm.finalizeRestore();
     applyUI(manifest.settings);
 
@@ -361,7 +376,9 @@ export async function importProject(
   cm.setCorrectionY(manifest.settings.correctionY);
   cm.setBackground(manifest.settings.backgroundColor);
   cm.setMarkColor(manifest.settings.markColor);
-  cm.setGuidelinesVisible(manifest.settings.guidelinesVisible);
+  migrateGuideSettings(manifest.settings);
+  cm.setOutlineVisible(manifest.settings.outlineVisible);
+  cm.setCenterLinesVisible(manifest.settings.centerLinesVisible);
   cm.finalizeRestore();
   applyUI(manifest.settings);
 

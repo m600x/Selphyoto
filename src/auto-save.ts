@@ -32,7 +32,9 @@ export interface AutoSaveSettings {
   correctionY: number;
   backgroundColor: string;
   markColor: string;
-  guidelinesVisible: boolean;
+  outlineVisible: boolean;
+  centerLinesVisible: boolean;
+  guidelinesVisible?: boolean;
   exportFormat: 'png' | 'jpeg';
 }
 
@@ -192,7 +194,8 @@ export function collectState(
       correctionY: cm.getCorrectionY(),
       backgroundColor: cm.getBackgroundColor(),
       markColor: cm.getMarkColor(),
-      guidelinesVisible: cm.getGuidelinesVisible(),
+      outlineVisible: cm.getOutlineVisible(),
+      centerLinesVisible: cm.getCenterLinesVisible(),
       exportFormat,
     },
   };

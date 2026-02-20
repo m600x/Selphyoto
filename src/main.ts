@@ -34,7 +34,8 @@ const pm = new PageManager();
 const corrXInput = document.getElementById('correction-x') as HTMLInputElement;
 const corrYInput = document.getElementById('correction-y') as HTMLInputElement;
 const fileInput = document.getElementById('file-input') as HTMLInputElement;
-const guidelinesBtn = document.getElementById('guidelines-btn')!;
+const outlineBtn = document.getElementById('outline-btn')!;
+const centerLinesBtn = document.getElementById('center-lines-btn')!;
 const newGroupBtn = document.getElementById('new-group-btn')!;
 const importBtn = document.getElementById('import-btn')!;
 const clearCanvasBtn = document.getElementById('clear-canvas-btn') as HTMLButtonElement;
@@ -44,6 +45,9 @@ const projectFileInput = document.getElementById('project-file-input') as HTMLIn
 const exportBtn = document.getElementById('export-btn') as HTMLButtonElement;
 const exportDropdownBtn = document.getElementById('export-dropdown-btn') as HTMLButtonElement;
 const exportMenu = document.getElementById('export-menu')!;
+const optionsBtn = document.getElementById('options-btn') as HTMLButtonElement;
+const optionsMenu = document.getElementById('options-menu')!;
+const optionsArrow = optionsBtn.querySelector('.options-arrow')!;
 const canvasContainer = document.getElementById('canvas-container')!;
 const bgButtons = document.querySelectorAll<HTMLButtonElement>('.bg-btn');
 const langSelect = document.getElementById('lang-select') as HTMLSelectElement;
@@ -682,12 +686,14 @@ cm.canvas.on('mouse:down', (opt) => {
 });
 
 function showCanvasContextMenu(x: number, y: number) {
-  const guidesOn = cm.getGuidelinesVisible();
+  const outlineOn = cm.getOutlineVisible();
+  const centerOn = cm.getCenterLinesVisible();
 
   const bgColors: MenuEntry[] = [
-    { label: t('color.white'), icon: colorSwatch('#ffffff'), action: () => { setBgColor('#ffffff'); } },
-    { label: t('color.grey'), icon: colorSwatch('#808080'), action: () => { setBgColor('#808080'); } },
     { label: t('color.black'), icon: colorSwatch('#000000'), action: () => { setBgColor('#000000'); } },
+    { label: t('color.darkGrey'), icon: colorSwatch('#555555'), action: () => { setBgColor('#555555'); } },
+    { label: t('color.lightGrey'), icon: colorSwatch('#aaaaaa'), action: () => { setBgColor('#aaaaaa'); } },
+    { label: t('color.white'), icon: colorSwatch('#ffffff'), action: () => { setBgColor('#ffffff'); } },
   ];
 
   const markColors: MenuEntry[] = [
@@ -715,13 +721,24 @@ function showCanvasContextMenu(x: number, y: number) {
     },
     { separator: true },
     {
-      label: `${t('ctx.toggleGuidelines')} (${guidesOn ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off')})`,
+      label: `${t('toolbar.outline')} (${outlineOn ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off')})`,
       icon: ICONS.guidelines,
       action: () => {
-        const nowVisible = !cm.getGuidelinesVisible();
-        cm.setGuidelinesVisible(nowVisible);
-        guidelinesBtn.textContent = nowVisible ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
-        guidelinesBtn.classList.toggle('active', nowVisible);
+        const nowVisible = !cm.getOutlineVisible();
+        cm.setOutlineVisible(nowVisible);
+        outlineBtn.textContent = nowVisible ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
+        outlineBtn.classList.toggle('active', nowVisible);
+        scheduleSave();
+      },
+    },
+    {
+      label: `${t('toolbar.centerLines')} (${centerOn ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off')})`,
+      icon: ICONS.guidelines,
+      action: () => {
+        const nowVisible = !cm.getCenterLinesVisible();
+        cm.setCenterLinesVisible(nowVisible);
+        centerLinesBtn.textContent = nowVisible ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
+        centerLinesBtn.classList.toggle('active', nowVisible);
         scheduleSave();
       },
     },
@@ -783,11 +800,19 @@ corrYInput.addEventListener('change', () => {
 
 // ── Guidelines toggle ──
 
-guidelinesBtn.addEventListener('click', () => {
-  const nowVisible = !cm.getGuidelinesVisible();
-  cm.setGuidelinesVisible(nowVisible);
-  guidelinesBtn.textContent = nowVisible ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
-  guidelinesBtn.classList.toggle('active', nowVisible);
+outlineBtn.addEventListener('click', () => {
+  const nowVisible = !cm.getOutlineVisible();
+  cm.setOutlineVisible(nowVisible);
+  outlineBtn.textContent = nowVisible ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
+  outlineBtn.classList.toggle('active', nowVisible);
+  scheduleSave();
+});
+
+centerLinesBtn.addEventListener('click', () => {
+  const nowVisible = !cm.getCenterLinesVisible();
+  cm.setCenterLinesVisible(nowVisible);
+  centerLinesBtn.textContent = nowVisible ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
+  centerLinesBtn.classList.toggle('active', nowVisible);
   scheduleSave();
 });
 
@@ -920,8 +945,12 @@ function applyUIState(settings: ProjectSettings | AutoSaveSettings) {
     btn.classList.toggle('active', btn.dataset.mark === settings.markColor);
   });
 
-  guidelinesBtn.textContent = settings.guidelinesVisible ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
-  guidelinesBtn.classList.toggle('active', settings.guidelinesVisible);
+  const outlineVis = settings.outlineVisible ?? (settings as unknown as Record<string, unknown>).guidelinesVisible as boolean ?? true;
+  const centerVis = settings.centerLinesVisible ?? false;
+  outlineBtn.textContent = outlineVis ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
+  outlineBtn.classList.toggle('active', outlineVis);
+  centerLinesBtn.textContent = centerVis ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
+  centerLinesBtn.classList.toggle('active', centerVis);
 
   exportFormat = settings.exportFormat;
 }
@@ -1402,6 +1431,8 @@ exportBtn.addEventListener('click', () => showExportModal(exportFormat));
 exportDropdownBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   exportMenu.classList.toggle('open');
+  optionsMenu.classList.remove('open');
+  optionsArrow.classList.remove('open');
 });
 
 exportMenu.querySelectorAll<HTMLButtonElement>('.split-btn-option').forEach((opt) => {
@@ -1412,7 +1443,20 @@ exportMenu.querySelectorAll<HTMLButtonElement>('.split-btn-option').forEach((opt
   });
 });
 
-document.addEventListener('click', () => exportMenu.classList.remove('open'));
+optionsBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  optionsMenu.classList.toggle('open');
+  optionsArrow.classList.toggle('open');
+  exportMenu.classList.remove('open');
+});
+
+optionsMenu.addEventListener('click', (e) => e.stopPropagation());
+
+document.addEventListener('click', () => {
+  exportMenu.classList.remove('open');
+  optionsMenu.classList.remove('open');
+  optionsArrow.classList.remove('open');
+});
 
 // ── Drag & drop on canvas ──
 
@@ -1637,8 +1681,11 @@ async function restoreAutoSave() {
       cm.setBackground(pageBg);
       const pageMark = currentPageData.markColor ?? state.settings.markColor;
       cm.setMarkColor(pageMark);
-      cm.setGuidelinesVisible(state.settings.guidelinesVisible);
-      applyUIState({ ...state.settings, backgroundColor: pageBg, markColor: pageMark });
+      const outVis = state.settings.outlineVisible ?? (state.settings as unknown as Record<string, unknown>).guidelinesVisible as boolean ?? true;
+      const cenVis = state.settings.centerLinesVisible ?? false;
+      cm.setOutlineVisible(outVis);
+      cm.setCenterLinesVisible(cenVis);
+      applyUIState({ ...state.settings, outlineVisible: outVis, centerLinesVisible: cenVis, backgroundColor: pageBg, markColor: pageMark });
     }
     cm.finalizeRestore();
   } catch (err) {

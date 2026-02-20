@@ -318,15 +318,26 @@ describe('CanvasManager', () => {
   });
 
   describe('guidelines and marks', () => {
-    it('guidelines are visible by default', () => {
-      expect(cm.getGuidelinesVisible()).toBe(true);
+    it('outline is visible by default', () => {
+      expect(cm.getOutlineVisible()).toBe(true);
     });
 
-    it('setGuidelinesVisible toggles state', () => {
-      cm.setGuidelinesVisible(false);
-      expect(cm.getGuidelinesVisible()).toBe(false);
-      cm.setGuidelinesVisible(true);
-      expect(cm.getGuidelinesVisible()).toBe(true);
+    it('center lines are hidden by default', () => {
+      expect(cm.getCenterLinesVisible()).toBe(false);
+    });
+
+    it('setOutlineVisible toggles state', () => {
+      cm.setOutlineVisible(false);
+      expect(cm.getOutlineVisible()).toBe(false);
+      cm.setOutlineVisible(true);
+      expect(cm.getOutlineVisible()).toBe(true);
+    });
+
+    it('setCenterLinesVisible toggles state', () => {
+      cm.setCenterLinesVisible(true);
+      expect(cm.getCenterLinesVisible()).toBe(true);
+      cm.setCenterLinesVisible(false);
+      expect(cm.getCenterLinesVisible()).toBe(false);
     });
 
     it('getBackgroundColor returns default white', () => {

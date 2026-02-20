@@ -104,6 +104,48 @@
               <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="7" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg>
             </button>
             <div class="canvas-toolbar-spacer"></div>
+            <div class="options-dropdown">
+              <button id="options-btn" class="action-btn options-toggle-btn">
+                <span data-i18n="toolbar.options">OPTIONS</span>
+                <svg class="options-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div id="options-menu" class="options-menu">
+                <div class="tool-group">
+                  <label data-i18n="toolbar.outline">OUTLINE</label>
+                  <button id="outline-btn" class="toggle-btn active" data-i18n="toolbar.guidelines.on">ON</button>
+                </div>
+                <div class="tool-group">
+                  <label data-i18n="toolbar.centerLines">CENTER LINES</label>
+                  <button id="center-lines-btn" class="toggle-btn" data-i18n="toolbar.guidelines.off">OFF</button>
+                </div>
+                <div class="tool-group">
+                  <label data-i18n="toolbar.background">Background</label>
+                  <div class="bg-buttons">
+                    <button class="bg-btn" data-bg="#000000" data-i18n-title="color.black" title="Black" style="background: #000000"></button>
+                    <button class="bg-btn" data-bg="#555555" data-i18n-title="color.darkGrey" title="Dark grey" style="background: #555555"></button>
+                    <button class="bg-btn" data-bg="#aaaaaa" data-i18n-title="color.lightGrey" title="Light grey" style="background: #aaaaaa"></button>
+                    <button class="bg-btn active" data-bg="#ffffff" data-i18n-title="color.white" title="White" style="background: #ffffff"></button>
+                  </div>
+                </div>
+                <div class="tool-group">
+                  <label data-i18n="toolbar.cuttingMarks">Cutting marks</label>
+                  <div class="mark-buttons">
+                    <button class="mark-btn" data-mark="#000000" data-i18n-title="color.black" title="Black" style="background: #000000"></button>
+                    <button class="mark-btn" data-mark="#ffffff" data-i18n-title="color.white" title="White" style="background: #ffffff"></button>
+                    <button class="mark-btn active" data-mark="#cc0000" data-i18n-title="color.red" title="Red" style="background: #cc0000"></button>
+                    <button class="mark-btn" data-mark="#cccc00" data-i18n-title="color.yellow" title="Yellow" style="background: #cccc00"></button>
+                  </div>
+                </div>
+                <div class="tool-group">
+                  <label for="correction-x" data-i18n="toolbar.scalingX">SCALING X</label>
+                  <input type="number" id="correction-x" step="0.0001" min="0.5" max="1.5" />
+                </div>
+                <div class="tool-group">
+                  <label for="correction-y" data-i18n="toolbar.scalingY">SCALING Y</label>
+                  <input type="number" id="correction-y" step="0.0001" min="0.5" max="1.5" />
+                </div>
+              </div>
+            </div>
             <select id="lang-select" title="Language">
               <option value="en">EN</option>
               <option value="zh">中文</option>
@@ -130,40 +172,6 @@
             </div>
           </main>
           <footer id="toolbar">
-            <div class="tool-group">
-              <label data-i18n="toolbar.guidelines">Guidelines</label>
-              <button id="guidelines-btn" class="toggle-btn active" data-i18n="toolbar.guidelines.on">ON</button>
-            </div>
-
-            <div class="tool-group">
-              <label data-i18n="toolbar.background">Background</label>
-              <div class="bg-buttons">
-                <button class="bg-btn active" data-bg="#ffffff" data-i18n-title="color.white" title="White" style="background: #ffffff"></button>
-                <button class="bg-btn" data-bg="#808080" data-i18n-title="color.grey" title="Grey" style="background: #808080"></button>
-                <button class="bg-btn" data-bg="#000000" data-i18n-title="color.black" title="Black" style="background: #000000"></button>
-              </div>
-            </div>
-
-            <div class="tool-group">
-              <label data-i18n="toolbar.cuttingMarks">Cutting marks</label>
-              <div class="mark-buttons">
-                <button class="mark-btn" data-mark="#000000" data-i18n-title="color.black" title="Black" style="background: #000000"></button>
-                <button class="mark-btn" data-mark="#ffffff" data-i18n-title="color.white" title="White" style="background: #ffffff"></button>
-                <button class="mark-btn active" data-mark="#cc0000" data-i18n-title="color.red" title="Red" style="background: #cc0000"></button>
-                <button class="mark-btn" data-mark="#cccc00" data-i18n-title="color.yellow" title="Yellow" style="background: #cccc00"></button>
-              </div>
-            </div>
-
-            <div class="tool-group">
-              <label for="correction-x" data-i18n="toolbar.corrX">Corr. X</label>
-              <input type="number" id="correction-x" step="0.0001" min="0.5" max="1.5" />
-            </div>
-
-            <div class="tool-group">
-              <label for="correction-y" data-i18n="toolbar.corrY">Corr. Y</label>
-              <input type="number" id="correction-y" step="0.0001" min="0.5" max="1.5" />
-            </div>
-
             <div class="tool-actions">
               <div class="split-btn">
                 <button id="export-btn" class="action-btn primary export-image-btn" data-i18n="export.button">Export image</button>

@@ -11,7 +11,8 @@ function makeState(overrides: Partial<AutoSaveState> = {}): AutoSaveState {
       correctionY: 0.961,
       backgroundColor: '#ffffff',
       markColor: '#cc0000',
-      guidelinesVisible: true,
+      outlineVisible: true,
+      centerLinesVisible: false,
       exportFormat: 'png',
     },
   };
@@ -57,7 +58,8 @@ describe('auto-save IndexedDB operations', () => {
         correctionY: 0.96,
         backgroundColor: '#000000',
         markColor: '#ffffff',
-        guidelinesVisible: false,
+        outlineVisible: false,
+        centerLinesVisible: true,
         exportFormat: 'jpeg',
       },
     });
@@ -156,7 +158,8 @@ describe('auto-save IndexedDB operations', () => {
         correctionY: 0.961,
         backgroundColor: '#ffffff',
         markColor: '#cc0000',
-        guidelinesVisible: true,
+        outlineVisible: true,
+        centerLinesVisible: false,
         exportFormat: 'png' as const,
       },
     };

@@ -93,7 +93,8 @@ describe('history IndexedDB operations', () => {
         correctionY: 0.961,
         backgroundColor: '#ffffff',
         markColor: '#cc0000',
-        guidelinesVisible: true,
+        outlineVisible: true,
+        centerLinesVisible: false,
         exportFormat: 'png' as const,
       },
     };

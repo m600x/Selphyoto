@@ -19,7 +19,8 @@ function makeMockCM(overrides: Partial<{
   corrY: number;
   bgColor: string;
   markColor: string;
-  guidelinesVisible: boolean;
+  outlineVisible: boolean;
+  centerLinesVisible: boolean;
 }> = {}): CanvasManager {
   const images = (overrides.images ?? []).map(img => ({ type: 'image' as const, ...img }));
   const groups = overrides.groups ?? [];
@@ -32,7 +33,8 @@ function makeMockCM(overrides: Partial<{
     getCorrectionY: mock(() => overrides.corrY ?? 0.961),
     getBackgroundColor: mock(() => overrides.bgColor ?? '#ffffff'),
     getMarkColor: mock(() => overrides.markColor ?? '#cc0000'),
-    getGuidelinesVisible: mock(() => overrides.guidelinesVisible ?? true),
+    getOutlineVisible: mock(() => overrides.outlineVisible ?? true),
+    getCenterLinesVisible: mock(() => overrides.centerLinesVisible ?? false),
   } as unknown as CanvasManager;
 }
 
@@ -153,7 +155,8 @@ describe('collectState', () => {
       corrY: 0.96,
       bgColor: '#000000',
       markColor: '#ffffff',
-      guidelinesVisible: false,
+      outlineVisible: false,
+      centerLinesVisible: true,
     });
 
     const pages = [{ images: [], groups: [], groupCounter: 0, textCounter: 0 }];
@@ -166,7 +169,8 @@ describe('collectState', () => {
       correctionY: 0.96,
       backgroundColor: '#000000',
       markColor: '#ffffff',
-      guidelinesVisible: false,
+      outlineVisible: false,
+      centerLinesVisible: true,
       exportFormat: 'jpeg',
     });
   });
