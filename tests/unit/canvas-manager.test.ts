@@ -987,7 +987,7 @@ describe('CanvasManager', () => {
           const canvas = el as HTMLCanvasElement;
           canvas.getContext = (() => ({
             drawImage() {},
-          })) as typeof canvas.getContext;
+          })) as unknown as typeof canvas.getContext;
           canvas.toDataURL = () => 'data:image/jpeg;base64,SMALL';
         }
         return el;
