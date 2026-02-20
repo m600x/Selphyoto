@@ -1,7 +1,7 @@
 import type { LocaleKey } from './en';
 
 const hi: Record<LocaleKey, string> = {
-  'page.title': 'SelphYoto - MYO लेबल प्रिंटिंग टेम्पलेट',
+  'page.title': 'Selph\'Yoto - MYO लेबल प्रिंटिंग टेम्पलेट',
   'page.subtitle': 'Canon Selphy CP1500/CP1300 प्रिंटर के लिए <strong>पोस्टकार्ड</strong> पेपर (बॉर्डरलेस प्रिंटिंग)',
 
   'toolbar.undo': 'पूर्ववत करें (Ctrl+Z)',

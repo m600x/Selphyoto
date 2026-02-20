@@ -1,4 +1,4 @@
-# SelphYoto
+# Selph'Yoto
 
 Available (for now) at: https://selphyoto.m600.fr
 

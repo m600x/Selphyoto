@@ -429,6 +429,26 @@ describe('project import', () => {
     expect(result.settings.backgroundColor).toBe('#000000');
   });
 
+  it('migrates legacy guidelinesVisible to outlineVisible and centerLinesVisible', async () => {
+    const manifest = {
+      version: 1 as const,
+      images: [] as ProjectManifest['images'],
+      groups: [],
+      groupCounter: 0,
+      settings: { correctionX: 0.961, correctionY: 0.961, backgroundColor: '#ffffff', markColor: '#cc0000', guidelinesVisible: false, exportFormat: 'png' as const } as ProjectSettings,
+    };
+
+    const zip = new JSZip();
+    zip.file('project.json', JSON.stringify(manifest));
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const file = new File([blob], 'legacy-guides.zip', { type: 'application/zip' });
+
+    await importProject(file, cm as never, mock(() => {}));
+
+    expect(cm.setOutlineVisible).toHaveBeenCalledWith(false);
+    expect(cm.setCenterLinesVisible).toHaveBeenCalledWith(false);
+  });
+
   it('computes maxCounter from group IDs when groupCounter is missing', async () => {
     const manifest = {
       version: 1 as const,

@@ -1,7 +1,7 @@
 import type { LocaleKey } from './en';
 
 const ar: Record<LocaleKey, string> = {
-  'page.title': 'SelphYoto - قالب طباعة ملصقات MYO',
+  'page.title': 'Selph\'Yoto - قالب طباعة ملصقات MYO',
   'page.subtitle': 'لطابعة Canon Selphy CP1500/CP1300 مع ورق <strong>بطاقة بريدية</strong> (طباعة بلا حدود)',
 
   'toolbar.undo': 'تراجع (Ctrl+Z)',

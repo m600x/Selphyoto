@@ -1,7 +1,7 @@
 import type { LocaleKey } from './en';
 
 const fr: Record<LocaleKey, string> = {
-  'page.title': 'SelphYoto - Gabarit d\'impression MYO',
+  'page.title': 'Selph\'Yoto - Gabarit d\'impression MYO',
   'page.subtitle': 'pour Canon Selphy CP1500/CP1300 avec papier <strong>CARTE POSTALE</strong> (impression sans marge)',
 
   'toolbar.undo': 'Annuler (Ctrl+Z)',

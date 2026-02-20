@@ -9,7 +9,7 @@ describe('i18n', () => {
 
   describe('t', () => {
     it('returns value for known key', () => {
-      expect(t('page.title')).toContain('SelphYoto');
+      expect(t('page.title')).toContain('Selph\'Yoto');
     });
 
     it('returns the key itself for unknown key', () => {
@@ -47,7 +47,7 @@ describe('i18n', () => {
     it('t falls back to en for missing keys in non-en locale', () => {
       registerLocale('de', {} as never);
       setLocale('de');
-      expect(t('page.title')).toContain('SelphYoto');
+      expect(t('page.title')).toContain('Selph\'Yoto');
     });
 
     it('ignores unknown locale codes', () => {

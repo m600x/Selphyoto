@@ -17,6 +17,7 @@ test.beforeAll(() => {
 });
 
 async function addImageViaButton(page: Page) {
+  await expandSidebar(page);
   const [fileChooser] = await Promise.all([
     page.waitForEvent('filechooser'),
     page.click('#import-btn'),
@@ -25,31 +26,50 @@ async function addImageViaButton(page: Page) {
   await page.waitForSelector('.layer-row');
 }
 
+async function expandSidebar(page: Page) {
+  const panel = page.locator('#layer-panel');
+  if (await panel.evaluate(el => el.classList.contains('collapsed'))) {
+    await page.click('#sidebar-drawer-toggle');
+    await expect(panel).not.toHaveClass(/collapsed/);
+  }
+}
+async function openOptionsMenu(page: Page) {
+  const menu = page.locator('#options-menu');
+  if (!(await menu.evaluate(el => el.classList.contains('open')))) {
+    await page.click('#options-btn');
+    await expect(menu).toHaveClass(/open/);
+  }
+}
+
 test.describe('Page load', () => {
   test('title and toolbar are visible', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('#page-title')).toContainText('SelphYoto');
+    await expect(page.locator('#sidebar-title')).toContainText("Selph'Yoto");
     await expect(page.locator('#toolbar')).toBeVisible();
   });
 
   test('empty layer message is shown initially', async ({ page }) => {
     await page.goto('/');
+    await expandSidebar(page);
     await expect(page.locator('#layer-empty')).toBeVisible();
   });
 
   test('export and clear buttons are disabled when empty', async ({ page }) => {
     await page.goto('/');
+    await expandSidebar(page);
     await expect(page.locator('#export-btn')).toBeDisabled();
     await expect(page.locator('#clear-canvas-btn')).toBeDisabled();
   });
 
-  test('guidelines button defaults to ON', async ({ page }) => {
+  test('outline button defaults to ON', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('#guidelines-btn')).toHaveText('ON');
+    await openOptionsMenu(page);
+    await expect(page.locator('#outline-btn')).toHaveText('ON');
   });
 
   test('correction inputs have default values', async ({ page }) => {
     await page.goto('/');
+    await openOptionsMenu(page);
     await expect(page.locator('#correction-x')).toHaveValue('0.961');
     await expect(page.locator('#correction-y')).toHaveValue('0.961');
   });
@@ -139,6 +159,7 @@ test.describe('Layer operations', () => {
 test.describe('Settings', () => {
   test('change background color', async ({ page }) => {
     await page.goto('/');
+    await openOptionsMenu(page);
     const blackBtn = page.locator('.bg-btn[data-bg="#000000"]');
     await blackBtn.click();
     await expect(blackBtn).toHaveClass(/active/);
@@ -146,14 +167,16 @@ test.describe('Settings', () => {
 
   test('change cutting marks color', async ({ page }) => {
     await page.goto('/');
+    await openOptionsMenu(page);
     const yellowBtn = page.locator('.mark-btn[data-mark="#cccc00"]');
     await yellowBtn.click();
     await expect(yellowBtn).toHaveClass(/active/);
   });
 
-  test('toggle guidelines', async ({ page }) => {
+  test('toggle outline', async ({ page }) => {
     await page.goto('/');
-    const btn = page.locator('#guidelines-btn');
+    await openOptionsMenu(page);
+    const btn = page.locator('#outline-btn');
     await expect(btn).toHaveText('ON');
     await btn.click();
     await expect(btn).toHaveText('OFF');
@@ -163,6 +186,7 @@ test.describe('Settings', () => {
 
   test('modify correction factor X', async ({ page }) => {
     await page.goto('/');
+    await openOptionsMenu(page);
     const input = page.locator('#correction-x');
     await input.fill('0.95');
     await input.dispatchEvent('change');
@@ -173,6 +197,7 @@ test.describe('Settings', () => {
 test.describe('Group operations', () => {
   test('create group adds a group header', async ({ page }) => {
     await page.goto('/');
+    await expandSidebar(page);
     await page.click('#new-group-btn');
     await expect(page.locator('.group-header')).toHaveCount(1);
     await expect(page.locator('.group-name').first()).toHaveText('Group 1');
@@ -180,6 +205,7 @@ test.describe('Group operations', () => {
 
   test('rename group via double-click', async ({ page }) => {
     await page.goto('/');
+    await expandSidebar(page);
     await page.click('#new-group-btn');
     const name = page.locator('.group-name').first();
     await name.dblclick();
@@ -191,6 +217,7 @@ test.describe('Group operations', () => {
 
   test('delete group removes it', async ({ page }) => {
     await page.goto('/');
+    await expandSidebar(page);
     await page.click('#new-group-btn');
     await page.locator('.group-header .del-btn').first().click();
     await expect(page.locator('.group-header')).toHaveCount(0);
@@ -290,6 +317,7 @@ test.describe('Auto-save', () => {
 
     await page.reload();
     await page.waitForTimeout(1000);
+    await expandSidebar(page);
 
     await expect(page.locator('.layer-row')).toHaveCount(1);
   });
@@ -326,6 +354,7 @@ test.describe('Undo / Redo', () => {
 
   test('undo after group creation removes the group', async ({ page }) => {
     await page.goto('/');
+    await expandSidebar(page);
     await page.click('#new-group-btn');
     await expect(page.locator('.group-header')).toHaveCount(1);
     await page.waitForTimeout(100);
@@ -337,6 +366,7 @@ test.describe('Undo / Redo', () => {
 
   test('redo restores after undo', async ({ page }) => {
     await page.goto('/');
+    await expandSidebar(page);
     await page.click('#new-group-btn');
     await expect(page.locator('.group-header')).toHaveCount(1);
     await page.waitForTimeout(100);
@@ -352,6 +382,7 @@ test.describe('Undo / Redo', () => {
 
   test('Ctrl+Z triggers undo', async ({ page }) => {
     await page.goto('/');
+    await expandSidebar(page);
     await page.click('#new-group-btn');
     await expect(page.locator('.group-header')).toHaveCount(1);
     await page.waitForTimeout(100);
@@ -363,6 +394,7 @@ test.describe('Undo / Redo', () => {
 
   test('Ctrl+Y triggers redo', async ({ page }) => {
     await page.goto('/');
+    await expandSidebar(page);
     await page.click('#new-group-btn');
     await page.waitForTimeout(100);
 
@@ -377,15 +409,17 @@ test.describe('Undo / Redo', () => {
   test('background color change does not enable undo', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('#undo-btn')).toBeDisabled();
+    await openOptionsMenu(page);
     await page.click('.bg-btn[data-bg="#000000"]');
     await page.waitForTimeout(100);
     await expect(page.locator('#undo-btn')).toBeDisabled();
   });
 
-  test('guidelines toggle does not enable undo', async ({ page }) => {
+  test('outline toggle does not enable undo', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('#undo-btn')).toBeDisabled();
-    await page.click('#guidelines-btn');
+    await openOptionsMenu(page);
+    await page.click('#outline-btn');
     await page.waitForTimeout(100);
     await expect(page.locator('#undo-btn')).toBeDisabled();
   });

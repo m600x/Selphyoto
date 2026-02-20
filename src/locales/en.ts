@@ -1,5 +1,5 @@
 const en = {
-  'page.title': 'SelphYoto - MYO label printing template',
+  'page.title': 'Selph\'Yoto - MYO label printing template',
   'page.subtitle': 'for Canon Selphy CP1500/CP1300 printer with <strong>POSTCARD</strong> paper (borderless printing)',
 
   'toolbar.undo': 'Undo (Ctrl+Z)',
