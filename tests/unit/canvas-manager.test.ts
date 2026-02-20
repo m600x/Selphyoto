@@ -8,7 +8,7 @@ mock.module('fabric', () => {
     private _width = 740;
     private _height = 500;
     private _zoom = 1;
-    private _listeners: Record<string, Function[]> = {};
+    private _listeners: Record<string, Array<() => void>> = {};
 
     add(obj: unknown) { this.objects.push(obj); }
     remove(obj: unknown) {
@@ -29,7 +29,7 @@ mock.module('fabric', () => {
     getHeight() { return this._height; }
     setZoom(z: number) { this._zoom = z; }
     getZoom() { return this._zoom; }
-    on(event: string, fn: Function) {
+    on(event: string, fn: () => void) {
       if (!this._listeners[event]) this._listeners[event] = [];
       this._listeners[event].push(fn);
     }
@@ -115,6 +115,15 @@ mock.module('fabric', () => {
 });
 
 import { CanvasManager } from '../../src/canvas-manager';
+import type { Canvas } from 'fabric';
+
+interface MockCanvasWithEmit extends Canvas {
+  emit(event: string): void;
+}
+
+function mockCanvas(cm: CanvasManager): MockCanvasWithEmit {
+  return cm.canvas as unknown as MockCanvasWithEmit;
+}
 
 describe('CanvasManager', () => {
   let cm: CanvasManager;
@@ -975,10 +984,11 @@ describe('CanvasManager', () => {
       document.createElement = ((tag: string) => {
         const el = origCreateElement(tag);
         if (tag === 'canvas') {
-          (el as any).getContext = () => ({
+          const canvas = el as HTMLCanvasElement;
+          canvas.getContext = (() => ({
             drawImage() {},
-          });
-          (el as any).toDataURL = () => 'data:image/jpeg;base64,SMALL';
+          })) as typeof canvas.getContext;
+          canvas.toDataURL = () => 'data:image/jpeg;base64,SMALL';
         }
         return el;
       }) as typeof document.createElement;
@@ -1011,45 +1021,45 @@ describe('CanvasManager', () => {
         filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
       });
       cm.selectImage(0);
-      (cm.canvas as any).emit('selection:created');
+      mockCanvas(cm).emit('selection:created');
       expect(spy).toHaveBeenCalled();
     });
 
     it('onSelectionChange is called on selection:updated', async () => {
       const spy = mock(() => {});
       cm.onSelectionChange = spy;
-      (cm.canvas as any).emit('selection:updated');
+      mockCanvas(cm).emit('selection:updated');
       expect(spy).toHaveBeenCalled();
     });
 
     it('onSelectionChange is called on selection:cleared', () => {
       const spy = mock(() => {});
       cm.onSelectionChange = spy;
-      (cm.canvas as any).emit('selection:cleared');
+      mockCanvas(cm).emit('selection:cleared');
       expect(spy).toHaveBeenCalled();
     });
 
     it('text:editing:exited updates filename from text content', () => {
       cm.addText();
-      const tb = cm.images[0].fabricImage as any;
+      const tb = cm.images[0].fabricImage as unknown as Record<string, unknown>;
       tb.text = 'Hello World';
-      cm.canvas.setActiveObject(tb);
+      cm.canvas.setActiveObject(cm.images[0].fabricImage);
 
       const listSpy = mock(() => {});
       cm.onListChange = listSpy;
 
-      (cm.canvas as any).emit('text:editing:exited');
+      mockCanvas(cm).emit('text:editing:exited');
       expect(cm.images[0].filename).toBe('Hello World');
       expect(listSpy).toHaveBeenCalled();
     });
 
     it('text:editing:exited truncates long text', () => {
       cm.addText();
-      const tb = cm.images[0].fabricImage as any;
+      const tb = cm.images[0].fabricImage as unknown as Record<string, unknown>;
       tb.text = 'A'.repeat(50);
-      cm.canvas.setActiveObject(tb);
+      cm.canvas.setActiveObject(cm.images[0].fabricImage);
 
-      (cm.canvas as any).emit('text:editing:exited');
+      mockCanvas(cm).emit('text:editing:exited');
       expect(cm.images[0].filename.length).toBeLessThanOrEqual(31);
       expect(cm.images[0].filename.endsWith('…')).toBe(true);
     });
@@ -1061,23 +1071,23 @@ describe('CanvasManager', () => {
       cm.selectImage(0);
       const origName = cm.images[0].filename;
 
-      (cm.canvas as any).emit('text:editing:exited');
+      mockCanvas(cm).emit('text:editing:exited');
       expect(cm.images[0].filename).toBe(origName);
     });
 
     it('text:editing:exited does nothing when no active object', () => {
       cm.canvas.discardActiveObject();
-      expect(() => (cm.canvas as any).emit('text:editing:exited')).not.toThrow();
+      expect(() => mockCanvas(cm).emit('text:editing:exited')).not.toThrow();
     });
 
     it('text:editing:exited keeps filename if text is empty', () => {
       cm.addText();
-      const tb = cm.images[0].fabricImage as any;
+      const tb = cm.images[0].fabricImage as unknown as Record<string, unknown>;
       tb.text = '   ';
-      cm.canvas.setActiveObject(tb);
+      cm.canvas.setActiveObject(cm.images[0].fabricImage);
       const origName = cm.images[0].filename;
 
-      (cm.canvas as any).emit('text:editing:exited');
+      mockCanvas(cm).emit('text:editing:exited');
       expect(cm.images[0].filename).toBe(origName);
     });
   });
