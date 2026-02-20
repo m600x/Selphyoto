@@ -56,6 +56,8 @@ export class CanvasManager {
       backgroundColor: 'transparent',
       selection: true,
       preserveObjectStacking: true,
+      fireRightClick: true,
+      stopContextMenu: true,
     });
 
     this.buildBackground();
@@ -447,6 +449,86 @@ export class CanvasManager {
         fromIndex >= this._images.length || toIndex >= this._images.length) return;
     const [item] = this._images.splice(fromIndex, 1);
     this._images.splice(toIndex, 0, item);
+    this.rebuildZOrder();
+    this.onListChange?.();
+  }
+
+  bringForward(index: number) {
+    if (index <= 0 || index >= this._images.length) return;
+    [this._images[index - 1], this._images[index]] = [this._images[index], this._images[index - 1]];
+    this.rebuildZOrder();
+    this.onListChange?.();
+  }
+
+  sendBackward(index: number) {
+    if (index < 0 || index >= this._images.length - 1) return;
+    [this._images[index], this._images[index + 1]] = [this._images[index + 1], this._images[index]];
+    this.rebuildZOrder();
+    this.onListChange?.();
+  }
+
+  bringToFront(index: number) {
+    if (index <= 0 || index >= this._images.length) return;
+    const [item] = this._images.splice(index, 1);
+    this._images.unshift(item);
+    this.rebuildZOrder();
+    this.onListChange?.();
+  }
+
+  sendToBack(index: number) {
+    if (index < 0 || index >= this._images.length - 1) return;
+    const [item] = this._images.splice(index, 1);
+    this._images.push(item);
+    this.rebuildZOrder();
+    this.onListChange?.();
+  }
+
+  async duplicateLayer(index: number): Promise<void> {
+    if (index < 0 || index >= this._images.length) return;
+    const src = this._images[index];
+    const fi = src.fabricImage;
+    const offset = 15;
+
+    if (src.type === 'text') {
+      const tb = fi as unknown as Textbox;
+      this.addTextLayer({
+        text: tb.text ?? '',
+        fontFamily: (tb.fontFamily as string) ?? 'Arial',
+        fontSize: tb.fontSize ?? 40,
+        fill: (tb.fill as string) ?? '#000000',
+        fontWeight: (tb.fontWeight as string) ?? 'normal',
+        fontStyle: (tb.fontStyle as string) ?? 'normal',
+        textAlign: (tb.textAlign as string) ?? 'center',
+        filename: src.filename,
+        visible: src.visible,
+        locked: src.locked,
+        groupId: src.groupId,
+        left: (fi.left ?? 0) + offset,
+        top: (fi.top ?? 0) + offset,
+        scaleX: fi.scaleX ?? 1,
+        scaleY: fi.scaleY ?? 1,
+        angle: fi.angle ?? 0,
+        flipX: fi.flipX ?? false,
+        flipY: fi.flipY ?? false,
+        opacity: fi.opacity ?? 1,
+        width: tb.width ?? 200,
+      });
+    } else {
+      await this.addImageFromDataURL(src.originalDataUrl, {
+        filename: src.filename,
+        visible: src.visible,
+        locked: src.locked,
+        groupId: src.groupId,
+        left: (fi.left ?? 0) + offset,
+        top: (fi.top ?? 0) + offset,
+        scaleX: fi.scaleX ?? 1,
+        scaleY: fi.scaleY ?? 1,
+        angle: fi.angle ?? 0,
+        flipX: fi.flipX ?? false,
+        flipY: fi.flipY ?? false,
+        opacity: fi.opacity ?? 1,
+      });
+    }
     this.rebuildZOrder();
     this.onListChange?.();
   }

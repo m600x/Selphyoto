@@ -83,6 +83,19 @@ const hi: Record<LocaleKey, string> = {
   'text.defaultContent': 'टेक्स्ट',
   'text.defaultName': 'टेक्स्ट {{n}}',
 
+  'ctx.addImage': 'छवि जोड़ें',
+  'ctx.addText': 'टेक्स्ट जोड़ें',
+  'ctx.importProject': 'प्रोजेक्ट आयात करें',
+  'ctx.toggleGuidelines': 'गाइडलाइन टॉगल करें',
+  'ctx.backgroundColor': 'पृष्ठभूमि रंग',
+  'ctx.cuttingMarksColor': 'कटिंग मार्क रंग',
+  'ctx.duplicate': 'प्रतिलिपि बनाएँ',
+  'ctx.bringForward': 'आगे लाएँ',
+  'ctx.sendBackward': 'पीछे भेजें',
+  'ctx.bringToFront': 'सबसे आगे लाएँ',
+  'ctx.sendToBack': 'सबसे पीछे भेजें',
+  'ctx.delete': 'हटाएँ',
+
   'canvas.dropHere': 'छवियाँ यहाँ छोड़ें',
 };
 

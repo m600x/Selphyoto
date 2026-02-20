@@ -7,6 +7,7 @@ import { saveAutoState, loadAutoState, clearAutoState, collectState, saveHistory
 import { HistoryManager, type HistorySnapshot } from './history-manager';
 import { t, setLocale, getLocale, detectLocale, applyI18n, registerLocale } from './i18n';
 import { populateFontSelect, loadGoogleFont, isSystemFont } from './fonts';
+import { ContextMenu, ICONS, type MenuEntry } from './context-menu';
 import fr from './locales/fr';
 import zh from './locales/zh';
 import hi from './locales/hi';
@@ -554,6 +555,177 @@ cm.canvas.on('object:modified', () => {
   pendingTransformSnapshot = null;
   scheduleSave();
 });
+
+// ── Right-click context menu ──
+
+const ctxMenu = new ContextMenu('context-menu');
+
+cm.canvas.on('mouse:down', (opt) => {
+  const e = opt.e as MouseEvent;
+  if (e.button !== 2) return;
+
+  const target = opt.target;
+  if (target) {
+    const idx = cm.images.findIndex(img => img.fabricImage === target);
+    if (idx >= 0 && cm.images[idx].visible && !cm.images[idx].locked) {
+      cm.canvas.setActiveObject(target);
+      cm.canvas.requestRenderAll();
+    }
+  }
+
+  const idx = cm.getSelectedIndex();
+
+  if (idx < 0) {
+    showCanvasContextMenu(e.clientX, e.clientY);
+    return;
+  }
+
+  const entry = cm.images[idx];
+  const isLocked = entry.locked;
+  const isFirst = idx === 0;
+  const isLast = idx === cm.images.length - 1;
+
+  const items: MenuEntry[] = [
+    {
+      label: t('ctx.duplicate'),
+      icon: ICONS.duplicate,
+      action: async () => { pushSnapshot(); await cm.duplicateLayer(idx); refreshLayers(); },
+    },
+    { separator: true },
+    {
+      label: t('toolbar.flipH'),
+      icon: ICONS.flipH,
+      action: () => { pushSnapshot(); cm.flipSelectedH(); scheduleSave(); },
+    },
+    {
+      label: t('toolbar.flipV'),
+      icon: ICONS.flipV,
+      action: () => { pushSnapshot(); cm.flipSelectedV(); scheduleSave(); },
+    },
+    { separator: true },
+    {
+      label: isLocked ? t('layer.unlockLayer') : t('layer.lockLayer'),
+      icon: isLocked ? ICONS.unlock : ICONS.lock,
+      action: () => { cm.toggleLock(idx); refreshLayers(); },
+    },
+    { separator: true },
+    {
+      label: t('ctx.bringForward'),
+      icon: ICONS.bringForward,
+      action: () => { pushSnapshot(); cm.bringForward(idx); refreshLayers(); },
+      disabled: isFirst,
+    },
+    {
+      label: t('ctx.sendBackward'),
+      icon: ICONS.sendBackward,
+      action: () => { pushSnapshot(); cm.sendBackward(idx); refreshLayers(); },
+      disabled: isLast,
+    },
+    {
+      label: t('ctx.bringToFront'),
+      icon: ICONS.bringToFront,
+      action: () => { pushSnapshot(); cm.bringToFront(idx); refreshLayers(); },
+      disabled: isFirst,
+    },
+    {
+      label: t('ctx.sendToBack'),
+      icon: ICONS.sendToBack,
+      action: () => { pushSnapshot(); cm.sendToBack(idx); refreshLayers(); },
+      disabled: isLast,
+    },
+    { separator: true },
+    {
+      label: t('ctx.delete'),
+      icon: ICONS.delete,
+      action: async () => {
+        const name = entry.filename ?? 'this layer';
+        if (!await showConfirmModal('', t('deleteImage.message', { name }))) return;
+        pushSnapshot();
+        cm.removeImage(idx);
+        refreshLayers();
+      },
+    },
+  ];
+
+  ctxMenu.show(e.clientX, e.clientY, items);
+});
+
+function showCanvasContextMenu(x: number, y: number) {
+  const guidesOn = cm.getGuidelinesVisible();
+
+  const bgColors: MenuEntry[] = [
+    { label: t('color.white'), icon: colorSwatch('#ffffff'), action: () => { setBgColor('#ffffff'); } },
+    { label: t('color.grey'), icon: colorSwatch('#808080'), action: () => { setBgColor('#808080'); } },
+    { label: t('color.black'), icon: colorSwatch('#000000'), action: () => { setBgColor('#000000'); } },
+  ];
+
+  const markColors: MenuEntry[] = [
+    { label: t('color.black'), icon: colorSwatch('#000000'), action: () => { setMarkColorCtx('#000000'); } },
+    { label: t('color.white'), icon: colorSwatch('#ffffff'), action: () => { setMarkColorCtx('#ffffff'); } },
+    { label: t('color.red'), icon: colorSwatch('#cc0000'), action: () => { setMarkColorCtx('#cc0000'); } },
+    { label: t('color.yellow'), icon: colorSwatch('#cccc00'), action: () => { setMarkColorCtx('#cccc00'); } },
+  ];
+
+  const items: MenuEntry[] = [
+    {
+      label: t('ctx.addImage'),
+      icon: ICONS.addImage,
+      action: () => { fileInput.click(); },
+    },
+    {
+      label: t('ctx.addText'),
+      icon: ICONS.addText,
+      action: () => { pushSnapshot(); cm.addText(); refreshLayers(); updateCanvasToolbar(); },
+    },
+    {
+      label: t('ctx.importProject'),
+      icon: ICONS.importProject,
+      action: () => { projectFileInput.click(); },
+    },
+    { separator: true },
+    {
+      label: `${t('ctx.toggleGuidelines')} (${guidesOn ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off')})`,
+      icon: ICONS.guidelines,
+      action: () => {
+        const nowVisible = !cm.getGuidelinesVisible();
+        cm.setGuidelinesVisible(nowVisible);
+        guidelinesBtn.textContent = nowVisible ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
+        guidelinesBtn.classList.toggle('active', nowVisible);
+        scheduleSave();
+      },
+    },
+    { separator: true },
+    {
+      label: t('ctx.backgroundColor'),
+      icon: ICONS.background,
+      children: bgColors,
+    },
+    {
+      label: t('ctx.cuttingMarksColor'),
+      icon: ICONS.cuttingMarks,
+      children: markColors,
+    },
+  ];
+
+  ctxMenu.show(x, y, items);
+}
+
+function colorSwatch(hex: string): string {
+  return `<svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="4" fill="${hex}" stroke="${hex === '#ffffff' ? '#999' : hex}" stroke-width="1.5"/></svg>`;
+}
+
+function setBgColor(color: string) {
+  cm.setBackground(color);
+  bgButtons.forEach((b) => b.classList.toggle('active', b.dataset.bg === color));
+  scheduleSave();
+}
+
+function setMarkColorCtx(color: string) {
+  cm.setMarkColor(color);
+  const markButtons = document.querySelectorAll<HTMLButtonElement>('.mark-btn');
+  markButtons.forEach((b) => b.classList.toggle('active', b.dataset.mark === color));
+  scheduleSave();
+}
 
 // ── Correction factors ──
 

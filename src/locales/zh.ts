@@ -83,6 +83,19 @@ const zh: Record<LocaleKey, string> = {
   'text.defaultContent': '文字',
   'text.defaultName': '文字 {{n}}',
 
+  'ctx.addImage': '添加图片',
+  'ctx.addText': '添加文字',
+  'ctx.importProject': '导入项目',
+  'ctx.toggleGuidelines': '切换参考线',
+  'ctx.backgroundColor': '背景颜色',
+  'ctx.cuttingMarksColor': '裁切标记颜色',
+  'ctx.duplicate': '复制',
+  'ctx.bringForward': '上移一层',
+  'ctx.sendBackward': '下移一层',
+  'ctx.bringToFront': '移到最前',
+  'ctx.sendToBack': '移到最后',
+  'ctx.delete': '删除',
+
   'canvas.dropHere': '将图片拖放到此处',
 };
 

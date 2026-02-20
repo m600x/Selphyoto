@@ -81,6 +81,19 @@ const en = {
   'text.defaultContent': 'Text',
   'text.defaultName': 'Text {{n}}',
 
+  'ctx.addImage': 'Add image',
+  'ctx.addText': 'Add text',
+  'ctx.importProject': 'Import project',
+  'ctx.toggleGuidelines': 'Toggle guidelines',
+  'ctx.backgroundColor': 'Background color',
+  'ctx.cuttingMarksColor': 'Cutting marks color',
+  'ctx.duplicate': 'Duplicate',
+  'ctx.bringForward': 'Bring forward',
+  'ctx.sendBackward': 'Send backward',
+  'ctx.bringToFront': 'Bring to front',
+  'ctx.sendToBack': 'Send to back',
+  'ctx.delete': 'Delete',
+
   'canvas.dropHere': 'Drop images here',
 } as const;
 

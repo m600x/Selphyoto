@@ -83,6 +83,19 @@ const fr: Record<LocaleKey, string> = {
   'text.defaultContent': 'Texte',
   'text.defaultName': 'Texte {{n}}',
 
+  'ctx.addImage': 'Ajouter une image',
+  'ctx.addText': 'Ajouter du texte',
+  'ctx.importProject': 'Importer un projet',
+  'ctx.toggleGuidelines': 'Afficher/masquer les repères',
+  'ctx.backgroundColor': 'Couleur de fond',
+  'ctx.cuttingMarksColor': 'Couleur des marques de coupe',
+  'ctx.duplicate': 'Dupliquer',
+  'ctx.bringForward': 'Avancer',
+  'ctx.sendBackward': 'Reculer',
+  'ctx.bringToFront': 'Premier plan',
+  'ctx.sendToBack': 'Arrière-plan',
+  'ctx.delete': 'Supprimer',
+
   'canvas.dropHere': 'Déposez les images ici',
 };
 

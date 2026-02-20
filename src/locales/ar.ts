@@ -83,6 +83,19 @@ const ar: Record<LocaleKey, string> = {
   'text.defaultContent': 'نص',
   'text.defaultName': 'نص {{n}}',
 
+  'ctx.addImage': 'إضافة صورة',
+  'ctx.addText': 'إضافة نص',
+  'ctx.importProject': 'استيراد مشروع',
+  'ctx.toggleGuidelines': 'تبديل الخطوط الإرشادية',
+  'ctx.backgroundColor': 'لون الخلفية',
+  'ctx.cuttingMarksColor': 'لون علامات القص',
+  'ctx.duplicate': 'تكرار',
+  'ctx.bringForward': 'تقديم',
+  'ctx.sendBackward': 'تأخير',
+  'ctx.bringToFront': 'نقل للأمام',
+  'ctx.sendToBack': 'نقل للخلف',
+  'ctx.delete': 'حذف',
+
   'canvas.dropHere': 'أفلت الصور هنا',
 };
 

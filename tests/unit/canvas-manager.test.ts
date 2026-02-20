@@ -684,4 +684,85 @@ describe('CanvasManager', () => {
       expect(spy).toHaveBeenCalled();
     });
   });
+
+  describe('z-order methods', () => {
+    beforeEach(async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'a.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'b.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'c.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+    });
+
+    it('bringForward swaps with previous item', () => {
+      cm.bringForward(1);
+      expect(cm.images[0].filename).toBe('b.png');
+      expect(cm.images[1].filename).toBe('a.png');
+    });
+
+    it('bringForward does nothing at index 0', () => {
+      cm.bringForward(0);
+      expect(cm.images[0].filename).toBe('a.png');
+    });
+
+    it('sendBackward swaps with next item', () => {
+      cm.sendBackward(1);
+      expect(cm.images[1].filename).toBe('c.png');
+      expect(cm.images[2].filename).toBe('b.png');
+    });
+
+    it('sendBackward does nothing at last index', () => {
+      cm.sendBackward(2);
+      expect(cm.images[2].filename).toBe('c.png');
+    });
+
+    it('bringToFront moves item to index 0', () => {
+      cm.bringToFront(2);
+      expect(cm.images[0].filename).toBe('c.png');
+      expect(cm.images[1].filename).toBe('a.png');
+      expect(cm.images[2].filename).toBe('b.png');
+    });
+
+    it('sendToBack moves item to last index', () => {
+      cm.sendToBack(0);
+      expect(cm.images[0].filename).toBe('b.png');
+      expect(cm.images[1].filename).toBe('c.png');
+      expect(cm.images[2].filename).toBe('a.png');
+    });
+  });
+
+  describe('duplicateLayer', () => {
+    it('duplicates an image layer', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'photo.png', visible: true, left: 10, top: 20, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      expect(cm.images.length).toBe(1);
+      await cm.duplicateLayer(0);
+      expect(cm.images.length).toBe(2);
+      expect(cm.images[1].filename).toBe('photo.png');
+      expect(cm.images[1].type).toBe('image');
+    });
+
+    it('duplicates a text layer', async () => {
+      cm.addText();
+      expect(cm.images.length).toBe(1);
+      await cm.duplicateLayer(0);
+      expect(cm.images.length).toBe(2);
+      expect(cm.images[1].type).toBe('text');
+    });
+
+    it('offsets the duplicate position', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'photo.png', visible: true, left: 100, top: 200, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      await cm.duplicateLayer(0);
+      const origLeft = cm.images[0].fabricImage.left ?? 0;
+      const dupeLeft = cm.images[1].fabricImage.left ?? 0;
+      expect(dupeLeft).toBe(origLeft + 15);
+    });
+  });
 });
