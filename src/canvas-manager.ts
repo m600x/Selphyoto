@@ -1,10 +1,11 @@
-import { Canvas, Rect, Line, FabricImage, FabricObject } from 'fabric';
+import { Canvas, Rect, Line, FabricImage, FabricObject, Textbox } from 'fabric';
 import * as C from './constants';
 import { t } from './i18n';
 
 export interface ImageEntry {
   id: string;
-  fabricImage: FabricImage;
+  type: 'image' | 'text';
+  fabricImage: FabricObject;
   filename: string;
   visible: boolean;
   locked: boolean;
@@ -41,6 +42,7 @@ export class CanvasManager {
   private _groups: GroupEntry[] = [];
   private _groupCounter = 0;
   private _nextImageId = 0;
+  private _textCounter = 0;
   private corrX = C.DEFAULT_CORRECTION_X;
   private corrY = C.DEFAULT_CORRECTION_Y;
 
@@ -358,7 +360,7 @@ export class CanvasManager {
         originY: 'top',
       });
 
-      this._images.unshift({ id: this.generateImageId(), fabricImage: img, filename: file.name, visible: true, locked: false, originalDataUrl: dataUrl });
+      this._images.unshift({ id: this.generateImageId(), type: 'image', fabricImage: img, filename: file.name, visible: true, locked: false, originalDataUrl: dataUrl });
       this.canvas.add(img);
       this.rebuildZOrder();
       this.canvas.setActiveObject(img);
@@ -606,6 +608,7 @@ export class CanvasManager {
     this._images.length = 0;
     this._groups.length = 0;
     this._groupCounter = 0;
+    this._textCounter = 0;
     this.rebuildZOrder();
     this.onListChange?.();
   }
@@ -649,6 +652,7 @@ export class CanvasManager {
 
     this._images.push({
       id: props.id ?? this.generateImageId(),
+      type: 'image',
       fabricImage: img,
       filename: props.filename,
       visible: props.visible,
@@ -714,6 +718,146 @@ export class CanvasManager {
   getImageOpacity(index: number): number {
     if (index < 0 || index >= this._images.length) return 1;
     return this._images[index].fabricImage.opacity ?? 1;
+  }
+
+  // ── Text layers ──
+
+  getTextCounter(): number { return this._textCounter; }
+  setTextCounter(value: number) { this._textCounter = value; }
+
+  addText(): void {
+    this._textCounter++;
+    const displayName = t('text.defaultName', { n: this._textCounter });
+    const textContent = t('text.defaultContent');
+
+    const tb = new Textbox(textContent, {
+      fontFamily: 'Arial',
+      fontSize: 40,
+      fill: '#000000',
+      textAlign: 'center',
+      originX: 'left',
+      originY: 'top',
+    });
+
+    tb.set('width', Math.ceil(tb.calcTextWidth()) + 4);
+    const tbWidth = tb.width ?? 100;
+    const tbHeight = tb.height ?? 50;
+    tb.set({
+      left: C.CROP_X + (C.CROP_W - tbWidth) / 2,
+      top: C.CROP_Y + (C.CROP_H - tbHeight) / 2,
+    });
+
+    this._images.unshift({
+      id: `text-${this._textCounter}`,
+      type: 'text',
+      fabricImage: tb,
+      filename: displayName,
+      visible: true,
+      locked: false,
+      originalDataUrl: '',
+    });
+
+    this.canvas.add(tb);
+    this.rebuildZOrder();
+    this.canvas.setActiveObject(tb);
+    this.onListChange?.();
+  }
+
+  addTextLayer(props: {
+    id?: string;
+    text: string;
+    fontFamily: string;
+    fontSize: number;
+    fill: string;
+    fontWeight: string;
+    fontStyle: string;
+    textAlign?: string;
+    filename: string;
+    visible: boolean;
+    locked?: boolean;
+    groupId?: string;
+    left: number;
+    top: number;
+    scaleX: number;
+    scaleY: number;
+    angle: number;
+    flipX?: boolean;
+    flipY?: boolean;
+    opacity?: number;
+    width?: number;
+  }): void {
+    const locked = props.locked ?? false;
+    const tb = new Textbox(props.text, {
+      left: props.left,
+      top: props.top,
+      scaleX: props.scaleX,
+      scaleY: props.scaleY,
+      angle: props.angle,
+      flipX: props.flipX ?? false,
+      flipY: props.flipY ?? false,
+      opacity: props.opacity ?? 1,
+      visible: props.visible,
+      selectable: !locked,
+      evented: !locked,
+      originX: 'left',
+      originY: 'top',
+      fontFamily: props.fontFamily,
+      fontSize: props.fontSize,
+      fill: props.fill,
+      fontWeight: props.fontWeight as string,
+      fontStyle: props.fontStyle as '' | 'normal' | 'italic' | 'oblique',
+      textAlign: (props.textAlign ?? 'center') as 'left' | 'center' | 'right' | 'justify',
+      width: props.width ?? 200,
+    });
+
+    this._images.push({
+      id: props.id ?? `text-${++this._textCounter}`,
+      type: 'text',
+      fabricImage: tb,
+      filename: props.filename,
+      visible: props.visible,
+      locked,
+      groupId: props.groupId,
+      originalDataUrl: '',
+    });
+    this.canvas.add(tb);
+  }
+
+  getSelectedType(): 'image' | 'text' | null {
+    const idx = this.getSelectedIndex();
+    if (idx < 0) return null;
+    return this._images[idx].type;
+  }
+
+  getTextProps(index: number): { text: string; fontFamily: string; fontSize: number; fill: string; fontWeight: string; fontStyle: string; textAlign: string; width: number } | null {
+    if (index < 0 || index >= this._images.length) return null;
+    const entry = this._images[index];
+    if (entry.type !== 'text') return null;
+    const tb = entry.fabricImage as Textbox;
+    return {
+      text: tb.text ?? '',
+      fontFamily: (tb.fontFamily as string) ?? 'Arial',
+      fontSize: tb.fontSize ?? 40,
+      fill: (tb.fill as string) ?? '#000000',
+      fontWeight: (tb.fontWeight as string) ?? 'normal',
+      fontStyle: (tb.fontStyle as string) ?? 'normal',
+      textAlign: (tb.textAlign as string) ?? 'center',
+      width: tb.width ?? 200,
+    };
+  }
+
+  setTextProp(index: number, props: Record<string, unknown>): void {
+    if (index < 0 || index >= this._images.length || this._images[index].type !== 'text') return;
+    const tb = this._images[index].fabricImage as unknown as Textbox;
+    tb.set(props);
+    tb.initDimensions();
+    tb.dirty = true;
+    tb.setCoords();
+    this.canvas.requestRenderAll();
+  }
+
+  requestRenderAll(): void {
+    this.canvas.requestRenderAll();
   }
 
   // ── Cutting mark color ──
@@ -843,5 +987,19 @@ export class CanvasManager {
     this.canvas.on('selection:created', notify);
     this.canvas.on('selection:updated', notify);
     this.canvas.on('selection:cleared', notify);
+
+    this.canvas.on('text:editing:exited', () => {
+      const active = this.canvas.getActiveObject();
+      if (!active) return;
+      const entry = this._images.find(e => e.fabricImage === active);
+      if (entry && entry.type === 'text') {
+        const tb = active as Textbox;
+        const text = (tb.text ?? '').trim();
+        if (text) {
+          entry.filename = text.length > 30 ? text.substring(0, 30) + '…' : text;
+        }
+        this.onListChange?.();
+      }
+    });
   }
 }

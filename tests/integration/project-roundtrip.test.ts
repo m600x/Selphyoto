@@ -5,9 +5,11 @@ import { importProject, type ProjectManifest, type ProjectSettings } from '../..
 function makeMockCM() {
   const state = {
     images: [] as Array<{
-      filename: string; visible: boolean; locked: boolean; groupId?: string;
+      type: string; filename: string; visible: boolean; locked: boolean; groupId?: string;
       left: number; top: number; scaleX: number; scaleY: number; angle: number;
       flipX: boolean; flipY: boolean; opacity: number;
+      text?: string; fontFamily?: string; fontSize?: number; fill?: string;
+      fontWeight?: string; fontStyle?: string; width?: number;
     }>,
     groups: [] as Array<{ id: string; name: string; visible: boolean }>,
     correctionX: 0.961,
@@ -15,6 +17,7 @@ function makeMockCM() {
     backgroundColor: '#ffffff',
     markColor: '#cc0000',
     guidelinesVisible: true,
+    textCounter: 0,
   };
 
   return {
@@ -25,6 +28,7 @@ function makeMockCM() {
     }),
     addImageFromDataURL: mock(async (_dataUrl: string, props: Record<string, unknown>) => {
       state.images.push({
+        type: 'image',
         filename: props.filename as string,
         visible: props.visible as boolean,
         locked: (props.locked ?? false) as boolean,
@@ -39,6 +43,30 @@ function makeMockCM() {
         opacity: (props.opacity ?? 1) as number,
       });
     }),
+    addTextLayer: mock((props: Record<string, unknown>) => {
+      state.images.push({
+        type: 'text',
+        filename: props.filename as string,
+        visible: props.visible as boolean,
+        locked: (props.locked ?? false) as boolean,
+        groupId: props.groupId as string | undefined,
+        left: props.left as number,
+        top: props.top as number,
+        scaleX: props.scaleX as number,
+        scaleY: props.scaleY as number,
+        angle: props.angle as number,
+        flipX: (props.flipX ?? false) as boolean,
+        flipY: (props.flipY ?? false) as boolean,
+        opacity: (props.opacity ?? 1) as number,
+        text: props.text as string,
+        fontFamily: props.fontFamily as string,
+        fontSize: props.fontSize as number,
+        fill: props.fill as string,
+        fontWeight: props.fontWeight as string,
+        fontStyle: props.fontStyle as string,
+        width: props.width as number | undefined,
+      });
+    }),
     restoreGroups: mock((groups: Array<{ id: string; name: string; visible: boolean }>, _counter: number) => {
       state.groups = groups.map(g => ({ ...g }));
     }),
@@ -47,6 +75,8 @@ function makeMockCM() {
     setBackground: mock((c: string) => { state.backgroundColor = c; }),
     setMarkColor: mock((c: string) => { state.markColor = c; }),
     setGuidelinesVisible: mock((v: boolean) => { state.guidelinesVisible = v; }),
+    setTextCounter: mock((v: number) => { state.textCounter = v; }),
+    getTextCounter: mock(() => state.textCounter),
     finalizeRestore: mock(() => {}),
   };
 }
@@ -189,6 +219,55 @@ describe('project import', () => {
     expect(cm.addImageFromDataURL).toHaveBeenCalledTimes(1);
     expect(cm.state.images[0].filename).toBe('exists.png');
     consoleSpy.mockRestore();
+  });
+
+  it('imports text layers from project', async () => {
+    const manifest: ProjectManifest = {
+      version: 1,
+      images: [
+        {
+          type: 'text',
+          file: '',
+          filename: 'Text 1',
+          visible: true,
+          locked: false,
+          groupId: null,
+          left: 100, top: 200, scaleX: 1, scaleY: 1, angle: 0,
+          flipX: false, flipY: false, opacity: 0.9,
+          text: 'Hello World',
+          fontFamily: 'Georgia',
+          fontSize: 60,
+          fill: '#ff0000',
+          fontWeight: 'bold',
+          fontStyle: 'italic',
+          textAlign: 'right',
+          width: 300,
+        },
+        {
+          file: 'images/0_bg.png',
+          filename: 'bg.png',
+          visible: true,
+          locked: false,
+          groupId: null,
+          left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+        },
+      ],
+      groups: [],
+      groupCounter: 0,
+      textCounter: 1,
+      settings: { correctionX: 0.961, correctionY: 0.961, backgroundColor: '#ffffff', markColor: '#cc0000', guidelinesVisible: true, exportFormat: 'png' },
+    };
+
+    const file = await buildProjectZip(manifest, { '0_bg.png': TINY_PNG_B64 });
+    await importProject(file, cm as never, mock(() => {}));
+
+    expect(cm.addTextLayer).toHaveBeenCalledTimes(1);
+    expect(cm.addImageFromDataURL).toHaveBeenCalledTimes(1);
+    expect(cm.state.images[0].type).toBe('text');
+    expect(cm.state.images[0].text).toBe('Hello World');
+    expect(cm.state.images[0].fontFamily).toBe('Georgia');
+    expect(cm.state.images[1].type).toBe('image');
+    expect(cm.setTextCounter).toHaveBeenCalledWith(1);
   });
 
   it('handles project with no images', async () => {

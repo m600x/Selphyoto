@@ -16,6 +16,15 @@ const ar: Record<LocaleKey, string> = {
   'toolbar.flipH': 'قلب أفقي',
   'toolbar.flipV': 'قلب عمودي',
   'toolbar.opacity': 'الشفافية',
+  'toolbar.addText': 'إضافة نص',
+  'toolbar.font': 'الخط',
+  'toolbar.fontSize': 'الحجم',
+  'toolbar.textColor': 'اللون',
+  'toolbar.bold': 'عريض',
+  'toolbar.italic': 'مائل',
+  'toolbar.alignLeft': 'محاذاة لليسار',
+  'toolbar.alignCenter': 'محاذاة للوسط',
+  'toolbar.alignRight': 'محاذاة لليمين',
 
   'color.white': 'أبيض',
   'color.grey': 'رمادي',
@@ -69,6 +78,9 @@ const ar: Record<LocaleKey, string> = {
   'project.exportFailed': 'فشل تصدير المشروع.',
   'project.importing': 'جارٍ الاستيراد…',
   'project.importFailed': 'فشل استيراد المشروع. قد يكون الملف غير صالح.',
+
+  'text.defaultContent': 'نص',
+  'text.defaultName': 'نص {{n}}',
 
   'canvas.dropHere': 'أفلت الصور هنا',
 };

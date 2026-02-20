@@ -4,6 +4,7 @@ const PORT = 5174;
 
 export default defineConfig({
   testDir: '.',
+  testMatch: '*.pw.ts',
   timeout: 30_000,
   retries: 0,
   use: {

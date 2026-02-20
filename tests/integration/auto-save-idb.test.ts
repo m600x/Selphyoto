@@ -95,11 +95,12 @@ describe('auto-save IndexedDB operations', () => {
     expect(loaded!.groupCounter).toBe(42);
   });
 
-  it('handles state with multiple images', async () => {
+  it('handles state with multiple images and text layers', async () => {
     const state = makeState({
       images: [
         { dataUrl: 'data:a', filename: 'a.png', visible: true, locked: false, groupId: null, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0, flipX: false, flipY: false, opacity: 1 },
         { dataUrl: 'data:b', filename: 'b.jpg', visible: false, locked: true, groupId: 'g1', left: 50, top: 60, scaleX: 2, scaleY: 2, angle: 90, flipX: true, flipY: true, opacity: 0.5 },
+        { type: 'text', dataUrl: '', filename: 'Text 1', visible: true, locked: false, groupId: null, left: 100, top: 200, scaleX: 1, scaleY: 1, angle: 0, flipX: false, flipY: false, opacity: 0.8, text: 'Hello', fontFamily: 'Georgia', fontSize: 60, fill: '#ff0000', fontWeight: 'bold', fontStyle: 'italic', textAlign: 'right', width: 300 },
       ],
       groups: [{ id: 'g1', name: 'Photos', visible: true }],
     });
@@ -107,9 +108,12 @@ describe('auto-save IndexedDB operations', () => {
     await saveAutoState(state);
     const loaded = await loadAutoState();
 
-    expect(loaded!.images).toHaveLength(2);
+    expect(loaded!.images).toHaveLength(3);
     expect(loaded!.images[1].filename).toBe('b.jpg');
     expect(loaded!.images[1].locked).toBe(true);
     expect(loaded!.images[1].angle).toBe(90);
+    expect(loaded!.images[2].type).toBe('text');
+    expect(loaded!.images[2].text).toBe('Hello');
+    expect(loaded!.images[2].fontFamily).toBe('Georgia');
   });
 });

@@ -74,12 +74,36 @@ mock.module('fabric', () => {
     static fromURL = mock().mockImplementation(async () => new MockFabricImage());
   }
 
+  class MockTextbox {
+    text = ''; left = 0; top = 0; scaleX = 1; scaleY = 1; angle = 0;
+    flipX = false; flipY = false; opacity = 1;
+    width = 200; height = 50; visible = true;
+    selectable = true; evented = true;
+    fontFamily = 'Arial'; fontSize = 40; fill = '#000000';
+    fontWeight = 'normal'; fontStyle = 'normal'; textAlign = 'center';
+
+    constructor(text?: string, opts?: Record<string, unknown>) {
+      if (text) this.text = text;
+      if (opts) Object.assign(this, opts);
+    }
+    set(key: string | Record<string, unknown>, val?: unknown) {
+      if (typeof key === 'string') (this as Record<string, unknown>)[key] = val;
+      else Object.assign(this, key);
+    }
+    dirty = false;
+    setCoords() {}
+    calcTextWidth() { return (this.text?.length ?? 4) * 20; }
+    initDimensions() {}
+    toDataURL() { return 'data:image/png;base64,TEXT'; }
+  }
+
   return {
     Canvas: MockCanvas,
     Rect: MockRect,
     Line: MockLine,
     FabricImage: MockFabricImage,
     FabricObject: class {},
+    Textbox: MockTextbox,
   };
 });
 
@@ -497,6 +521,134 @@ describe('CanvasManager', () => {
         left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
       });
       expect(cm.images[0].fabricImage.opacity).toBe(1);
+    });
+  });
+
+  describe('text layers', () => {
+    it('addText creates a text layer with center alignment', () => {
+      cm.addText();
+      expect(cm.images.length).toBe(1);
+      expect(cm.images[0].type).toBe('text');
+      expect(cm.images[0].originalDataUrl).toBe('');
+      const props = cm.getTextProps(0);
+      expect(props!.textAlign).toBe('center');
+    });
+
+    it('addText increments text counter', () => {
+      expect(cm.getTextCounter()).toBe(0);
+      cm.addText();
+      expect(cm.getTextCounter()).toBe(1);
+      cm.addText();
+      expect(cm.getTextCounter()).toBe(2);
+    });
+
+    it('addTextLayer restores a text layer with properties', () => {
+      cm.addTextLayer({
+        text: 'Hello',
+        fontFamily: 'Georgia',
+        fontSize: 60,
+        fill: '#ff0000',
+        fontWeight: 'bold',
+        fontStyle: 'italic',
+        textAlign: 'right',
+        filename: 'Test Text',
+        visible: true,
+        locked: false,
+        left: 10, top: 20, scaleX: 1.5, scaleY: 1.5, angle: 45,
+        flipX: true, flipY: false, opacity: 0.7,
+        width: 300,
+      });
+      expect(cm.images.length).toBe(1);
+      expect(cm.images[0].type).toBe('text');
+      expect(cm.images[0].filename).toBe('Test Text');
+      const props = cm.getTextProps(0);
+      expect(props).not.toBeNull();
+      expect(props!.text).toBe('Hello');
+      expect(props!.fontFamily).toBe('Georgia');
+      expect(props!.fontSize).toBe(60);
+      expect(props!.fill).toBe('#ff0000');
+      expect(props!.fontWeight).toBe('bold');
+      expect(props!.fontStyle).toBe('italic');
+      expect(props!.textAlign).toBe('right');
+    });
+
+    it('getSelectedType returns text for text layer', () => {
+      cm.addText();
+      cm.selectImage(0);
+      expect(cm.getSelectedType()).toBe('text');
+    });
+
+    it('getSelectedType returns image for image layer', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.selectImage(0);
+      expect(cm.getSelectedType()).toBe('image');
+    });
+
+    it('getSelectedType returns null with no selection', () => {
+      expect(cm.getSelectedType()).toBeNull();
+    });
+
+    it('getTextProps returns null for image layers', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      expect(cm.getTextProps(0)).toBeNull();
+    });
+
+    it('setTextProp updates text properties', () => {
+      cm.addText();
+      cm.setTextProp(0, { fontFamily: 'Verdana', fontSize: 80 });
+      const props = cm.getTextProps(0);
+      expect(props!.fontFamily).toBe('Verdana');
+      expect(props!.fontSize).toBe(80);
+    });
+
+    it('setTextProp does nothing for image layers', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      expect(() => cm.setTextProp(0, { fontFamily: 'Arial' })).not.toThrow();
+    });
+
+    it('clearAll resets text counter', () => {
+      cm.addText();
+      cm.addText();
+      expect(cm.getTextCounter()).toBe(2);
+      cm.clearAll();
+      expect(cm.getTextCounter()).toBe(0);
+    });
+
+    it('text layers work with visibility toggle', () => {
+      cm.addText();
+      expect(cm.images[0].visible).toBe(true);
+      cm.toggleVisibility(0);
+      expect(cm.images[0].visible).toBe(false);
+    });
+
+    it('text layers work with lock toggle', () => {
+      cm.addText();
+      expect(cm.images[0].locked).toBe(false);
+      cm.toggleLock(0);
+      expect(cm.images[0].locked).toBe(true);
+    });
+
+    it('text layers can be removed', () => {
+      cm.addText();
+      cm.addText();
+      expect(cm.images.length).toBe(2);
+      cm.removeImage(0);
+      expect(cm.images.length).toBe(1);
+    });
+
+    it('addTextLayer uses provided id', () => {
+      cm.addTextLayer({
+        id: 'custom-text-42',
+        text: 'Hello', fontFamily: 'Arial', fontSize: 40, fill: '#000', fontWeight: 'normal', fontStyle: 'normal',
+        filename: 'T', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      expect(cm.images[0].id).toBe('custom-text-42');
     });
   });
 

@@ -16,6 +16,15 @@ const hi: Record<LocaleKey, string> = {
   'toolbar.flipH': 'क्षैतिज पलटें',
   'toolbar.flipV': 'लंबवत पलटें',
   'toolbar.opacity': 'अपारदर्शिता',
+  'toolbar.addText': 'टेक्स्ट जोड़ें',
+  'toolbar.font': 'फ़ॉन्ट',
+  'toolbar.fontSize': 'आकार',
+  'toolbar.textColor': 'रंग',
+  'toolbar.bold': 'बोल्ड',
+  'toolbar.italic': 'इटैलिक',
+  'toolbar.alignLeft': 'बाएँ संरेखित करें',
+  'toolbar.alignCenter': 'केंद्र संरेखित करें',
+  'toolbar.alignRight': 'दाएँ संरेखित करें',
 
   'color.white': 'सफ़ेद',
   'color.grey': 'धूसर',
@@ -69,6 +78,9 @@ const hi: Record<LocaleKey, string> = {
   'project.exportFailed': 'प्रोजेक्ट निर्यात विफल।',
   'project.importing': 'आयात हो रहा है…',
   'project.importFailed': 'प्रोजेक्ट आयात विफल। फ़ाइल अमान्य हो सकती है।',
+
+  'text.defaultContent': 'टेक्स्ट',
+  'text.defaultName': 'टेक्स्ट {{n}}',
 
   'canvas.dropHere': 'छवियाँ यहाँ छोड़ें',
 };

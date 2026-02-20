@@ -1,8 +1,10 @@
 import JSZip from 'jszip';
+import type { Textbox } from 'fabric';
 import type { CanvasManager, GroupEntry } from './canvas-manager';
 import { timestamp, sanitizeFilename } from './utils';
 
 export interface ProjectImageEntry {
+  type?: 'image' | 'text';
   file: string;
   filename: string;
   visible: boolean;
@@ -16,6 +18,14 @@ export interface ProjectImageEntry {
   flipX?: boolean;
   flipY?: boolean;
   opacity?: number;
+  text?: string;
+  fontFamily?: string;
+  fontSize?: number;
+  fill?: string;
+  fontWeight?: string;
+  fontStyle?: string;
+  textAlign?: string;
+  width?: number;
 }
 
 export interface ProjectSettings {
@@ -32,6 +42,7 @@ export interface ProjectManifest {
   images: ProjectImageEntry[];
   groups: GroupEntry[];
   groupCounter: number;
+  textCounter?: number;
   settings: ProjectSettings;
 }
 
@@ -48,6 +59,35 @@ export async function exportProject(
     const entry = images[i];
     const fi = entry.fabricImage;
 
+    if (entry.type === 'text') {
+      const tb = fi as unknown as Textbox;
+      manifestImages.push({
+        type: 'text',
+        file: '',
+        filename: entry.filename,
+        visible: entry.visible,
+        locked: entry.locked ?? false,
+        groupId: entry.groupId ?? null,
+        left: fi.left ?? 0,
+        top: fi.top ?? 0,
+        scaleX: fi.scaleX ?? 1,
+        scaleY: fi.scaleY ?? 1,
+        angle: fi.angle ?? 0,
+        flipX: fi.flipX ?? false,
+        flipY: fi.flipY ?? false,
+        opacity: fi.opacity ?? 1,
+        text: tb.text ?? '',
+        fontFamily: (tb.fontFamily as string) ?? 'Arial',
+        fontSize: tb.fontSize ?? 40,
+        fill: (tb.fill as string) ?? '#000000',
+        fontWeight: (tb.fontWeight as string) ?? 'normal',
+        fontStyle: (tb.fontStyle as string) ?? 'normal',
+        textAlign: (tb.textAlign as string) ?? 'center',
+        width: tb.width ?? 200,
+      });
+      continue;
+    }
+
     const ext = 'png';
     const safeName = sanitizeFilename(entry.filename);
     const zipPath = `${i}_${safeName}${safeName.includes('.') ? '' : '.' + ext}`;
@@ -62,6 +102,7 @@ export async function exportProject(
     imagesFolder.file(zipPath, base64, { base64: true });
 
     manifestImages.push({
+      type: 'image',
       file: `images/${zipPath}`,
       filename: entry.filename,
       visible: entry.visible,
@@ -83,6 +124,7 @@ export async function exportProject(
     images: manifestImages,
     groups: cm.groups.map(g => ({ ...g })),
     groupCounter: cm.groups.length,
+    textCounter: cm.getTextCounter(),
     settings: {
       correctionX: cm.getCorrectionX(),
       correctionY: cm.getCorrectionY(),
@@ -124,6 +166,32 @@ export async function importProject(
   cm.clearAll();
 
   for (const imgEntry of manifest.images) {
+    if ((imgEntry.type ?? 'image') === 'text') {
+      cm.addTextLayer({
+        filename: imgEntry.filename,
+        text: imgEntry.text ?? 'Text',
+        fontFamily: imgEntry.fontFamily ?? 'Arial',
+        fontSize: imgEntry.fontSize ?? 40,
+        fill: imgEntry.fill ?? '#000000',
+        fontWeight: imgEntry.fontWeight ?? 'normal',
+        fontStyle: imgEntry.fontStyle ?? 'normal',
+        textAlign: imgEntry.textAlign ?? 'center',
+        visible: imgEntry.visible,
+        locked: imgEntry.locked ?? false,
+        groupId: imgEntry.groupId ?? undefined,
+        left: imgEntry.left,
+        top: imgEntry.top,
+        scaleX: imgEntry.scaleX,
+        scaleY: imgEntry.scaleY,
+        angle: imgEntry.angle,
+        flipX: imgEntry.flipX ?? false,
+        flipY: imgEntry.flipY ?? false,
+        opacity: imgEntry.opacity ?? 1,
+        width: imgEntry.width,
+      });
+      continue;
+    }
+
     const imgFile = zip.file(imgEntry.file);
     if (!imgFile) {
       console.warn(`Missing image in zip: ${imgEntry.file}`);
@@ -148,6 +216,8 @@ export async function importProject(
       opacity: imgEntry.opacity ?? 1,
     });
   }
+
+  if (manifest.textCounter) cm.setTextCounter(manifest.textCounter);
 
   const maxCounter = manifest.groupCounter ??
     manifest.groups.reduce((max, g) => {

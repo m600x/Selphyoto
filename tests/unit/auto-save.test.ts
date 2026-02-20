@@ -4,7 +4,8 @@ import type { CanvasManager } from '../../src/canvas-manager';
 
 function makeMockCM(overrides: Partial<{
   images: Array<{
-    fabricImage: { left: number; top: number; scaleX: number; scaleY: number; angle: number; flipX?: boolean; flipY?: boolean; opacity?: number };
+    type?: 'image' | 'text';
+    fabricImage: Record<string, unknown>;
     filename: string;
     visible: boolean;
     locked: boolean;
@@ -13,18 +14,20 @@ function makeMockCM(overrides: Partial<{
   }>;
   groups: Array<{ id: string; name: string; visible: boolean }>;
   groupCounter: number;
+  textCounter: number;
   corrX: number;
   corrY: number;
   bgColor: string;
   markColor: string;
   guidelinesVisible: boolean;
 }> = {}): CanvasManager {
-  const images = overrides.images ?? [];
+  const images = (overrides.images ?? []).map(img => ({ type: 'image' as const, ...img }));
   const groups = overrides.groups ?? [];
   return {
     images,
     groups,
     getGroupCounter: mock(() => overrides.groupCounter ?? 0),
+    getTextCounter: mock(() => overrides.textCounter ?? 0),
     getCorrectionX: mock(() => overrides.corrX ?? 0.961),
     getCorrectionY: mock(() => overrides.corrY ?? 0.961),
     getBackgroundColor: mock(() => overrides.bgColor ?? '#ffffff'),
@@ -58,7 +61,8 @@ describe('collectState', () => {
     const state = collectState(cm, 'jpeg');
 
     expect(state.images).toHaveLength(1);
-    expect(state.images[0]).toEqual({
+    expect(state.images[0]).toMatchObject({
+      type: 'image',
       dataUrl: 'data:image/png;base64,AAA',
       filename: 'photo.png',
       visible: true,
@@ -130,5 +134,40 @@ describe('collectState', () => {
     const cm = makeMockCM();
     expect(collectState(cm, 'png').settings.exportFormat).toBe('png');
     expect(collectState(cm, 'jpeg').settings.exportFormat).toBe('jpeg');
+  });
+
+  it('collects text layer properties including textAlign', () => {
+    const cm = makeMockCM({
+      images: [{
+        type: 'text',
+        fabricImage: {
+          left: 100, top: 200, scaleX: 1, scaleY: 1, angle: 0,
+          flipX: false, flipY: false, opacity: 0.9,
+          text: 'Hello', fontFamily: 'Georgia', fontSize: 60,
+          fill: '#ff0000', fontWeight: 'bold', fontStyle: 'italic',
+          textAlign: 'right', width: 300,
+        },
+        filename: 'Text 1',
+        visible: true,
+        locked: false,
+        originalDataUrl: '',
+      }],
+      textCounter: 1,
+    });
+
+    const state = collectState(cm, 'png');
+    expect(state.images).toHaveLength(1);
+    expect(state.images[0]).toMatchObject({
+      type: 'text',
+      text: 'Hello',
+      fontFamily: 'Georgia',
+      fontSize: 60,
+      fill: '#ff0000',
+      fontWeight: 'bold',
+      fontStyle: 'italic',
+      textAlign: 'right',
+      width: 300,
+    });
+    expect(state.textCounter).toBe(1);
   });
 });

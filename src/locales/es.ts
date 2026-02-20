@@ -16,6 +16,15 @@ const es: Record<LocaleKey, string> = {
   'toolbar.flipH': 'Voltear horizontal',
   'toolbar.flipV': 'Voltear vertical',
   'toolbar.opacity': 'Opacidad',
+  'toolbar.addText': 'Añadir texto',
+  'toolbar.font': 'Fuente',
+  'toolbar.fontSize': 'Tamaño',
+  'toolbar.textColor': 'Color',
+  'toolbar.bold': 'Negrita',
+  'toolbar.italic': 'Cursiva',
+  'toolbar.alignLeft': 'Alinear a la izquierda',
+  'toolbar.alignCenter': 'Alinear al centro',
+  'toolbar.alignRight': 'Alinear a la derecha',
 
   'color.white': 'Blanco',
   'color.grey': 'Gris',
@@ -69,6 +78,9 @@ const es: Record<LocaleKey, string> = {
   'project.exportFailed': 'Error al exportar el proyecto.',
   'project.importing': 'Importando…',
   'project.importFailed': 'Error al importar el proyecto. El archivo puede ser inválido.',
+
+  'text.defaultContent': 'Texto',
+  'text.defaultName': 'Texto {{n}}',
 
   'canvas.dropHere': 'Arrastra las imágenes aquí',
 };

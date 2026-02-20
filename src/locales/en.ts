@@ -14,6 +14,15 @@ const en = {
   'toolbar.flipH': 'Flip horizontal',
   'toolbar.flipV': 'Flip vertical',
   'toolbar.opacity': 'Opacity',
+  'toolbar.addText': 'Add text',
+  'toolbar.font': 'Font',
+  'toolbar.fontSize': 'Size',
+  'toolbar.textColor': 'Color',
+  'toolbar.bold': 'Bold',
+  'toolbar.italic': 'Italic',
+  'toolbar.alignLeft': 'Align left',
+  'toolbar.alignCenter': 'Align center',
+  'toolbar.alignRight': 'Align right',
 
   'color.white': 'White',
   'color.grey': 'Grey',
@@ -67,6 +76,9 @@ const en = {
   'project.exportFailed': 'Failed to export project.',
   'project.importing': 'Importing…',
   'project.importFailed': 'Failed to import project. The file may be invalid.',
+
+  'text.defaultContent': 'Text',
+  'text.defaultName': 'Text {{n}}',
 
   'canvas.dropHere': 'Drop images here',
 } as const;

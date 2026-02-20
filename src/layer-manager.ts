@@ -23,6 +23,9 @@ const SVG_TRASH = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const SVG_UNGROUP = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
 const SVG_LOCK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
 const SVG_UNLOCK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>`;
+const SVG_FOLDER = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
+const SVG_IMAGE_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+const SVG_TEXT_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9.5" y1="20" x2="14.5" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>`;
 
 export class LayerManager {
   private container: HTMLElement;
@@ -265,7 +268,11 @@ export class LayerManager {
       }
     });
 
-    row.append(visBtn, name, delBtn);
+    const typeIcon = document.createElement('span');
+    typeIcon.className = 'layer-type-icon';
+    typeIcon.innerHTML = SVG_FOLDER;
+
+    row.append(visBtn, typeIcon, name, delBtn);
     this.container.appendChild(row);
   }
 
@@ -417,7 +424,11 @@ export class LayerManager {
       }
     });
 
-    row.append(visBtn, name, ...buttons);
+    const typeIcon = document.createElement('span');
+    typeIcon.className = 'layer-type-icon';
+    typeIcon.innerHTML = entry.type === 'text' ? SVG_TEXT_ICON : SVG_IMAGE_ICON;
+
+    row.append(visBtn, typeIcon, name, ...buttons);
     this.container.appendChild(row);
   }
 

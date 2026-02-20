@@ -6,6 +6,7 @@ import { exportProject, importProject, type ProjectSettings } from './project-io
 import { saveAutoState, loadAutoState, clearAutoState, collectState, saveHistoryState, loadHistoryState, clearHistoryState, type AutoSaveSettings } from './auto-save';
 import { HistoryManager, type HistorySnapshot } from './history-manager';
 import { t, setLocale, getLocale, detectLocale, applyI18n, registerLocale } from './i18n';
+import { populateFontSelect, loadGoogleFont, isSystemFont } from './fonts';
 import fr from './locales/fr';
 import zh from './locales/zh';
 import hi from './locales/hi';
@@ -48,6 +49,17 @@ const flipHBtn = document.getElementById('flip-h-btn') as HTMLButtonElement;
 const flipVBtn = document.getElementById('flip-v-btn') as HTMLButtonElement;
 const opacitySlider = document.getElementById('opacity-slider') as HTMLInputElement;
 const opacityValue = document.getElementById('opacity-value') as HTMLSpanElement;
+const addTextBtn = document.getElementById('add-text-btn') as HTMLButtonElement;
+const fontSelect = document.getElementById('font-select') as HTMLSelectElement;
+const fontSizeInput = document.getElementById('font-size-input') as HTMLInputElement;
+const textColorInput = document.getElementById('text-color-input') as HTMLInputElement;
+const boldBtn = document.getElementById('bold-btn') as HTMLButtonElement;
+const italicBtn = document.getElementById('italic-btn') as HTMLButtonElement;
+const alignLeftBtn = document.getElementById('align-left-btn') as HTMLButtonElement;
+const alignCenterBtn = document.getElementById('align-center-btn') as HTMLButtonElement;
+const alignRightBtn = document.getElementById('align-right-btn') as HTMLButtonElement;
+
+populateFontSelect(fontSelect);
 
 // ── Export format state ──
 
@@ -64,9 +76,13 @@ function captureSnapshot(): HistorySnapshot {
   return {
     images: state.images.map((img, i) => {
       const entry = cm.images[i];
+      const isText = (img.type ?? 'image') === 'text';
       const key = entry?.id ?? `img-fallback-${Date.now()}-${i}`;
-      history.registerImageData(key, img.dataUrl);
+      if (!isText) {
+        history.registerImageData(key, img.dataUrl);
+      }
       return {
+        type: img.type ?? 'image',
         dataKey: key,
         filename: img.filename,
         visible: img.visible,
@@ -80,6 +96,16 @@ function captureSnapshot(): HistorySnapshot {
         flipX: img.flipX,
         flipY: img.flipY,
         opacity: img.opacity,
+        ...(isText ? {
+          text: img.text,
+          fontFamily: img.fontFamily,
+          fontSize: img.fontSize,
+          fill: img.fill,
+          fontWeight: img.fontWeight,
+          fontStyle: img.fontStyle,
+          textAlign: img.textAlign,
+          width: img.width,
+        } : {}),
       };
     }),
     groups: state.groups,
@@ -105,6 +131,32 @@ async function restoreFromSnapshot(snapshot: HistorySnapshot): Promise<void> {
   isRestoring = true;
   cm.clearAll();
   for (const img of snapshot.images) {
+    if ((img.type ?? 'image') === 'text') {
+      cm.addTextLayer({
+        id: img.dataKey,
+        text: img.text ?? 'Text',
+        fontFamily: img.fontFamily ?? 'Arial',
+        fontSize: img.fontSize ?? 40,
+        fill: img.fill ?? '#000000',
+        fontWeight: img.fontWeight ?? 'normal',
+        fontStyle: img.fontStyle ?? 'normal',
+        textAlign: img.textAlign ?? 'center',
+        filename: img.filename,
+        visible: img.visible,
+        locked: img.locked,
+        groupId: img.groupId ?? undefined,
+        left: img.left,
+        top: img.top,
+        scaleX: img.scaleX,
+        scaleY: img.scaleY,
+        angle: img.angle,
+        flipX: img.flipX ?? false,
+        flipY: img.flipY ?? false,
+        opacity: img.opacity ?? 1,
+        width: img.width,
+      });
+      continue;
+    }
     const dataUrl = history.resolveDataUrl(img.dataKey);
     if (!dataUrl) continue;
     await cm.addImageFromDataURL(dataUrl, {
@@ -183,12 +235,103 @@ opacitySlider.addEventListener('change', () => {
   scheduleSave();
 });
 
+// ── Add Text ──
+
+addTextBtn.addEventListener('click', () => {
+  pushSnapshot();
+  cm.addText();
+  refreshLayers();
+  updateCanvasToolbar();
+});
+
+// ── Text property controls ──
+
+fontSelect.addEventListener('change', async () => {
+  const idx = cm.getSelectedIndex();
+  if (idx < 0) return;
+  const family = fontSelect.value;
+  pushSnapshot();
+  if (!isSystemFont(family)) {
+    await loadGoogleFont(family);
+  }
+  cm.setTextProp(idx, { fontFamily: family });
+  scheduleSave();
+});
+
+fontSizeInput.addEventListener('change', () => {
+  const idx = cm.getSelectedIndex();
+  if (idx < 0) return;
+  const val = parseInt(fontSizeInput.value, 10);
+  if (isNaN(val) || val < 8) return;
+  pushSnapshot();
+  cm.setTextProp(idx, { fontSize: val });
+  scheduleSave();
+});
+
+textColorInput.addEventListener('input', () => {
+  const idx = cm.getSelectedIndex();
+  if (idx < 0) return;
+  cm.setTextProp(idx, { fill: textColorInput.value });
+});
+
+textColorInput.addEventListener('change', () => {
+  pushSnapshot();
+  scheduleSave();
+});
+
+boldBtn.addEventListener('click', () => {
+  const idx = cm.getSelectedIndex();
+  if (idx < 0) return;
+  const props = cm.getTextProps(idx);
+  if (!props) return;
+  pushSnapshot();
+  cm.setTextProp(idx, { fontWeight: props.fontWeight === 'bold' ? 'normal' : 'bold' });
+  updateCanvasToolbar();
+  scheduleSave();
+});
+
+italicBtn.addEventListener('click', () => {
+  const idx = cm.getSelectedIndex();
+  if (idx < 0) return;
+  const props = cm.getTextProps(idx);
+  if (!props) return;
+  pushSnapshot();
+  cm.setTextProp(idx, { fontStyle: props.fontStyle === 'italic' ? 'normal' : 'italic' });
+  updateCanvasToolbar();
+  scheduleSave();
+});
+
+function setAlignment(align: string) {
+  const idx = cm.getSelectedIndex();
+  if (idx < 0) return;
+  pushSnapshot();
+  cm.setTextProp(idx, { textAlign: align });
+  updateCanvasToolbar();
+  scheduleSave();
+}
+
+alignLeftBtn.addEventListener('click', () => setAlignment('left'));
+alignCenterBtn.addEventListener('click', () => setAlignment('center'));
+alignRightBtn.addEventListener('click', () => setAlignment('right'));
+
 function updateCanvasToolbar() {
   const idx = cm.getSelectedIndex();
   const hasSelection = idx >= 0;
+  const selType = hasSelection ? cm.getSelectedType() : null;
+  const isText = selType === 'text';
+
   flipHBtn.disabled = !hasSelection;
   flipVBtn.disabled = !hasSelection;
   opacitySlider.disabled = !hasSelection;
+
+  fontSelect.disabled = !isText;
+  fontSizeInput.disabled = !isText;
+  textColorInput.disabled = !isText;
+  boldBtn.disabled = !isText;
+  italicBtn.disabled = !isText;
+  alignLeftBtn.disabled = !isText;
+  alignCenterBtn.disabled = !isText;
+  alignRightBtn.disabled = !isText;
 
   if (hasSelection) {
     const opacity = cm.getImageOpacity(idx);
@@ -197,6 +340,29 @@ function updateCanvasToolbar() {
   } else {
     opacitySlider.value = '1';
     opacityValue.textContent = '100%';
+  }
+
+  if (isText) {
+    const props = cm.getTextProps(idx);
+    if (props) {
+      if (!isSystemFont(props.fontFamily)) {
+        loadGoogleFont(props.fontFamily).then(() => cm.requestRenderAll());
+      }
+      fontSelect.value = props.fontFamily;
+      fontSizeInput.value = String(props.fontSize);
+      textColorInput.value = props.fill;
+      boldBtn.classList.toggle('active', props.fontWeight === 'bold');
+      italicBtn.classList.toggle('active', props.fontStyle === 'italic');
+      alignLeftBtn.classList.toggle('active', props.textAlign === 'left');
+      alignCenterBtn.classList.toggle('active', props.textAlign === 'center');
+      alignRightBtn.classList.toggle('active', props.textAlign === 'right');
+    }
+  } else {
+    boldBtn.classList.remove('active');
+    italicBtn.classList.remove('active');
+    alignLeftBtn.classList.remove('active');
+    alignCenterBtn.classList.remove('active');
+    alignRightBtn.classList.remove('active');
   }
 }
 
@@ -781,31 +947,59 @@ async function restoreAutoSave() {
     const state = await loadAutoState();
     if (!state) return;
 
-    const validImages = state.images.filter(img => img.dataUrl && typeof img.dataUrl === 'string');
+    const validImages = state.images.filter(img =>
+      (img.type ?? 'image') === 'text' || (img.dataUrl && typeof img.dataUrl === 'string'),
+    );
     if (validImages.length === 0 && state.groups.length === 0) return;
 
     for (const img of validImages) {
       try {
-        await cm.addImageFromDataURL(img.dataUrl, {
-          filename: img.filename,
-          visible: img.visible,
-          locked: img.locked ?? false,
-          groupId: img.groupId ?? undefined,
-          left: img.left,
-          top: img.top,
-          scaleX: img.scaleX,
-          scaleY: img.scaleY,
-          angle: img.angle,
-          flipX: img.flipX ?? false,
-          flipY: img.flipY ?? false,
-          opacity: img.opacity ?? 1,
-        });
+        if ((img.type ?? 'image') === 'text') {
+          cm.addTextLayer({
+            filename: img.filename,
+            text: img.text ?? 'Text',
+            fontFamily: img.fontFamily ?? 'Arial',
+            fontSize: img.fontSize ?? 40,
+            fill: img.fill ?? '#000000',
+            fontWeight: img.fontWeight ?? 'normal',
+            fontStyle: img.fontStyle ?? 'normal',
+            textAlign: img.textAlign ?? 'center',
+            visible: img.visible,
+            locked: img.locked ?? false,
+            groupId: img.groupId ?? undefined,
+            left: img.left,
+            top: img.top,
+            scaleX: img.scaleX,
+            scaleY: img.scaleY,
+            angle: img.angle,
+            flipX: img.flipX ?? false,
+            flipY: img.flipY ?? false,
+            opacity: img.opacity ?? 1,
+            width: img.width,
+          });
+        } else {
+          await cm.addImageFromDataURL(img.dataUrl, {
+            filename: img.filename,
+            visible: img.visible,
+            locked: img.locked ?? false,
+            groupId: img.groupId ?? undefined,
+            left: img.left,
+            top: img.top,
+            scaleX: img.scaleX,
+            scaleY: img.scaleY,
+            angle: img.angle,
+            flipX: img.flipX ?? false,
+            flipY: img.flipY ?? false,
+            opacity: img.opacity ?? 1,
+          });
+        }
       } catch (imgErr) {
-        console.warn('Skipping corrupt auto-saved image:', img.filename, imgErr);
+        console.warn('Skipping corrupt auto-saved layer:', img.filename, imgErr);
       }
     }
 
     cm.restoreGroups(state.groups, state.groupCounter);
+    if (state.textCounter) cm.setTextCounter(state.textCounter);
     if (state.settings) {
       cm.setCorrectionX(state.settings.correctionX);
       cm.setCorrectionY(state.settings.correctionY);

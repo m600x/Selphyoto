@@ -6,6 +6,7 @@ let _fakeId = 0;
 function makeFakeImage(overrides: Partial<ImageEntry> = {}): ImageEntry {
   return {
     id: `fake-${++_fakeId}`,
+    type: 'image',
     fabricImage: {} as ImageEntry['fabricImage'],
     filename: 'test.png',
     visible: true,
@@ -128,6 +129,28 @@ describe('LayerManager', () => {
       const names = container.querySelectorAll('.layer-name');
       expect(names[0].textContent).toBe('first.png');
       expect(names[1].textContent).toBe('second.jpg');
+    });
+  });
+
+  describe('type icons', () => {
+    it('renders image icon for image layers', () => {
+      lm.render([makeFakeImage({ type: 'image' })], [], -1);
+      const icon = container.querySelector('.layer-row .layer-type-icon');
+      expect(icon).not.toBeNull();
+      expect(icon!.innerHTML).toContain('svg');
+    });
+
+    it('renders text icon for text layers', () => {
+      lm.render([makeFakeImage({ type: 'text', filename: 'Text 1' })], [], -1);
+      const icon = container.querySelector('.layer-row .layer-type-icon');
+      expect(icon).not.toBeNull();
+    });
+
+    it('renders folder icon for group headers', () => {
+      const groups: GroupEntry[] = [{ id: 'g1', name: 'Group', visible: true }];
+      lm.render([], groups, -1);
+      const icon = container.querySelector('.group-header .layer-type-icon');
+      expect(icon).not.toBeNull();
     });
   });
 

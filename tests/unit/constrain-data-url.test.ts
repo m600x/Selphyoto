@@ -56,12 +56,32 @@ mock.module('fabric', () => {
     static fromURL = mock().mockImplementation(async () => new MockFabricImage());
   }
 
+  class MockTextbox {
+    text = ''; left = 0; top = 0; width = 200; height = 50;
+    scaleX = 1; scaleY = 1; angle = 0; visible = true; selectable = true; evented = true;
+    fontFamily = 'Arial'; fontSize = 40; fill = '#000000';
+    fontWeight = 'normal'; fontStyle = 'normal'; textAlign = 'center';
+    constructor(text?: string, opts?: Record<string, unknown>) {
+      if (text) this.text = text;
+      if (opts) Object.assign(this, opts);
+    }
+    set(key: string | Record<string, unknown>, val?: unknown) {
+      if (typeof key === 'string') (this as Record<string, unknown>)[key] = val;
+      else Object.assign(this, key);
+    }
+    dirty = false;
+    setCoords() {}
+    calcTextWidth() { return (this.text?.length ?? 4) * 20; }
+    initDimensions() {}
+  }
+
   return {
     Canvas: MockCanvas,
     Rect: MockRect,
     Line: MockLine,
     FabricImage: MockFabricImage,
     FabricObject: class {},
+    Textbox: MockTextbox,
   };
 });
 

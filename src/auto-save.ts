@@ -1,6 +1,8 @@
+import type { Textbox } from 'fabric';
 import type { CanvasManager, GroupEntry } from './canvas-manager';
 
 export interface AutoSaveImage {
+  type?: 'image' | 'text';
   dataUrl: string;
   filename: string;
   visible: boolean;
@@ -14,6 +16,14 @@ export interface AutoSaveImage {
   flipX: boolean;
   flipY: boolean;
   opacity: number;
+  text?: string;
+  fontFamily?: string;
+  fontSize?: number;
+  fill?: string;
+  fontWeight?: string;
+  fontStyle?: string;
+  textAlign?: string;
+  width?: number;
 }
 
 export interface AutoSaveSettings {
@@ -29,6 +39,7 @@ export interface AutoSaveState {
   images: AutoSaveImage[];
   groups: GroupEntry[];
   groupCounter: number;
+  textCounter?: number;
   settings: AutoSaveSettings;
 }
 
@@ -123,23 +134,39 @@ export function collectState(
   exportFormat: 'png' | 'jpeg',
 ): AutoSaveState {
   return {
-    images: cm.images.map(e => ({
-      dataUrl: e.originalDataUrl,
-      filename: e.filename,
-      visible: e.visible,
-      locked: e.locked,
-      groupId: e.groupId ?? null,
-      left: e.fabricImage.left ?? 0,
-      top: e.fabricImage.top ?? 0,
-      scaleX: e.fabricImage.scaleX ?? 1,
-      scaleY: e.fabricImage.scaleY ?? 1,
-      angle: e.fabricImage.angle ?? 0,
-      flipX: e.fabricImage.flipX ?? false,
-      flipY: e.fabricImage.flipY ?? false,
-      opacity: e.fabricImage.opacity ?? 1,
-    })),
+    images: cm.images.map(e => {
+      const base: AutoSaveImage = {
+        type: e.type,
+        dataUrl: e.originalDataUrl,
+        filename: e.filename,
+        visible: e.visible,
+        locked: e.locked,
+        groupId: e.groupId ?? null,
+        left: e.fabricImage.left ?? 0,
+        top: e.fabricImage.top ?? 0,
+        scaleX: e.fabricImage.scaleX ?? 1,
+        scaleY: e.fabricImage.scaleY ?? 1,
+        angle: e.fabricImage.angle ?? 0,
+        flipX: e.fabricImage.flipX ?? false,
+        flipY: e.fabricImage.flipY ?? false,
+        opacity: e.fabricImage.opacity ?? 1,
+      };
+      if (e.type === 'text') {
+        const tb = e.fabricImage as unknown as Textbox;
+        base.text = tb.text ?? '';
+        base.fontFamily = (tb.fontFamily as string) ?? 'Arial';
+        base.fontSize = tb.fontSize ?? 40;
+        base.fill = (tb.fill as string) ?? '#000000';
+        base.fontWeight = (tb.fontWeight as string) ?? 'normal';
+        base.fontStyle = (tb.fontStyle as string) ?? 'normal';
+        base.textAlign = (tb.textAlign as string) ?? 'center';
+        base.width = tb.width ?? 200;
+      }
+      return base;
+    }),
     groups: cm.groups.map(g => ({ ...g })),
     groupCounter: cm.getGroupCounter(),
+    textCounter: cm.getTextCounter(),
     settings: {
       correctionX: cm.getCorrectionX(),
       correctionY: cm.getCorrectionY(),

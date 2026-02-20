@@ -1,6 +1,7 @@
 import type { GroupEntry } from './canvas-manager';
 
 export interface HistoryImage {
+  type?: 'image' | 'text';
   dataKey: string;
   filename: string;
   visible: boolean;
@@ -14,6 +15,14 @@ export interface HistoryImage {
   flipX: boolean;
   flipY: boolean;
   opacity: number;
+  text?: string;
+  fontFamily?: string;
+  fontSize?: number;
+  fill?: string;
+  fontWeight?: string;
+  fontStyle?: string;
+  textAlign?: string;
+  width?: number;
 }
 
 export interface HistorySnapshot {

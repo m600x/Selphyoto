@@ -16,6 +16,15 @@ const fr: Record<LocaleKey, string> = {
   'toolbar.flipH': 'Retourner horizontalement',
   'toolbar.flipV': 'Retourner verticalement',
   'toolbar.opacity': 'Opacité',
+  'toolbar.addText': 'Ajouter du texte',
+  'toolbar.font': 'Police',
+  'toolbar.fontSize': 'Taille',
+  'toolbar.textColor': 'Couleur',
+  'toolbar.bold': 'Gras',
+  'toolbar.italic': 'Italique',
+  'toolbar.alignLeft': 'Aligner à gauche',
+  'toolbar.alignCenter': 'Aligner au centre',
+  'toolbar.alignRight': 'Aligner à droite',
 
   'color.white': 'Blanc',
   'color.grey': 'Gris',
@@ -69,6 +78,9 @@ const fr: Record<LocaleKey, string> = {
   'project.exportFailed': 'Échec de l\'export du projet.',
   'project.importing': 'Import en cours…',
   'project.importFailed': 'Échec de l\'import du projet. Le fichier est peut-être invalide.',
+
+  'text.defaultContent': 'Texte',
+  'text.defaultName': 'Texte {{n}}',
 
   'canvas.dropHere': 'Déposez les images ici',
 };

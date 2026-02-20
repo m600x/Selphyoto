@@ -211,6 +211,41 @@ describe('HistoryManager', () => {
     });
   });
 
+  describe('text layer snapshots', () => {
+    it('round-trips text layer data through undo/redo', () => {
+      const textSnap = makeSnapshot({
+        images: [{
+          type: 'text',
+          dataKey: 'text-1',
+          filename: 'Text 1',
+          visible: true,
+          locked: false,
+          groupId: null,
+          left: 100, top: 200, scaleX: 1, scaleY: 1, angle: 0,
+          flipX: false, flipY: false, opacity: 0.8,
+          text: 'Hello',
+          fontFamily: 'Georgia',
+          fontSize: 60,
+          fill: '#ff0000',
+          fontWeight: 'bold',
+          fontStyle: 'italic',
+          textAlign: 'right',
+          width: 300,
+        }],
+      });
+
+      hm.push(textSnap);
+      const undone = hm.undo(makeSnapshot());
+      expect(undone).not.toBeNull();
+      expect(undone!.images[0].type).toBe('text');
+      expect(undone!.images[0].text).toBe('Hello');
+      expect(undone!.images[0].fontFamily).toBe('Georgia');
+      expect(undone!.images[0].fontSize).toBe(60);
+      expect(undone!.images[0].fill).toBe('#ff0000');
+      expect(undone!.images[0].textAlign).toBe('right');
+    });
+  });
+
   describe('complex undo/redo sequences', () => {
     it('handles multiple undo then redo', () => {
       hm.push(makeSnapshot({ groupCounter: 1 }));

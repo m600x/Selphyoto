@@ -16,6 +16,15 @@ const zh: Record<LocaleKey, string> = {
   'toolbar.flipH': '水平翻转',
   'toolbar.flipV': '垂直翻转',
   'toolbar.opacity': '不透明度',
+  'toolbar.addText': '添加文字',
+  'toolbar.font': '字体',
+  'toolbar.fontSize': '大小',
+  'toolbar.textColor': '颜色',
+  'toolbar.bold': '粗体',
+  'toolbar.italic': '斜体',
+  'toolbar.alignLeft': '左对齐',
+  'toolbar.alignCenter': '居中对齐',
+  'toolbar.alignRight': '右对齐',
 
   'color.white': '白色',
   'color.grey': '灰色',
@@ -69,6 +78,9 @@ const zh: Record<LocaleKey, string> = {
   'project.exportFailed': '项目导出失败。',
   'project.importing': '导入中…',
   'project.importFailed': '项目导入失败。文件可能无效。',
+
+  'text.defaultContent': '文字',
+  'text.defaultName': '文字 {{n}}',
 
   'canvas.dropHere': '将图片拖放到此处',
 };
