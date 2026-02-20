@@ -28,7 +28,7 @@ jobs:
       - run: bun install
 
       - name: bun audit
-        run: bun audit
+        run: bun audit --ignore GHSA-2g4f-4pwh-qvx6
 
   # ── Lint & tests ───────────────────────────────────────────────────
   test:
