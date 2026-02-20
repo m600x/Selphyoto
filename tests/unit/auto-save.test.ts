@@ -1,5 +1,5 @@
 import { describe, it, expect, mock } from 'bun:test';
-import { collectState } from '../../src/auto-save';
+import { collectPageData, collectState } from '../../src/auto-save';
 import type { CanvasManager } from '../../src/canvas-manager';
 
 function makeMockCM(overrides: Partial<{
@@ -36,7 +36,7 @@ function makeMockCM(overrides: Partial<{
   } as unknown as CanvasManager;
 }
 
-describe('collectState', () => {
+describe('collectPageData', () => {
   it('returns correct structure with populated images', () => {
     const cm = makeMockCM({
       images: [
@@ -51,17 +51,12 @@ describe('collectState', () => {
       ],
       groups: [{ id: 'group-1', name: 'Group 1', visible: true }],
       groupCounter: 1,
-      corrX: 0.95,
-      corrY: 0.96,
-      bgColor: '#000000',
-      markColor: '#ffffff',
-      guidelinesVisible: false,
     });
 
-    const state = collectState(cm, 'jpeg');
+    const pageData = collectPageData(cm);
 
-    expect(state.images).toHaveLength(1);
-    expect(state.images[0]).toMatchObject({
+    expect(pageData.images).toHaveLength(1);
+    expect(pageData.images[0]).toMatchObject({
       type: 'image',
       dataUrl: 'data:image/png;base64,AAA',
       filename: 'photo.png',
@@ -70,34 +65,19 @@ describe('collectState', () => {
       groupId: 'group-1',
       left: 10,
       top: 20,
-      scaleX: 0.5,
-      scaleY: 0.5,
-      angle: 45,
-      flipX: true,
-      flipY: false,
-      opacity: 0.8,
     });
 
-    expect(state.groups).toHaveLength(1);
-    expect(state.groups[0].id).toBe('group-1');
-    expect(state.groupCounter).toBe(1);
-
-    expect(state.settings).toEqual({
-      correctionX: 0.95,
-      correctionY: 0.96,
-      backgroundColor: '#000000',
-      markColor: '#ffffff',
-      guidelinesVisible: false,
-      exportFormat: 'jpeg',
-    });
+    expect(pageData.groups).toHaveLength(1);
+    expect(pageData.groups[0].id).toBe('group-1');
+    expect(pageData.groupCounter).toBe(1);
   });
 
   it('handles empty images array', () => {
     const cm = makeMockCM();
-    const state = collectState(cm, 'png');
-    expect(state.images).toHaveLength(0);
-    expect(state.groups).toHaveLength(0);
-    expect(state.groupCounter).toBe(0);
+    const pageData = collectPageData(cm);
+    expect(pageData.images).toHaveLength(0);
+    expect(pageData.groups).toHaveLength(0);
+    expect(pageData.groupCounter).toBe(0);
   });
 
   it('maps fabricImage properties correctly for multiple images', () => {
@@ -121,19 +101,13 @@ describe('collectState', () => {
       ],
     });
 
-    const state = collectState(cm, 'png');
-    expect(state.images).toHaveLength(2);
-    expect(state.images[0].left).toBe(100);
-    expect(state.images[0].locked).toBe(true);
-    expect(state.images[0].groupId).toBeNull();
-    expect(state.images[1].filename).toBe('b.jpg');
-    expect(state.images[1].groupId).toBeNull();
-  });
-
-  it('uses provided export format', () => {
-    const cm = makeMockCM();
-    expect(collectState(cm, 'png').settings.exportFormat).toBe('png');
-    expect(collectState(cm, 'jpeg').settings.exportFormat).toBe('jpeg');
+    const pageData = collectPageData(cm);
+    expect(pageData.images).toHaveLength(2);
+    expect(pageData.images[0].left).toBe(100);
+    expect(pageData.images[0].locked).toBe(true);
+    expect(pageData.images[0].groupId).toBeNull();
+    expect(pageData.images[1].filename).toBe('b.jpg');
+    expect(pageData.images[1].groupId).toBeNull();
   });
 
   it('collects text layer properties including textAlign', () => {
@@ -155,9 +129,9 @@ describe('collectState', () => {
       textCounter: 1,
     });
 
-    const state = collectState(cm, 'png');
-    expect(state.images).toHaveLength(1);
-    expect(state.images[0]).toMatchObject({
+    const pageData = collectPageData(cm);
+    expect(pageData.images).toHaveLength(1);
+    expect(pageData.images[0]).toMatchObject({
       type: 'text',
       text: 'Hello',
       fontFamily: 'Georgia',
@@ -168,6 +142,39 @@ describe('collectState', () => {
       textAlign: 'right',
       width: 300,
     });
-    expect(state.textCounter).toBe(1);
+    expect(pageData.textCounter).toBe(1);
+  });
+});
+
+describe('collectState', () => {
+  it('wraps pages and settings into multi-page format', () => {
+    const cm = makeMockCM({
+      corrX: 0.95,
+      corrY: 0.96,
+      bgColor: '#000000',
+      markColor: '#ffffff',
+      guidelinesVisible: false,
+    });
+
+    const pages = [{ images: [], groups: [], groupCounter: 0, textCounter: 0 }];
+    const state = collectState(cm, pages, 0, 'jpeg');
+
+    expect(state.pages).toHaveLength(1);
+    expect(state.currentPage).toBe(0);
+    expect(state.settings).toEqual({
+      correctionX: 0.95,
+      correctionY: 0.96,
+      backgroundColor: '#000000',
+      markColor: '#ffffff',
+      guidelinesVisible: false,
+      exportFormat: 'jpeg',
+    });
+  });
+
+  it('uses provided export format', () => {
+    const cm = makeMockCM();
+    const pages = [{ images: [], groups: [], groupCounter: 0, textCounter: 0 }];
+    expect(collectState(cm, pages, 0, 'png').settings.exportFormat).toBe('png');
+    expect(collectState(cm, pages, 0, 'jpeg').settings.exportFormat).toBe('jpeg');
   });
 });

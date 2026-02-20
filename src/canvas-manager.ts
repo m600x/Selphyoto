@@ -984,19 +984,16 @@ export class CanvasManager {
 
   // ── Export ──
 
-  exportImage(format: 'png' | 'jpeg') {
+  exportImageDataUrl(format: 'png' | 'jpeg'): string {
     const mult = C.PX_PER_MM / C.DISPLAY_SCALE;
 
-    // Save display state
     const displayZoom = this.canvas.getZoom();
     const displayW = this.canvas.getWidth();
     const displayH = this.canvas.getHeight();
 
-    // Reset to logical 1:1 so toDataURL coordinates are in object space
     this.canvas.setZoom(1);
     this.canvas.setDimensions({ width: C.CANVAS_W, height: C.CANVAS_H });
 
-    // Hide visual-only guides
     this.guideObjects.forEach((o) => o.set('visible', false));
     this.staticGuides.forEach((o) => o.set('visible', false));
     this.guidelineObjects.forEach((o) => o.set('visible', false));
@@ -1012,15 +1009,19 @@ export class CanvasManager {
       enableRetinaScaling: false,
     });
 
-    // Restore guides
     this.guideObjects.forEach((o) => o.set('visible', this.guidelinesVisible));
     this.staticGuides.forEach((o) => o.set('visible', true));
     this.guidelineObjects.forEach((o) => o.set('visible', this.guidelinesVisible));
 
-    // Restore display state
     this.canvas.setDimensions({ width: displayW, height: displayH });
     this.canvas.setZoom(displayZoom);
     this.canvas.renderAll();
+
+    return dataUrl;
+  }
+
+  exportImage(format: 'png' | 'jpeg') {
+    const dataUrl = this.exportImageDataUrl(format);
 
     const d = new Date();
     const ts = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}_${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}${String(d.getSeconds()).padStart(2, '0')}`;

@@ -86,9 +86,8 @@ describe('history IndexedDB operations', () => {
     const { saveAutoState, loadAutoState } = await import('../../src/auto-save');
 
     const autoState = {
-      images: [],
-      groups: [],
-      groupCounter: 5,
+      pages: [{ images: [], groups: [], groupCounter: 5, textCounter: 0 }],
+      currentPage: 0,
       settings: {
         correctionX: 0.961,
         correctionY: 0.961,
@@ -108,7 +107,7 @@ describe('history IndexedDB operations', () => {
     const loadedHistory = await loadHistoryState();
 
     expect(loadedAuto).not.toBeNull();
-    expect(loadedAuto!.groupCounter).toBe(5);
+    expect(loadedAuto!.pages[0].groupCounter).toBe(5);
     expect(loadedHistory).not.toBeNull();
     expect(loadedHistory!.imageData['history-key']).toBe('history-data');
   });

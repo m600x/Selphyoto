@@ -15,124 +15,9 @@
         <div id="header-left"></div>
         <div id="header-center">
           <h1 id="page-title" data-i18n="page.title">SelphYoto - MYO label printing template</h1>
-          <p id="page-subtitle" data-i18n="page.subtitle">for Canon Selphy CP1500/CP1300 printer with <strong>POSTCARD</strong> paper (borderless printing)</p>
         </div>
-        <div id="header-right">
-          <select id="lang-select" title="Language">
-            <option value="en">EN</option>
-            <option value="zh">中文</option>
-            <option value="hi">हिन्दी</option>
-            <option value="es">ES</option>
-            <option value="fr">FR</option>
-            <option value="ar">عربي</option>
-          </select>
-          <button id="theme-toggle" class="theme-toggle-btn" data-i18n-title="toolbar.theme.toggle" title="Toggle theme">
-            <svg id="theme-icon-sun" class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-            <svg id="theme-icon-moon" class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          </button>
-        </div>
+        <div id="header-right"></div>
       </div>
-      <header id="toolbar">
-        <div class="tool-group">
-          <label data-i18n="toolbar.guidelines">Guidelines</label>
-          <button id="guidelines-btn" class="toggle-btn active" data-i18n="toolbar.guidelines.on">ON</button>
-        </div>
-
-        <div class="tool-group">
-          <label data-i18n="toolbar.background">Background</label>
-          <div class="bg-buttons">
-            <button
-              class="bg-btn active"
-              data-bg="#ffffff"
-              data-i18n-title="color.white"
-              title="White"
-              style="background: #ffffff"
-            ></button>
-            <button
-              class="bg-btn"
-              data-bg="#808080"
-              data-i18n-title="color.grey"
-              title="Grey"
-              style="background: #808080"
-            ></button>
-            <button
-              class="bg-btn"
-              data-bg="#000000"
-              data-i18n-title="color.black"
-              title="Black"
-              style="background: #000000"
-            ></button>
-          </div>
-        </div>
-
-        <div class="tool-group">
-          <label data-i18n="toolbar.cuttingMarks">Cutting marks</label>
-          <div class="mark-buttons">
-            <button
-              class="mark-btn"
-              data-mark="#000000"
-              data-i18n-title="color.black"
-              title="Black"
-              style="background: #000000"
-            ></button>
-            <button
-              class="mark-btn"
-              data-mark="#ffffff"
-              data-i18n-title="color.white"
-              title="White"
-              style="background: #ffffff"
-            ></button>
-            <button
-              class="mark-btn active"
-              data-mark="#cc0000"
-              data-i18n-title="color.red"
-              title="Red"
-              style="background: #cc0000"
-            ></button>
-            <button
-              class="mark-btn"
-              data-mark="#cccc00"
-              data-i18n-title="color.yellow"
-              title="Yellow"
-              style="background: #cccc00"
-            ></button>
-          </div>
-        </div>
-
-        <div class="tool-group">
-          <label for="correction-x" data-i18n="toolbar.corrX">Corr. X</label>
-          <input
-            type="number"
-            id="correction-x"
-            step="0.0001"
-            min="0.5"
-            max="1.5"
-          />
-        </div>
-
-        <div class="tool-group">
-          <label for="correction-y" data-i18n="toolbar.corrY">Corr. Y</label>
-          <input
-            type="number"
-            id="correction-y"
-            step="0.0001"
-            min="0.5"
-            max="1.5"
-          />
-        </div>
-
-        <div class="tool-actions">
-          <div class="split-btn">
-            <button id="export-btn" class="action-btn primary export-image-btn" data-i18n="export.button">Export image</button>
-            <button id="export-dropdown-btn" class="action-btn primary split-btn-arrow">&#9662;</button>
-            <div id="export-menu" class="split-btn-menu">
-              <button class="split-btn-option" data-format="png" data-i18n="export.asPng">Export as PNG</button>
-              <button class="split-btn-option" data-format="jpeg" data-i18n="export.asJpeg">Export as JPEG</button>
-            </div>
-          </div>
-        </div>
-      </header>
-
       <div id="main-area">
         <section id="layer-panel">
           <div id="layer-panel-handle"></div>
@@ -199,6 +84,25 @@
             <button id="align-right-btn" class="action-btn canvas-tool-btn" data-i18n-title="toolbar.alignRight" title="Align right" disabled>
               <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="7" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg>
             </button>
+            <div class="canvas-toolbar-spacer"></div>
+            <select id="lang-select" title="Language">
+              <option value="en">EN</option>
+              <option value="zh">中文</option>
+              <option value="hi">हिन्दी</option>
+              <option value="es">ES</option>
+              <option value="fr">FR</option>
+              <option value="ar">عربي</option>
+            </select>
+            <button id="theme-toggle" class="theme-toggle-btn" data-i18n-title="toolbar.theme.toggle" title="Toggle theme">
+              <svg id="theme-icon-sun" class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              <svg id="theme-icon-moon" class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </button>
+          </div>
+          <div id="page-tabs">
+            <div id="page-tab-list"></div>
+            <button id="add-page-btn" class="page-tab-add" data-i18n-title="page.add" title="Add page">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
           </div>
           <main id="canvas-wrapper">
             <div id="canvas-container">
@@ -206,6 +110,52 @@
               <canvas id="main-canvas"></canvas>
             </div>
           </main>
+          <footer id="toolbar">
+            <div class="tool-group">
+              <label data-i18n="toolbar.guidelines">Guidelines</label>
+              <button id="guidelines-btn" class="toggle-btn active" data-i18n="toolbar.guidelines.on">ON</button>
+            </div>
+
+            <div class="tool-group">
+              <label data-i18n="toolbar.background">Background</label>
+              <div class="bg-buttons">
+                <button class="bg-btn active" data-bg="#ffffff" data-i18n-title="color.white" title="White" style="background: #ffffff"></button>
+                <button class="bg-btn" data-bg="#808080" data-i18n-title="color.grey" title="Grey" style="background: #808080"></button>
+                <button class="bg-btn" data-bg="#000000" data-i18n-title="color.black" title="Black" style="background: #000000"></button>
+              </div>
+            </div>
+
+            <div class="tool-group">
+              <label data-i18n="toolbar.cuttingMarks">Cutting marks</label>
+              <div class="mark-buttons">
+                <button class="mark-btn" data-mark="#000000" data-i18n-title="color.black" title="Black" style="background: #000000"></button>
+                <button class="mark-btn" data-mark="#ffffff" data-i18n-title="color.white" title="White" style="background: #ffffff"></button>
+                <button class="mark-btn active" data-mark="#cc0000" data-i18n-title="color.red" title="Red" style="background: #cc0000"></button>
+                <button class="mark-btn" data-mark="#cccc00" data-i18n-title="color.yellow" title="Yellow" style="background: #cccc00"></button>
+              </div>
+            </div>
+
+            <div class="tool-group">
+              <label for="correction-x" data-i18n="toolbar.corrX">Corr. X</label>
+              <input type="number" id="correction-x" step="0.0001" min="0.5" max="1.5" />
+            </div>
+
+            <div class="tool-group">
+              <label for="correction-y" data-i18n="toolbar.corrY">Corr. Y</label>
+              <input type="number" id="correction-y" step="0.0001" min="0.5" max="1.5" />
+            </div>
+
+            <div class="tool-actions">
+              <div class="split-btn">
+                <button id="export-btn" class="action-btn primary export-image-btn" data-i18n="export.button">Export image</button>
+                <button id="export-dropdown-btn" class="action-btn primary split-btn-arrow">&#9662;</button>
+                <div id="export-menu" class="split-btn-menu">
+                  <button class="split-btn-option" data-format="png" data-i18n="export.asPng">Export as PNG</button>
+                  <button class="split-btn-option" data-format="jpeg" data-i18n="export.asJpeg">Export as JPEG</button>
+                </div>
+              </div>
+            </div>
+          </footer>
         </div>
       </div>
     </div>

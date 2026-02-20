@@ -71,7 +71,7 @@ const ar: Record<LocaleKey, string> = {
   'confirm.confirm': 'تأكيد',
 
   'clearCanvas.title': 'مسح اللوحة',
-  'clearCanvas.message': 'سيتم حذف جميع الصور والمجموعات. هل أنت متأكد؟',
+  'clearCanvas.message': 'سيتم حذف جميع الصور والمجموعات والصفحات. هل أنت متأكد؟',
 
   'deleteImage.message': 'حذف "{{name}}"؟',
 
@@ -95,6 +95,12 @@ const ar: Record<LocaleKey, string> = {
   'ctx.bringToFront': 'نقل للأمام',
   'ctx.sendToBack': 'نقل للخلف',
   'ctx.delete': 'حذف',
+
+  'page.add': 'إضافة صفحة',
+  'page.delete': 'حذف الصفحة',
+  'page.label': 'صفحة {{n}}',
+  'page.deleteConfirm': 'حذف الصفحة {{n}} وكل محتوياتها؟',
+  'export.allPages': 'جارٍ تصدير جميع الصفحات…',
 
   'canvas.dropHere': 'أفلت الصور هنا',
 };

@@ -159,7 +159,7 @@ body {
   gap: 16px;
   padding: 4px 16px;
   background: var(--bg-panel);
-  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--border);
   flex-wrap: wrap;
   flex-shrink: 0;
 }
@@ -367,9 +367,9 @@ body {
 .split-btn-menu {
   display: none;
   position: absolute;
-  top: 100%;
+  bottom: 100%;
   right: 0;
-  margin-top: 4px;
+  margin-bottom: 4px;
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -434,6 +434,121 @@ body {
   flex-shrink: 0;
 }
 
+/* ─── Page Tabs ─── */
+
+#page-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 10px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+#page-tab-list {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.page-tab {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 4px 4px 0 0;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.page-tab:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.page-tab.active {
+  background: var(--bg-panel);
+  color: var(--text-bright);
+  border-color: var(--border);
+  border-bottom-color: var(--bg-panel);
+}
+
+.page-tab-close {
+  display: none;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  border-radius: 3px;
+  line-height: 1;
+  font-size: 14px;
+}
+
+.page-tab.active .page-tab-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-tab-close:hover {
+  background: var(--del-hover-bg);
+  color: var(--red);
+}
+
+.page-tab-name {
+  outline: none;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  padding: 0 2px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  min-width: 20px;
+}
+
+.page-tab-name[contenteditable="true"] {
+  border-color: var(--accent);
+  background: var(--bg);
+}
+
+.page-tab-add {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.page-tab-add:hover {
+  background: var(--bg-hover);
+  color: var(--green);
+}
+
+.page-tab-add .btn-icon {
+  width: 14px;
+  height: 14px;
+}
+
 /* ─── Canvas ─── */
 
 #canvas-wrapper {
@@ -450,6 +565,10 @@ body {
   height: 22px;
   background: var(--border);
   flex-shrink: 0;
+}
+
+.canvas-toolbar-spacer {
+  flex: 1;
 }
 
 .canvas-tool-btn {

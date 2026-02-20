@@ -71,7 +71,7 @@ const zh: Record<LocaleKey, string> = {
   'confirm.confirm': '确认',
 
   'clearCanvas.title': '清空画布',
-  'clearCanvas.message': '所有图片和分组将被删除。确定吗？',
+  'clearCanvas.message': '所有图片、分组和页面将被删除。确定吗？',
 
   'deleteImage.message': '删除"{{name}}"？',
 
@@ -95,6 +95,12 @@ const zh: Record<LocaleKey, string> = {
   'ctx.bringToFront': '移到最前',
   'ctx.sendToBack': '移到最后',
   'ctx.delete': '删除',
+
+  'page.add': '添加页面',
+  'page.delete': '删除页面',
+  'page.label': '页面 {{n}}',
+  'page.deleteConfirm': '删除页面 {{n}} 及其所有内容？',
+  'export.allPages': '正在导出所有页面…',
 
   'canvas.dropHere': '将图片拖放到此处',
 };

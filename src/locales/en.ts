@@ -69,7 +69,7 @@ const en = {
   'confirm.confirm': 'Confirm',
 
   'clearCanvas.title': 'Clear Canvas',
-  'clearCanvas.message': 'All images and groups will be removed. Are you sure?',
+  'clearCanvas.message': 'All images, groups and pages will be removed. Are you sure?',
 
   'deleteImage.message': 'Delete "{{name}}"?',
 
@@ -93,6 +93,12 @@ const en = {
   'ctx.bringToFront': 'Bring to front',
   'ctx.sendToBack': 'Send to back',
   'ctx.delete': 'Delete',
+
+  'page.add': 'Add page',
+  'page.delete': 'Delete page',
+  'page.label': 'Page {{n}}',
+  'page.deleteConfirm': 'Delete page {{n}} and all its contents?',
+  'export.allPages': 'Exporting all pages…',
 
   'canvas.dropHere': 'Drop images here',
 } as const;

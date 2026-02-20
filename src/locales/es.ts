@@ -71,7 +71,7 @@ const es: Record<LocaleKey, string> = {
   'confirm.confirm': 'Confirmar',
 
   'clearCanvas.title': 'Limpiar lienzo',
-  'clearCanvas.message': 'Se eliminarán todas las imágenes y grupos. ¿Estás seguro?',
+  'clearCanvas.message': 'Se eliminarán todas las imágenes, grupos y páginas. ¿Estás seguro?',
 
   'deleteImage.message': '¿Eliminar "{{name}}"?',
 
@@ -95,6 +95,12 @@ const es: Record<LocaleKey, string> = {
   'ctx.bringToFront': 'Traer al frente',
   'ctx.sendToBack': 'Enviar al fondo',
   'ctx.delete': 'Eliminar',
+
+  'page.add': 'Añadir página',
+  'page.delete': 'Eliminar página',
+  'page.label': 'Página {{n}}',
+  'page.deleteConfirm': '¿Eliminar la página {{n}} y todo su contenido?',
+  'export.allPages': 'Exportando todas las páginas…',
 
   'canvas.dropHere': 'Arrastra las imágenes aquí',
 };

@@ -71,7 +71,7 @@ const fr: Record<LocaleKey, string> = {
   'confirm.confirm': 'Confirmer',
 
   'clearCanvas.title': 'Tout effacer',
-  'clearCanvas.message': 'Toutes les images et groupes seront supprimés. Êtes-vous sûr ?',
+  'clearCanvas.message': 'Toutes les images, groupes et pages seront supprimés. Êtes-vous sûr ?',
 
   'deleteImage.message': 'Supprimer "{{name}}" ?',
 
@@ -95,6 +95,12 @@ const fr: Record<LocaleKey, string> = {
   'ctx.bringToFront': 'Premier plan',
   'ctx.sendToBack': 'Arrière-plan',
   'ctx.delete': 'Supprimer',
+
+  'page.add': 'Ajouter une page',
+  'page.delete': 'Supprimer la page',
+  'page.label': 'Page {{n}}',
+  'page.deleteConfirm': 'Supprimer la page {{n}} et tout son contenu ?',
+  'export.allPages': 'Export de toutes les pages…',
 
   'canvas.dropHere': 'Déposez les images ici',
 };

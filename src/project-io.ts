@@ -1,6 +1,8 @@
 import JSZip from 'jszip';
 import type { Textbox } from 'fabric';
 import type { CanvasManager, GroupEntry } from './canvas-manager';
+import type { PageData } from './page-manager';
+import type { AutoSaveImage } from './auto-save';
 import { timestamp, sanitizeFilename } from './utils';
 
 export interface ProjectImageEntry {
@@ -37,8 +39,16 @@ export interface ProjectSettings {
   exportFormat: 'png' | 'jpeg';
 }
 
+export interface ProjectPage {
+  images: ProjectImageEntry[];
+  groups: GroupEntry[];
+  groupCounter: number;
+  textCounter: number;
+}
+
 export interface ProjectManifest {
   version: 1;
+  pages?: ProjectPage[];
   images: ProjectImageEntry[];
   groups: GroupEntry[];
   groupCounter: number;
@@ -46,12 +56,11 @@ export interface ProjectManifest {
   settings: ProjectSettings;
 }
 
-export async function exportProject(
+function serializeCanvasPage(
   cm: CanvasManager,
-  uiState: { exportFormat: 'png' | 'jpeg' },
-): Promise<void> {
-  const zip = new JSZip();
-  const imagesFolder = zip.folder('images')!;
+  imagesFolder: JSZip,
+  pagePrefix: string,
+): { manifestImages: ProjectImageEntry[]; groups: GroupEntry[]; groupCounter: number; textCounter: number } {
   const images = cm.images;
   const manifestImages: ProjectImageEntry[] = [];
 
@@ -90,7 +99,7 @@ export async function exportProject(
 
     const ext = 'png';
     const safeName = sanitizeFilename(entry.filename);
-    const zipPath = `${i}_${safeName}${safeName.includes('.') ? '' : '.' + ext}`;
+    const zipPath = `${pagePrefix}${i}_${safeName}${safeName.includes('.') ? '' : '.' + ext}`;
 
     const origSx = fi.scaleX ?? 1;
     const origSy = fi.scaleY ?? 1;
@@ -119,23 +128,154 @@ export async function exportProject(
     });
   }
 
-  const manifest: ProjectManifest = {
-    version: 1,
-    images: manifestImages,
+  return {
+    manifestImages,
     groups: cm.groups.map(g => ({ ...g })),
     groupCounter: cm.groups.length,
     textCounter: cm.getTextCounter(),
-    settings: {
-      correctionX: cm.getCorrectionX(),
-      correctionY: cm.getCorrectionY(),
-      backgroundColor: cm.getBackgroundColor(),
-      markColor: cm.getMarkColor(),
-      guidelinesVisible: cm.getGuidelinesVisible(),
-      exportFormat: uiState.exportFormat,
-    },
   };
+}
 
-  zip.file('project.json', JSON.stringify(manifest, null, 2));
+function serializePageData(
+  page: PageData,
+  imagesFolder: JSZip,
+  pagePrefix: string,
+): ProjectPage {
+  const manifestImages: ProjectImageEntry[] = [];
+
+  for (let i = 0; i < page.images.length; i++) {
+    const img = page.images[i];
+
+    if ((img.type ?? 'image') === 'text') {
+      manifestImages.push({
+        type: 'text',
+        file: '',
+        filename: img.filename,
+        visible: img.visible,
+        locked: img.locked ?? false,
+        groupId: img.groupId ?? null,
+        left: img.left,
+        top: img.top,
+        scaleX: img.scaleX,
+        scaleY: img.scaleY,
+        angle: img.angle,
+        flipX: img.flipX ?? false,
+        flipY: img.flipY ?? false,
+        opacity: img.opacity ?? 1,
+        text: img.text ?? '',
+        fontFamily: img.fontFamily ?? 'Arial',
+        fontSize: img.fontSize ?? 40,
+        fill: img.fill ?? '#000000',
+        fontWeight: img.fontWeight ?? 'normal',
+        fontStyle: img.fontStyle ?? 'normal',
+        textAlign: img.textAlign ?? 'center',
+        width: img.width ?? 200,
+      });
+      continue;
+    }
+
+    const ext = 'png';
+    const safeName = sanitizeFilename(img.filename);
+    const zipPath = `${pagePrefix}${i}_${safeName}${safeName.includes('.') ? '' : '.' + ext}`;
+
+    const base64 = img.dataUrl.split(',')[1];
+    if (base64) {
+      imagesFolder.file(zipPath, base64, { base64: true });
+    }
+
+    manifestImages.push({
+      type: 'image',
+      file: `images/${zipPath}`,
+      filename: img.filename,
+      visible: img.visible,
+      locked: img.locked ?? false,
+      groupId: img.groupId ?? null,
+      left: img.left,
+      top: img.top,
+      scaleX: img.scaleX,
+      scaleY: img.scaleY,
+      angle: img.angle,
+      flipX: img.flipX ?? false,
+      flipY: img.flipY ?? false,
+      opacity: img.opacity ?? 1,
+    });
+  }
+
+  return {
+    images: manifestImages,
+    groups: page.groups.map(g => ({ ...g })),
+    groupCounter: page.groupCounter,
+    textCounter: page.textCounter,
+  };
+}
+
+export async function exportProject(
+  cm: CanvasManager,
+  uiState: { exportFormat: 'png' | 'jpeg' },
+  otherPages?: PageData[],
+  currentPageIndex?: number,
+): Promise<void> {
+  const zip = new JSZip();
+  const imagesFolder = zip.folder('images')!;
+
+  const totalPages = otherPages ? otherPages.length : 1;
+  const isMultiPage = totalPages > 1;
+
+  if (isMultiPage && otherPages) {
+    const pages: ProjectPage[] = [];
+    for (let p = 0; p < otherPages.length; p++) {
+      if (p === (currentPageIndex ?? 0)) {
+        const result = serializeCanvasPage(cm, imagesFolder, `p${p}_`);
+        pages.push({
+          images: result.manifestImages,
+          groups: result.groups,
+          groupCounter: result.groupCounter,
+          textCounter: result.textCounter,
+        });
+      } else {
+        pages.push(serializePageData(otherPages[p], imagesFolder, `p${p}_`));
+      }
+    }
+
+    const page0 = pages[0];
+    const manifest: ProjectManifest = {
+      version: 1,
+      pages,
+      images: page0.images,
+      groups: page0.groups,
+      groupCounter: page0.groupCounter,
+      textCounter: page0.textCounter,
+      settings: {
+        correctionX: cm.getCorrectionX(),
+        correctionY: cm.getCorrectionY(),
+        backgroundColor: cm.getBackgroundColor(),
+        markColor: cm.getMarkColor(),
+        guidelinesVisible: cm.getGuidelinesVisible(),
+        exportFormat: uiState.exportFormat,
+      },
+    };
+
+    zip.file('project.json', JSON.stringify(manifest, null, 2));
+  } else {
+    const result = serializeCanvasPage(cm, imagesFolder, '');
+    const manifest: ProjectManifest = {
+      version: 1,
+      images: result.manifestImages,
+      groups: result.groups,
+      groupCounter: result.groupCounter,
+      textCounter: result.textCounter,
+      settings: {
+        correctionX: cm.getCorrectionX(),
+        correctionY: cm.getCorrectionY(),
+        backgroundColor: cm.getBackgroundColor(),
+        markColor: cm.getMarkColor(),
+        guidelinesVisible: cm.getGuidelinesVisible(),
+        exportFormat: uiState.exportFormat,
+      },
+    };
+
+    zip.file('project.json', JSON.stringify(manifest, null, 2));
+  }
 
   const blob = await zip.generateAsync({ type: 'blob' });
   const link = document.createElement('a');
@@ -147,11 +287,16 @@ export async function exportProject(
   URL.revokeObjectURL(link.href);
 }
 
+export interface ImportResult {
+  pages: PageData[];
+  settings: ProjectSettings;
+}
+
 export async function importProject(
   file: File,
   cm: CanvasManager,
   applyUI: (settings: ProjectSettings) => void,
-): Promise<void> {
+): Promise<ImportResult> {
   const zip = await JSZip.loadAsync(file);
   const manifestFile = zip.file('project.json');
   if (!manifestFile) throw new Error('Invalid project: missing project.json');
@@ -163,61 +308,47 @@ export async function importProject(
     throw new Error(`Unsupported project version: ${manifest.version}`);
   }
 
-  cm.clearAll();
+  const isMultiPage = manifest.pages && manifest.pages.length > 0;
 
-  for (const imgEntry of manifest.images) {
-    if ((imgEntry.type ?? 'image') === 'text') {
-      cm.addTextLayer({
-        filename: imgEntry.filename,
-        text: imgEntry.text ?? 'Text',
-        fontFamily: imgEntry.fontFamily ?? 'Arial',
-        fontSize: imgEntry.fontSize ?? 40,
-        fill: imgEntry.fill ?? '#000000',
-        fontWeight: imgEntry.fontWeight ?? 'normal',
-        fontStyle: imgEntry.fontStyle ?? 'normal',
-        textAlign: imgEntry.textAlign ?? 'center',
-        visible: imgEntry.visible,
-        locked: imgEntry.locked ?? false,
-        groupId: imgEntry.groupId ?? undefined,
-        left: imgEntry.left,
-        top: imgEntry.top,
-        scaleX: imgEntry.scaleX,
-        scaleY: imgEntry.scaleY,
-        angle: imgEntry.angle,
-        flipX: imgEntry.flipX ?? false,
-        flipY: imgEntry.flipY ?? false,
-        opacity: imgEntry.opacity ?? 1,
-        width: imgEntry.width,
+  if (isMultiPage) {
+    const resultPages: PageData[] = [];
+    for (let p = 0; p < manifest.pages!.length; p++) {
+      const page = manifest.pages![p];
+      const pageData = await loadPageFromManifest(page.images, zip);
+      resultPages.push({
+        images: pageData,
+        groups: page.groups,
+        groupCounter: page.groupCounter,
+        textCounter: page.textCounter ?? 0,
       });
-      continue;
     }
 
-    const imgFile = zip.file(imgEntry.file);
-    if (!imgFile) {
-      console.warn(`Missing image in zip: ${imgEntry.file}`);
-      continue;
-    }
+    // Load first page into canvas
+    cm.clearAll();
+    await loadImagesIntoCanvas(cm, resultPages[0]);
 
-    const imgBlob = await imgFile.async('blob');
-    const dataUrl = await blobToDataURL(imgBlob);
+    cm.setCorrectionX(manifest.settings.correctionX);
+    cm.setCorrectionY(manifest.settings.correctionY);
+    cm.setBackground(manifest.settings.backgroundColor);
+    cm.setMarkColor(manifest.settings.markColor);
+    cm.setGuidelinesVisible(manifest.settings.guidelinesVisible);
+    cm.finalizeRestore();
+    applyUI(manifest.settings);
 
-    await cm.addImageFromDataURL(dataUrl, {
-      filename: imgEntry.filename,
-      visible: imgEntry.visible,
-      locked: imgEntry.locked ?? false,
-      groupId: imgEntry.groupId ?? undefined,
-      left: imgEntry.left,
-      top: imgEntry.top,
-      scaleX: imgEntry.scaleX,
-      scaleY: imgEntry.scaleY,
-      angle: imgEntry.angle,
-      flipX: imgEntry.flipX ?? false,
-      flipY: imgEntry.flipY ?? false,
-      opacity: imgEntry.opacity ?? 1,
-    });
+    return { pages: resultPages, settings: manifest.settings };
   }
 
-  if (manifest.textCounter) cm.setTextCounter(manifest.textCounter);
+  // Single-page legacy
+  cm.clearAll();
+  const pageData = await loadPageFromManifest(manifest.images, zip);
+  const singlePage: PageData = {
+    images: pageData,
+    groups: manifest.groups,
+    groupCounter: manifest.groupCounter,
+    textCounter: manifest.textCounter ?? 0,
+  };
+
+  await loadImagesIntoCanvas(cm, singlePage);
 
   const maxCounter = manifest.groupCounter ??
     manifest.groups.reduce((max, g) => {
@@ -232,8 +363,123 @@ export async function importProject(
   cm.setMarkColor(manifest.settings.markColor);
   cm.setGuidelinesVisible(manifest.settings.guidelinesVisible);
   cm.finalizeRestore();
-
   applyUI(manifest.settings);
+
+  return { pages: [singlePage], settings: manifest.settings };
+}
+
+async function loadPageFromManifest(
+  entries: ProjectImageEntry[],
+  zip: JSZip,
+): Promise<AutoSaveImage[]> {
+  const result: AutoSaveImage[] = [];
+
+  for (const imgEntry of entries) {
+    if ((imgEntry.type ?? 'image') === 'text') {
+      result.push({
+        type: 'text',
+        dataUrl: '',
+        filename: imgEntry.filename,
+        visible: imgEntry.visible,
+        locked: imgEntry.locked ?? false,
+        groupId: imgEntry.groupId ?? null,
+        left: imgEntry.left,
+        top: imgEntry.top,
+        scaleX: imgEntry.scaleX,
+        scaleY: imgEntry.scaleY,
+        angle: imgEntry.angle,
+        flipX: imgEntry.flipX ?? false,
+        flipY: imgEntry.flipY ?? false,
+        opacity: imgEntry.opacity ?? 1,
+        text: imgEntry.text ?? 'Text',
+        fontFamily: imgEntry.fontFamily ?? 'Arial',
+        fontSize: imgEntry.fontSize ?? 40,
+        fill: imgEntry.fill ?? '#000000',
+        fontWeight: imgEntry.fontWeight ?? 'normal',
+        fontStyle: imgEntry.fontStyle ?? 'normal',
+        textAlign: imgEntry.textAlign ?? 'center',
+        width: imgEntry.width ?? 200,
+      });
+      continue;
+    }
+
+    const imgFile = zip.file(imgEntry.file);
+    if (!imgFile) {
+      console.warn(`Missing image in zip: ${imgEntry.file}`);
+      continue;
+    }
+
+    const imgBlob = await imgFile.async('blob');
+    const dataUrl = await blobToDataURL(imgBlob);
+
+    result.push({
+      type: 'image',
+      dataUrl,
+      filename: imgEntry.filename,
+      visible: imgEntry.visible,
+      locked: imgEntry.locked ?? false,
+      groupId: imgEntry.groupId ?? null,
+      left: imgEntry.left,
+      top: imgEntry.top,
+      scaleX: imgEntry.scaleX,
+      scaleY: imgEntry.scaleY,
+      angle: imgEntry.angle,
+      flipX: imgEntry.flipX ?? false,
+      flipY: imgEntry.flipY ?? false,
+      opacity: imgEntry.opacity ?? 1,
+    });
+  }
+
+  return result;
+}
+
+async function loadImagesIntoCanvas(cm: CanvasManager, page: PageData): Promise<void> {
+  for (const img of page.images) {
+    if ((img.type ?? 'image') === 'text') {
+      cm.addTextLayer({
+        filename: img.filename,
+        text: img.text ?? 'Text',
+        fontFamily: img.fontFamily ?? 'Arial',
+        fontSize: img.fontSize ?? 40,
+        fill: img.fill ?? '#000000',
+        fontWeight: img.fontWeight ?? 'normal',
+        fontStyle: img.fontStyle ?? 'normal',
+        textAlign: img.textAlign ?? 'center',
+        visible: img.visible,
+        locked: img.locked ?? false,
+        groupId: img.groupId ?? undefined,
+        left: img.left,
+        top: img.top,
+        scaleX: img.scaleX,
+        scaleY: img.scaleY,
+        angle: img.angle,
+        flipX: img.flipX ?? false,
+        flipY: img.flipY ?? false,
+        opacity: img.opacity ?? 1,
+        width: img.width,
+      });
+      continue;
+    }
+
+    if (!img.dataUrl) continue;
+    await cm.addImageFromDataURL(img.dataUrl, {
+      filename: img.filename,
+      visible: img.visible,
+      locked: img.locked ?? false,
+      groupId: img.groupId ?? undefined,
+      left: img.left,
+      top: img.top,
+      scaleX: img.scaleX,
+      scaleY: img.scaleY,
+      angle: img.angle,
+      flipX: img.flipX ?? false,
+      flipY: img.flipY ?? false,
+      opacity: img.opacity ?? 1,
+    });
+  }
+
+  cm.restoreGroups(page.groups, page.groupCounter);
+  if (page.textCounter) cm.setTextCounter(page.textCounter);
 }
 
 function blobToDataURL(blob: Blob): Promise<string> {

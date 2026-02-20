@@ -1,5 +1,6 @@
 import type { Textbox } from 'fabric';
 import type { CanvasManager, GroupEntry } from './canvas-manager';
+import type { PageData } from './page-manager';
 
 export interface AutoSaveImage {
   type?: 'image' | 'text';
@@ -36,6 +37,13 @@ export interface AutoSaveSettings {
 }
 
 export interface AutoSaveState {
+  pages: PageData[];
+  currentPage: number;
+  settings: AutoSaveSettings;
+}
+
+// Legacy single-page format (for backward compat on load)
+interface LegacyAutoSaveState {
   images: AutoSaveImage[];
   groups: GroupEntry[];
   groupCounter: number;
@@ -84,9 +92,31 @@ export async function loadAutoState(): Promise<AutoSaveState | null> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly');
     const req = tx.objectStore(STORE_NAME).get(STATE_KEY);
-    req.onsuccess = () => { db.close(); resolve(req.result ?? null); };
+    req.onsuccess = () => {
+      db.close();
+      const raw = req.result;
+      if (!raw) { resolve(null); return; }
+      resolve(migrateState(raw));
+    };
     req.onerror = () => { db.close(); reject(req.error); };
   });
+}
+
+function migrateState(raw: AutoSaveState | LegacyAutoSaveState): AutoSaveState {
+  if ('pages' in raw && Array.isArray(raw.pages)) {
+    return raw as AutoSaveState;
+  }
+  const legacy = raw as LegacyAutoSaveState;
+  return {
+    pages: [{
+      images: legacy.images,
+      groups: legacy.groups,
+      groupCounter: legacy.groupCounter,
+      textCounter: legacy.textCounter ?? 0,
+    }],
+    currentPage: 0,
+    settings: legacy.settings,
+  };
 }
 
 export async function clearAutoState(): Promise<void> {
@@ -129,11 +159,10 @@ export async function clearHistoryState(): Promise<void> {
   });
 }
 
-export function collectState(
-  cm: CanvasManager,
-  exportFormat: 'png' | 'jpeg',
-): AutoSaveState {
+export function collectPageData(cm: CanvasManager, backgroundColor?: string, markColor?: string): PageData {
   return {
+    backgroundColor,
+    markColor,
     images: cm.images.map(e => {
       const base: AutoSaveImage = {
         type: e.type,
@@ -167,6 +196,18 @@ export function collectState(
     groups: cm.groups.map(g => ({ ...g })),
     groupCounter: cm.getGroupCounter(),
     textCounter: cm.getTextCounter(),
+  };
+}
+
+export function collectState(
+  cm: CanvasManager,
+  pages: PageData[],
+  currentPage: number,
+  exportFormat: 'png' | 'jpeg',
+): AutoSaveState {
+  return {
+    pages,
+    currentPage,
     settings: {
       correctionX: cm.getCorrectionX(),
       correctionY: cm.getCorrectionY(),

@@ -1,10 +1,12 @@
 import './style.css';
+import JSZip from 'jszip';
 import { CanvasManager } from './canvas-manager';
 import { LayerManager } from './layer-manager';
 import { DEFAULT_CORRECTION_X, DEFAULT_CORRECTION_Y } from './constants';
 import { exportProject, importProject, type ProjectSettings } from './project-io';
-import { saveAutoState, loadAutoState, clearAutoState, collectState, saveHistoryState, loadHistoryState, clearHistoryState, type AutoSaveSettings } from './auto-save';
+import { saveAutoState, loadAutoState, clearAutoState, collectState, collectPageData, saveHistoryState, loadHistoryState, clearHistoryState, type AutoSaveSettings } from './auto-save';
 import { HistoryManager, type HistorySnapshot } from './history-manager';
+import { PageManager } from './page-manager';
 import { t, setLocale, getLocale, detectLocale, applyI18n, registerLocale } from './i18n';
 import { populateFontSelect, loadGoogleFont, isSystemFont } from './fonts';
 import { ContextMenu, ICONS, type MenuEntry } from './context-menu';
@@ -27,6 +29,7 @@ setLocale(detectLocale());
 
 const cm = new CanvasManager('main-canvas');
 const history = new HistoryManager();
+const pm = new PageManager();
 
 const corrXInput = document.getElementById('correction-x') as HTMLInputElement;
 const corrYInput = document.getElementById('correction-y') as HTMLInputElement;
@@ -59,6 +62,8 @@ const italicBtn = document.getElementById('italic-btn') as HTMLButtonElement;
 const alignLeftBtn = document.getElementById('align-left-btn') as HTMLButtonElement;
 const alignCenterBtn = document.getElementById('align-center-btn') as HTMLButtonElement;
 const alignRightBtn = document.getElementById('align-right-btn') as HTMLButtonElement;
+const pageTabList = document.getElementById('page-tab-list')!;
+const addPageBtn = document.getElementById('add-page-btn') as HTMLButtonElement;
 
 populateFontSelect(fontSelect);
 
@@ -73,9 +78,9 @@ let lastSnapshotTime = 0;
 const COALESCE_MS = 500;
 
 function captureSnapshot(): HistorySnapshot {
-  const state = collectState(cm, exportFormat);
+  const pageData = collectPageData(cm);
   return {
-    images: state.images.map((img, i) => {
+    images: pageData.images.map((img, i) => {
       const entry = cm.images[i];
       const isText = (img.type ?? 'image') === 'text';
       const key = entry?.id ?? `img-fallback-${Date.now()}-${i}`;
@@ -109,8 +114,8 @@ function captureSnapshot(): HistorySnapshot {
         } : {}),
       };
     }),
-    groups: state.groups,
-    groupCounter: state.groupCounter,
+    groups: pageData.groups,
+    groupCounter: pageData.groupCounter,
   };
 }
 
@@ -381,6 +386,7 @@ langSelect.addEventListener('change', () => {
   applyI18n();
   captureButtonLabels();
   refreshLayers();
+  renderPageTabs();
 });
 
 // ── Theme toggle ──
@@ -419,7 +425,10 @@ function scheduleSave() {
 
 function performSave() {
   saveTimer = null;
-  const state = collectState(cm, exportFormat);
+  pm.setPageBgColor(pm.currentPage, cm.getBackgroundColor());
+  pm.setPageMarkColor(pm.currentPage, cm.getMarkColor());
+  pm.setPageData(pm.currentPage, collectPageData(cm, cm.getBackgroundColor(), cm.getMarkColor()));
+  const state = collectState(cm, pm.getAllPages(), pm.currentPage, exportFormat);
   saveAutoState(state)
     .then(() => { lastSaveTime = Date.now(); updateAutosaveDisplay(); })
     .catch(err => console.warn('Auto-save failed:', err));
@@ -521,10 +530,11 @@ function refreshLayers() {
 function updateExportState() {
   const hasImages = cm.images.length > 0;
   const hasVisible = hasImages && cm.images.some((e) => e.visible);
-  exportBtn.disabled = !hasVisible;
-  exportDropdownBtn.disabled = !hasVisible;
+  const hasAnyContent = hasVisible || pm.pageCount > 1;
+  exportBtn.disabled = !hasAnyContent;
+  exportDropdownBtn.disabled = !hasAnyContent;
   clearCanvasBtn.disabled = !hasImages && !history.canUndo() && !history.canRedo();
-  saveProjectBtn.disabled = !hasImages;
+  saveProjectBtn.disabled = !hasImages && pm.pageCount <= 1;
 }
 
 // ── Canvas ↔ layer sync ──
@@ -536,9 +546,6 @@ cm.onSelectionChange = (index) => {
 };
 
 // ── Canvas object transform → auto-save + history ──
-// Capture state BEFORE the transform starts (mouse:down), push it when
-// the transform ends (object:modified). This avoids the "first undo does
-// nothing" bug caused by saving the post-modification state.
 
 let pendingTransformSnapshot: HistorySnapshot | null = null;
 
@@ -716,12 +723,14 @@ function colorSwatch(hex: string): string {
 
 function setBgColor(color: string) {
   cm.setBackground(color);
+  pm.setPageBgColor(pm.currentPage, color);
   bgButtons.forEach((b) => b.classList.toggle('active', b.dataset.bg === color));
   scheduleSave();
 }
 
 function setMarkColorCtx(color: string) {
   cm.setMarkColor(color);
+  pm.setPageMarkColor(pm.currentPage, color);
   const markButtons = document.querySelectorAll<HTMLButtonElement>('.mark-btn');
   markButtons.forEach((b) => b.classList.toggle('active', b.dataset.mark === color));
   scheduleSave();
@@ -772,7 +781,9 @@ bgButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
     bgButtons.forEach((b) => b.classList.remove('active'));
     btn.classList.add('active');
-    cm.setBackground(btn.dataset.bg!);
+    const color = btn.dataset.bg!;
+    cm.setBackground(color);
+    pm.setPageBgColor(pm.currentPage, color);
     scheduleSave();
   });
 });
@@ -785,7 +796,9 @@ markButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
     markButtons.forEach((b) => b.classList.remove('active'));
     btn.classList.add('active');
-    cm.setMarkColor(btn.dataset.mark!);
+    const color = btn.dataset.mark!;
+    cm.setMarkColor(color);
+    pm.setPageMarkColor(pm.currentPage, color);
     scheduleSave();
   });
 });
@@ -799,9 +812,11 @@ importBtn.addEventListener('click', () => fileInput.click());
 clearCanvasBtn.addEventListener('click', async () => {
   if (!await showConfirmModal(t('clearCanvas.title'), t('clearCanvas.message'))) return;
   cm.clearAll();
+  pm.reset();
   history.clear();
   if (historySaveTimer) { clearTimeout(historySaveTimer); historySaveTimer = null; }
   updateUndoRedoButtons();
+  renderPageTabs();
   refreshLayers();
   clearAutoState().catch(() => {});
   clearHistoryState().catch(() => {});
@@ -824,7 +839,9 @@ saveProjectBtn.addEventListener('click', async () => {
   saveProjectBtn.disabled = true;
   saveProjectBtn.textContent = t('project.exporting');
   try {
-    await exportProject(cm, { exportFormat });
+    pm.setPageData(pm.currentPage, collectPageData(cm));
+    const allPages = pm.getAllPages();
+    await exportProject(cm, { exportFormat }, allPages, pm.currentPage);
   } catch (err) {
     console.error('Failed to export project:', err);
     alert(t('project.exportFailed'));
@@ -844,10 +861,18 @@ projectFileInput.addEventListener('change', async () => {
   loadProjectBtn.disabled = true;
   loadProjectBtn.textContent = t('project.importing');
   try {
-    await importProject(file, cm, applyUIState);
+    const result = await importProject(file, cm, applyUIState);
+    pm.restorePages(result.pages, 0);
+    const importedBg = result.pages[0]?.backgroundColor ?? '#ffffff';
+    cm.setBackground(importedBg);
+    bgButtons.forEach((b) => b.classList.toggle('active', b.dataset.bg === importedBg));
+    const importedMark = result.pages[0]?.markColor ?? '#cc0000';
+    cm.setMarkColor(importedMark);
+    markButtons.forEach((b) => b.classList.toggle('active', b.dataset.mark === importedMark));
     history.clear();
     updateUndoRedoButtons();
     pushSnapshot();
+    renderPageTabs();
     refreshLayers();
     flushSave();
   } catch (err) {
@@ -888,6 +913,242 @@ fileInput.addEventListener('change', () => {
   }
   fileInput.value = '';
 });
+
+// ── Page management ──
+
+function renderPageTabs() {
+  pageTabList.innerHTML = '';
+  for (let i = 0; i < pm.pageCount; i++) {
+    const tab = document.createElement('div');
+    tab.className = `page-tab${i === pm.currentPage ? ' active' : ''}`;
+    tab.dataset.page = String(i);
+
+    const label = document.createElement('span');
+    label.className = 'page-tab-name';
+    label.textContent = pm.getPageName(i) || t('page.label', { n: i + 1 });
+    tab.appendChild(label);
+
+    label.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      label.contentEditable = 'true';
+      label.focus();
+      const range = document.createRange();
+      range.selectNodeContents(label);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    });
+
+    const commitRename = () => {
+      label.contentEditable = 'false';
+      const name = label.textContent?.trim() || '';
+      pm.setPageName(i, name);
+      if (!name) label.textContent = t('page.label', { n: i + 1 });
+      scheduleSave();
+    };
+
+    label.addEventListener('blur', commitRename);
+    label.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); label.blur(); }
+      if (e.key === 'Escape') {
+        label.textContent = pm.getPageName(i) || t('page.label', { n: i + 1 });
+        label.blur();
+      }
+    });
+
+    if (pm.pageCount > 1 && i === pm.currentPage) {
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'page-tab-close';
+      closeBtn.textContent = '×';
+      closeBtn.title = t('page.delete');
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handleDeletePage(i);
+      });
+      tab.appendChild(closeBtn);
+    }
+
+    tab.addEventListener('click', () => handleSwitchPage(i));
+    pageTabList.appendChild(tab);
+  }
+}
+
+addPageBtn.addEventListener('click', () => {
+  pm.setPageBgColor(pm.currentPage, cm.getBackgroundColor());
+  pm.setPageMarkColor(pm.currentPage, cm.getMarkColor());
+  pm.setPageData(pm.currentPage, collectPageData(cm, cm.getBackgroundColor(), cm.getMarkColor()));
+  const newIdx = pm.addPage();
+  cm.clearAll();
+  cm.setBackground('#ffffff');
+  bgButtons.forEach((b) => b.classList.toggle('active', b.dataset.bg === '#ffffff'));
+  cm.setMarkColor('#cc0000');
+  markButtons.forEach((b) => b.classList.toggle('active', b.dataset.mark === '#cc0000'));
+  cm.finalizeRestore();
+  pm.switchTo(newIdx);
+  history.clear();
+  updateUndoRedoButtons();
+  pushSnapshot();
+  renderPageTabs();
+  refreshLayers();
+  flushSave();
+});
+
+async function handleSwitchPage(targetIndex: number) {
+  if (targetIndex === pm.currentPage) return;
+
+  pm.setPageBgColor(pm.currentPage, cm.getBackgroundColor());
+  pm.setPageMarkColor(pm.currentPage, cm.getMarkColor());
+  pm.setPageData(pm.currentPage, collectPageData(cm, cm.getBackgroundColor(), cm.getMarkColor()));
+
+  const targetData = pm.switchTo(targetIndex);
+  if (!targetData) return;
+
+  isRestoring = true;
+  cm.clearAll();
+  for (const img of targetData.images) {
+    try {
+      if ((img.type ?? 'image') === 'text') {
+        cm.addTextLayer({
+          filename: img.filename,
+          text: img.text ?? 'Text',
+          fontFamily: img.fontFamily ?? 'Arial',
+          fontSize: img.fontSize ?? 40,
+          fill: img.fill ?? '#000000',
+          fontWeight: img.fontWeight ?? 'normal',
+          fontStyle: img.fontStyle ?? 'normal',
+          textAlign: img.textAlign ?? 'center',
+          visible: img.visible,
+          locked: img.locked ?? false,
+          groupId: img.groupId ?? undefined,
+          left: img.left,
+          top: img.top,
+          scaleX: img.scaleX,
+          scaleY: img.scaleY,
+          angle: img.angle,
+          flipX: img.flipX ?? false,
+          flipY: img.flipY ?? false,
+          opacity: img.opacity ?? 1,
+          width: img.width,
+        });
+      } else {
+        if (!img.dataUrl) continue;
+        await cm.addImageFromDataURL(img.dataUrl, {
+          filename: img.filename,
+          visible: img.visible,
+          locked: img.locked ?? false,
+          groupId: img.groupId ?? undefined,
+          left: img.left,
+          top: img.top,
+          scaleX: img.scaleX,
+          scaleY: img.scaleY,
+          angle: img.angle,
+          flipX: img.flipX ?? false,
+          flipY: img.flipY ?? false,
+          opacity: img.opacity ?? 1,
+        });
+      }
+    } catch (err) {
+      console.warn('Skipping corrupt layer on page switch:', img.filename, err);
+    }
+  }
+  cm.restoreGroups(targetData.groups, targetData.groupCounter);
+  if (targetData.textCounter) cm.setTextCounter(targetData.textCounter);
+    const pageBg = targetData.backgroundColor ?? '#ffffff';
+  cm.setBackground(pageBg);
+  bgButtons.forEach((b) => b.classList.toggle('active', b.dataset.bg === pageBg));
+  const pageMark = targetData.markColor ?? '#cc0000';
+  cm.setMarkColor(pageMark);
+  markButtons.forEach((b) => b.classList.toggle('active', b.dataset.mark === pageMark));
+  cm.finalizeRestore();
+  isRestoring = false;
+
+  history.clear();
+  updateUndoRedoButtons();
+  pushSnapshot();
+  renderPageTabs();
+  refreshLayers();
+  flushSave();
+}
+
+async function handleDeletePage(index: number) {
+  if (pm.pageCount <= 1) return;
+  const pageNum = index + 1;
+  if (!await showConfirmModal('', t('page.deleteConfirm', { n: pageNum }))) return;
+
+  if (index === pm.currentPage) {
+    const newCurrent = pm.deletePage(index);
+    const targetData = pm.getPageData(newCurrent);
+    if (targetData) {
+      isRestoring = true;
+      cm.clearAll();
+      for (const img of targetData.images) {
+        try {
+          if ((img.type ?? 'image') === 'text') {
+            cm.addTextLayer({
+              filename: img.filename,
+              text: img.text ?? 'Text',
+              fontFamily: img.fontFamily ?? 'Arial',
+              fontSize: img.fontSize ?? 40,
+              fill: img.fill ?? '#000000',
+              fontWeight: img.fontWeight ?? 'normal',
+              fontStyle: img.fontStyle ?? 'normal',
+              textAlign: img.textAlign ?? 'center',
+              visible: img.visible,
+              locked: img.locked ?? false,
+              groupId: img.groupId ?? undefined,
+              left: img.left,
+              top: img.top,
+              scaleX: img.scaleX,
+              scaleY: img.scaleY,
+              angle: img.angle,
+              flipX: img.flipX ?? false,
+              flipY: img.flipY ?? false,
+              opacity: img.opacity ?? 1,
+              width: img.width,
+            });
+          } else {
+            if (!img.dataUrl) continue;
+            await cm.addImageFromDataURL(img.dataUrl, {
+              filename: img.filename,
+              visible: img.visible,
+              locked: img.locked ?? false,
+              groupId: img.groupId ?? undefined,
+              left: img.left,
+              top: img.top,
+              scaleX: img.scaleX,
+              scaleY: img.scaleY,
+              angle: img.angle,
+              flipX: img.flipX ?? false,
+              flipY: img.flipY ?? false,
+              opacity: img.opacity ?? 1,
+            });
+          }
+        } catch (err) {
+          console.warn('Skipping corrupt layer:', img.filename, err);
+        }
+      }
+      cm.restoreGroups(targetData.groups, targetData.groupCounter);
+      if (targetData.textCounter) cm.setTextCounter(targetData.textCounter);
+      const pageBg = targetData.backgroundColor ?? '#ffffff';
+      cm.setBackground(pageBg);
+      bgButtons.forEach((b) => b.classList.toggle('active', b.dataset.bg === pageBg));
+      const pageMark = targetData.markColor ?? '#cc0000';
+      cm.setMarkColor(pageMark);
+      markButtons.forEach((b) => b.classList.toggle('active', b.dataset.mark === pageMark));
+      cm.finalizeRestore();
+      isRestoring = false;
+    }
+  } else {
+    pm.deletePage(index);
+  }
+
+  history.clear();
+  updateUndoRedoButtons();
+  pushSnapshot();
+  renderPageTabs();
+  refreshLayers();
+  flushSave();
+}
 
 // ── Confirm modal (replaces browser confirm()) ──
 
@@ -935,11 +1196,158 @@ const exportModalOverlay = document.getElementById('export-modal-overlay')!;
 const exportModalDismiss = document.getElementById('export-modal-dismiss') as HTMLInputElement;
 const exportModalOk = document.getElementById('export-modal-ok') as HTMLButtonElement;
 
-function showExportModal(format: 'png' | 'jpeg') {
-  cm.exportImage(format);
+async function showExportModal(format: 'png' | 'jpeg') {
+  if (pm.pageCount > 1) {
+    await exportAllPagesAsZip(format);
+  } else {
+    cm.exportImage(format);
+  }
   if (localStorage.getItem(EXPORT_DISMISS_KEY) === 'true') return;
   exportModalDismiss.checked = false;
   exportModalOverlay.classList.remove('hidden');
+}
+
+async function exportAllPagesAsZip(format: 'png' | 'jpeg') {
+  const zip = new JSZip();
+  const ext = format === 'jpeg' ? 'jpg' : 'png';
+
+  pm.setPageBgColor(pm.currentPage, cm.getBackgroundColor());
+  pm.setPageMarkColor(pm.currentPage, cm.getMarkColor());
+  pm.setPageData(pm.currentPage, collectPageData(cm, cm.getBackgroundColor(), cm.getMarkColor()));
+  const savedCurrent = pm.currentPage;
+  const savedBg = cm.getBackgroundColor();
+  const savedMark = cm.getMarkColor();
+
+  for (let i = 0; i < pm.pageCount; i++) {
+    if (i !== savedCurrent) {
+      const pageData = pm.getPageData(i);
+      if (!pageData) continue;
+
+      isRestoring = true;
+      cm.clearAll();
+      cm.setBackground(pageData.backgroundColor ?? '#ffffff');
+      cm.setMarkColor(pageData.markColor ?? '#cc0000');
+      for (const img of pageData.images) {
+        if ((img.type ?? 'image') === 'text') {
+          cm.addTextLayer({
+            filename: img.filename,
+            text: img.text ?? 'Text',
+            fontFamily: img.fontFamily ?? 'Arial',
+            fontSize: img.fontSize ?? 40,
+            fill: img.fill ?? '#000000',
+            fontWeight: img.fontWeight ?? 'normal',
+            fontStyle: img.fontStyle ?? 'normal',
+            textAlign: img.textAlign ?? 'center',
+            visible: img.visible,
+            locked: img.locked ?? false,
+            groupId: img.groupId ?? undefined,
+            left: img.left,
+            top: img.top,
+            scaleX: img.scaleX,
+            scaleY: img.scaleY,
+            angle: img.angle,
+            flipX: img.flipX ?? false,
+            flipY: img.flipY ?? false,
+            opacity: img.opacity ?? 1,
+            width: img.width,
+          });
+        } else {
+          if (!img.dataUrl) continue;
+          await cm.addImageFromDataURL(img.dataUrl, {
+            filename: img.filename,
+            visible: img.visible,
+            locked: img.locked ?? false,
+            groupId: img.groupId ?? undefined,
+            left: img.left,
+            top: img.top,
+            scaleX: img.scaleX,
+            scaleY: img.scaleY,
+            angle: img.angle,
+            flipX: img.flipX ?? false,
+            flipY: img.flipY ?? false,
+            opacity: img.opacity ?? 1,
+          });
+        }
+      }
+      cm.restoreGroups(pageData.groups, pageData.groupCounter);
+      if (pageData.textCounter) cm.setTextCounter(pageData.textCounter);
+      cm.finalizeRestore();
+      isRestoring = false;
+    }
+
+    const dataUrl = cm.exportImageDataUrl(format);
+    const base64 = dataUrl.split(',')[1];
+    zip.file(`page_${i + 1}.${ext}`, base64, { base64: true });
+  }
+
+  // Restore original page
+  if (pm.pageCount > 1) {
+    const origData = pm.getPageData(savedCurrent);
+    if (origData) {
+      isRestoring = true;
+      cm.clearAll();
+      for (const img of origData.images) {
+        if ((img.type ?? 'image') === 'text') {
+          cm.addTextLayer({
+            filename: img.filename,
+            text: img.text ?? 'Text',
+            fontFamily: img.fontFamily ?? 'Arial',
+            fontSize: img.fontSize ?? 40,
+            fill: img.fill ?? '#000000',
+            fontWeight: img.fontWeight ?? 'normal',
+            fontStyle: img.fontStyle ?? 'normal',
+            textAlign: img.textAlign ?? 'center',
+            visible: img.visible,
+            locked: img.locked ?? false,
+            groupId: img.groupId ?? undefined,
+            left: img.left,
+            top: img.top,
+            scaleX: img.scaleX,
+            scaleY: img.scaleY,
+            angle: img.angle,
+            flipX: img.flipX ?? false,
+            flipY: img.flipY ?? false,
+            opacity: img.opacity ?? 1,
+            width: img.width,
+          });
+        } else {
+          if (!img.dataUrl) continue;
+          await cm.addImageFromDataURL(img.dataUrl, {
+            filename: img.filename,
+            visible: img.visible,
+            locked: img.locked ?? false,
+            groupId: img.groupId ?? undefined,
+            left: img.left,
+            top: img.top,
+            scaleX: img.scaleX,
+            scaleY: img.scaleY,
+            angle: img.angle,
+            flipX: img.flipX ?? false,
+            flipY: img.flipY ?? false,
+            opacity: img.opacity ?? 1,
+          });
+        }
+      }
+      cm.restoreGroups(origData.groups, origData.groupCounter);
+      if (origData.textCounter) cm.setTextCounter(origData.textCounter);
+      cm.setBackground(savedBg);
+      cm.setMarkColor(savedMark);
+      cm.finalizeRestore();
+      isRestoring = false;
+    }
+  }
+
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const d = new Date();
+  const ts = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}_${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}${String(d.getSeconds()).padStart(2, '0')}`;
+
+  const link = document.createElement('a');
+  link.download = `selphyoto_exported_${ts}.zip`;
+  link.href = URL.createObjectURL(blob);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
 }
 
 function closeExportModal() {
@@ -1043,7 +1451,6 @@ const NUDGE_PX = 1;
 document.addEventListener('keydown', (e) => {
   if (isInputFocused()) return;
 
-  // Undo / Redo shortcuts
   if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') {
     e.preventDefault();
     undoBtn.click();
@@ -1142,10 +1549,14 @@ async function restoreAutoSave() {
     const state = await loadAutoState();
     if (!state) return;
 
-    const validImages = state.images.filter(img =>
+    pm.restorePages(state.pages, state.currentPage);
+    const currentPageData = pm.getPageData(pm.currentPage);
+    if (!currentPageData) return;
+
+    const validImages = currentPageData.images.filter(img =>
       (img.type ?? 'image') === 'text' || (img.dataUrl && typeof img.dataUrl === 'string'),
     );
-    if (validImages.length === 0 && state.groups.length === 0) return;
+    if (validImages.length === 0 && currentPageData.groups.length === 0 && pm.pageCount <= 1) return;
 
     for (const img of validImages) {
       try {
@@ -1193,15 +1604,17 @@ async function restoreAutoSave() {
       }
     }
 
-    cm.restoreGroups(state.groups, state.groupCounter);
-    if (state.textCounter) cm.setTextCounter(state.textCounter);
+    cm.restoreGroups(currentPageData.groups, currentPageData.groupCounter);
+    if (currentPageData.textCounter) cm.setTextCounter(currentPageData.textCounter);
     if (state.settings) {
       cm.setCorrectionX(state.settings.correctionX);
       cm.setCorrectionY(state.settings.correctionY);
-      cm.setBackground(state.settings.backgroundColor);
-      cm.setMarkColor(state.settings.markColor);
+      const pageBg = currentPageData.backgroundColor ?? state.settings.backgroundColor;
+      cm.setBackground(pageBg);
+      const pageMark = currentPageData.markColor ?? state.settings.markColor;
+      cm.setMarkColor(pageMark);
       cm.setGuidelinesVisible(state.settings.guidelinesVisible);
-      applyUIState(state.settings);
+      applyUIState({ ...state.settings, backgroundColor: pageBg, markColor: pageMark });
     }
     cm.finalizeRestore();
   } catch (err) {
@@ -1224,6 +1637,7 @@ restoreAutoSave().then(async () => {
   updateUndoRedoButtons();
   applyI18n();
   captureButtonLabels();
+  renderPageTabs();
   refreshLayers();
   fitCanvas();
 });

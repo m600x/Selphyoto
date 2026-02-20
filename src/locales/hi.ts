@@ -71,7 +71,7 @@ const hi: Record<LocaleKey, string> = {
   'confirm.confirm': 'पुष्टि करें',
 
   'clearCanvas.title': 'कैनवास साफ़ करें',
-  'clearCanvas.message': 'सभी छवियाँ और समूह हटा दिए जाएँगे। क्या आप सुनिश्चित हैं?',
+  'clearCanvas.message': 'सभी छवियाँ, समूह और पेज हटा दिए जाएँगे। क्या आप सुनिश्चित हैं?',
 
   'deleteImage.message': '"{{name}}" हटाएँ?',
 
@@ -95,6 +95,12 @@ const hi: Record<LocaleKey, string> = {
   'ctx.bringToFront': 'सबसे आगे लाएँ',
   'ctx.sendToBack': 'सबसे पीछे भेजें',
   'ctx.delete': 'हटाएँ',
+
+  'page.add': 'पेज जोड़ें',
+  'page.delete': 'पेज हटाएँ',
+  'page.label': 'पेज {{n}}',
+  'page.deleteConfirm': 'पेज {{n}} और उसकी सभी सामग्री हटाएँ?',
+  'export.allPages': 'सभी पेज निर्यात हो रहे हैं…',
 
   'canvas.dropHere': 'छवियाँ यहाँ छोड़ें',
 };
