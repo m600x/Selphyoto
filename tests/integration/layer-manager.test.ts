@@ -1,9 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, mock, beforeEach } from 'bun:test';
 import type { ImageEntry, GroupEntry } from '../../src/canvas-manager';
 import { LayerManager, type LayerCallbacks } from '../../src/layer-manager';
 
+let _fakeId = 0;
 function makeFakeImage(overrides: Partial<ImageEntry> = {}): ImageEntry {
   return {
+    id: `fake-${++_fakeId}`,
     fabricImage: {} as ImageEntry['fabricImage'],
     filename: 'test.png',
     visible: true,
@@ -15,19 +17,19 @@ function makeFakeImage(overrides: Partial<ImageEntry> = {}): ImageEntry {
 
 function makeCallbacks(): LayerCallbacks {
   return {
-    onToggleVisibility: vi.fn(),
-    onToggleLock: vi.fn(),
-    onDelete: vi.fn(),
-    onReorder: vi.fn(),
-    onSelect: vi.fn(),
-    onRename: vi.fn(),
-    onCreateGroup: vi.fn(),
-    onDeleteGroup: vi.fn(),
-    onToggleGroupVisibility: vi.fn(),
-    onRenameGroup: vi.fn(),
-    onAddToGroup: vi.fn(),
-    onRemoveFromGroup: vi.fn(),
-    onReorderGroup: vi.fn(),
+    onToggleVisibility: mock(() => {}),
+    onToggleLock: mock(() => {}),
+    onDelete: mock(() => {}),
+    onReorder: mock(() => {}),
+    onSelect: mock(() => {}),
+    onRename: mock(() => {}),
+    onCreateGroup: mock(() => {}),
+    onDeleteGroup: mock(() => {}),
+    onToggleGroupVisibility: mock(() => {}),
+    onRenameGroup: mock(() => {}),
+    onAddToGroup: mock(() => {}),
+    onRemoveFromGroup: mock(() => {}),
+    onReorderGroup: mock(() => {}),
   };
 }
 

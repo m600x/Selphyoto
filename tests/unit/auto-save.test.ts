@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, mock } from 'bun:test';
 import { collectState } from '../../src/auto-save';
 import type { CanvasManager } from '../../src/canvas-manager';
 
@@ -24,12 +24,12 @@ function makeMockCM(overrides: Partial<{
   return {
     images,
     groups,
-    getGroupCounter: vi.fn(() => overrides.groupCounter ?? 0),
-    getCorrectionX: vi.fn(() => overrides.corrX ?? 0.961),
-    getCorrectionY: vi.fn(() => overrides.corrY ?? 0.961),
-    getBackgroundColor: vi.fn(() => overrides.bgColor ?? '#ffffff'),
-    getMarkColor: vi.fn(() => overrides.markColor ?? '#cc0000'),
-    getGuidelinesVisible: vi.fn(() => overrides.guidelinesVisible ?? true),
+    getGroupCounter: mock(() => overrides.groupCounter ?? 0),
+    getCorrectionX: mock(() => overrides.corrX ?? 0.961),
+    getCorrectionY: mock(() => overrides.corrY ?? 0.961),
+    getBackgroundColor: mock(() => overrides.bgColor ?? '#ffffff'),
+    getMarkColor: mock(() => overrides.markColor ?? '#cc0000'),
+    getGuidelinesVisible: mock(() => overrides.guidelinesVisible ?? true),
   } as unknown as CanvasManager;
 }
 

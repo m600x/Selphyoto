@@ -1,13 +1,14 @@
-import { vi } from 'vitest';
+import { mock } from 'bun:test';
+import { GlobalRegistrator } from '@happy-dom/global-registrator';
 
-// Provide global stubs for build-time constants injected by Vite
+GlobalRegistrator.register();
+
 (globalThis as Record<string, unknown>).__APP_VERSION__ = '0.1.0';
 (globalThis as Record<string, unknown>).__COMMIT_HASH__ = 'test';
 
-// Stub URL.createObjectURL / revokeObjectURL for jsdom
 if (typeof URL.createObjectURL !== 'function') {
-  URL.createObjectURL = vi.fn(() => 'blob:test');
+  URL.createObjectURL = mock(() => 'blob:test');
 }
 if (typeof URL.revokeObjectURL !== 'function') {
-  URL.revokeObjectURL = vi.fn();
+  URL.revokeObjectURL = mock(() => {});
 }

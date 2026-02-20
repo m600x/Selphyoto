@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, mock, spyOn, beforeEach } from 'bun:test';
 import JSZip from 'jszip';
 import { importProject, type ProjectManifest, type ProjectSettings } from '../../src/project-io';
 
@@ -18,11 +18,11 @@ function makeMockCM() {
 
   return {
     state,
-    clearAll: vi.fn(() => {
+    clearAll: mock(() => {
       state.images = [];
       state.groups = [];
     }),
-    addImageFromDataURL: vi.fn(async (_dataUrl: string, props: Record<string, unknown>) => {
+    addImageFromDataURL: mock(async (_dataUrl: string, props: Record<string, unknown>) => {
       state.images.push({
         filename: props.filename as string,
         visible: props.visible as boolean,
@@ -35,15 +35,15 @@ function makeMockCM() {
         angle: props.angle as number,
       });
     }),
-    restoreGroups: vi.fn((groups: Array<{ id: string; name: string; visible: boolean }>, _counter: number) => {
+    restoreGroups: mock((groups: Array<{ id: string; name: string; visible: boolean }>, _counter: number) => {
       state.groups = groups.map(g => ({ ...g }));
     }),
-    setCorrectionX: vi.fn((v: number) => { state.correctionX = v; }),
-    setCorrectionY: vi.fn((v: number) => { state.correctionY = v; }),
-    setBackground: vi.fn((c: string) => { state.backgroundColor = c; }),
-    setMarkColor: vi.fn((c: string) => { state.markColor = c; }),
-    setGuidelinesVisible: vi.fn((v: boolean) => { state.guidelinesVisible = v; }),
-    finalizeRestore: vi.fn(),
+    setCorrectionX: mock((v: number) => { state.correctionX = v; }),
+    setCorrectionY: mock((v: number) => { state.correctionY = v; }),
+    setBackground: mock((c: string) => { state.backgroundColor = c; }),
+    setMarkColor: mock((c: string) => { state.markColor = c; }),
+    setGuidelinesVisible: mock((v: boolean) => { state.guidelinesVisible = v; }),
+    finalizeRestore: mock(() => {}),
   };
 }
 
@@ -146,7 +146,7 @@ describe('project import', () => {
     const blob = await zip.generateAsync({ type: 'blob' });
     const file = new File([blob], 'bad.zip', { type: 'application/zip' });
 
-    await expect(importProject(file, cm as never, vi.fn())).rejects.toThrow('Invalid project: missing project.json');
+    await expect(importProject(file, cm as never, mock(() => {}))).rejects.toThrow('Invalid project: missing project.json');
   });
 
   it('throws on unsupported version', async () => {
@@ -156,7 +156,7 @@ describe('project import', () => {
     const blob = await zip.generateAsync({ type: 'blob' });
     const file = new File([blob], 'future.zip', { type: 'application/zip' });
 
-    await expect(importProject(file, cm as never, vi.fn())).rejects.toThrow('Unsupported project version: 99');
+    await expect(importProject(file, cm as never, mock(() => {}))).rejects.toThrow('Unsupported project version: 99');
   });
 
   it('skips missing images gracefully', async () => {
@@ -171,9 +171,9 @@ describe('project import', () => {
       settings: { correctionX: 0.961, correctionY: 0.961, backgroundColor: '#ffffff', markColor: '#cc0000', guidelinesVisible: true, exportFormat: 'png' },
     };
 
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const consoleSpy = spyOn(console, 'warn').mockImplementation(() => {});
     const file = await buildProjectZip(manifest, { 'exists.png': TINY_PNG_B64 });
-    await importProject(file, cm as never, vi.fn());
+    await importProject(file, cm as never, mock(() => {}));
 
     expect(cm.addImageFromDataURL).toHaveBeenCalledTimes(1);
     expect(cm.state.images[0].filename).toBe('exists.png');
@@ -190,7 +190,7 @@ describe('project import', () => {
     };
 
     const file = await buildProjectZip(manifest);
-    await importProject(file, cm as never, vi.fn());
+    await importProject(file, cm as never, mock(() => {}));
 
     expect(cm.addImageFromDataURL).not.toHaveBeenCalled();
     expect(cm.restoreGroups).toHaveBeenCalled();

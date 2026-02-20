@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, mock, beforeEach } from 'bun:test';
 
-vi.mock('fabric', () => {
+mock.module('fabric', () => {
   class MockCanvas {
     renderOnAddRemove = true;
     private objects: unknown[] = [];
@@ -53,7 +53,7 @@ vi.mock('fabric', () => {
       else Object.assign(this, key);
     }
     setCoords() {}
-    static fromURL = vi.fn().mockImplementation(async () => new MockFabricImage());
+    static fromURL = mock().mockImplementation(async () => new MockFabricImage());
   }
 
   return {

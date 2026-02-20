@@ -57,14 +57,14 @@ The core challenge this app solves: the Selphy's borderless printing mode slight
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) v18+ (for development and testing)
+- [Bun](https://bun.sh) (latest)
 - [Docker](https://www.docker.com/) (optional, for containerised builds)
 
 ### Install dependencies
 
 ```bash
-npm install
-npx playwright install chromium
+bun install
+bunx playwright install chromium
 ```
 
 Or with Make (runs both automatically):
@@ -76,7 +76,7 @@ make install
 ### Run the dev server
 
 ```bash
-npx vite
+bunx vite
 ```
 
 Or with Make:
@@ -90,8 +90,8 @@ Open `http://localhost:5173` in your browser. Changes are hot-reloaded.
 ### Build for production (without Docker)
 
 ```bash
-npm run build
-npm run preview
+bun run build
+bun run preview
 ```
 
 The built files are output to the `dist/` directory. This is a fully static site that can be hosted anywhere.
@@ -101,7 +101,7 @@ The built files are output to the `dist/` directory. This is a fully static site
 The project uses [ESLint](https://eslint.org/) v9 with the TypeScript plugin (flat config).
 
 ```bash
-npx eslint .
+bunx eslint .
 ```
 
 Or with Make:
@@ -113,7 +113,7 @@ make lint
 To auto-fix issues:
 
 ```bash
-npx eslint . --fix
+bunx eslint . --fix
 ```
 
 Or with Make:
@@ -129,7 +129,7 @@ The project includes a comprehensive test suite across three layers: unit tests,
 ### Run all tests
 
 ```bash
-npx vitest run && npx playwright test --config tests/e2e/playwright.config.ts
+bun test && bunx playwright test --config tests/e2e/playwright.config.ts
 ```
 
 Or with Make:
@@ -143,7 +143,7 @@ make tests
 Unit tests cover constants validation, utility functions, and CanvasManager logic with mocked Fabric.js.
 
 ```bash
-npx vitest run tests/unit/
+bun test tests/unit/
 ```
 
 Or with Make:
@@ -157,7 +157,7 @@ make unit-tests
 Integration tests cover LayerManager DOM rendering, project import/export roundtrips, and IndexedDB auto-save operations.
 
 ```bash
-npx vitest run tests/integration/
+bun test tests/integration/
 ```
 
 Or with Make:
@@ -171,7 +171,7 @@ make integration-tests
 E2E tests use Playwright with Chromium to test the full application in a real browser. A Vite dev server is started automatically on port 5174.
 
 ```bash
-npx playwright test --config tests/e2e/playwright.config.ts
+bunx playwright test --config tests/e2e/playwright.config.ts
 ```
 
 Or with Make:
@@ -183,17 +183,17 @@ make e2e-tests
 > **Note:** After installing or upgrading `@playwright/test`, you must download the matching browser binary:
 >
 > ```bash
-> npx playwright install chromium
+> bunx playwright install chromium
 > ```
 >
 > Or with Make: `make install-playwright`
 
 ### Test coverage
 
-Generate a V8 coverage report for unit and integration tests:
+Generate a coverage report for unit and integration tests:
 
 ```bash
-npx vitest run --coverage
+bun test --coverage
 ```
 
 Or with Make:
@@ -207,7 +207,7 @@ make tests-coverage
 Re-run unit and integration tests on file changes:
 
 ```bash
-npx vitest
+bun test --watch
 ```
 
 ## Docker
@@ -258,20 +258,21 @@ Run `make` (with no arguments) to see all available targets:
 
 ```
 make help                Show this help
-make install             Install npm dependencies and Playwright browsers
+make install             Install dependencies and Playwright browsers
 make install-playwright  Download Playwright browsers only (after upgrade)
 make lint                Lint all TypeScript and JavaScript files (ESLint)
 make lint-fix            Lint and auto-fix issues
 make dev                 Start the Vite dev server (http://localhost:5173)
-make unit-tests          Run unit tests only (Vitest)
-make integration-tests   Run integration tests only (Vitest + jsdom)
+make unit-tests          Run unit tests only (bun:test)
+make integration-tests   Run integration tests only (bun:test + happy-dom)
 make e2e-tests           Run end-to-end tests (Playwright + Chromium)
 make tests               Run the full test suite (unit + integration + e2e)
-make tests-coverage      Run unit + integration tests with V8 coverage report
+make tests-coverage      Run unit + integration tests with coverage report
 make build               Build the Docker image (with embedded commit hash)
 make run                 Run the Docker container (http://localhost:8080)
 make stop                Stop and remove the Docker container
 make clean               Remove node_modules and dist
+make reinstall           Clean and reinstall everything
 ```
 
 ## CI / CD
@@ -280,7 +281,7 @@ A GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push and pu
 
 | Job | When | What it does |
 |-----|------|-------------|
-| **Vulnerability scan** | Always | `npm audit --omit=dev` to flag known vulnerabilities in production dependencies |
+| **Vulnerability scan** | Always | `bun audit --omit=dev` to flag known vulnerabilities in production dependencies |
 | **Tests** | Always | ESLint, TypeScript check, unit tests, integration tests, and Playwright E2E tests |
 | **Docker build & push** | Push to master/main | Builds the image and pushes to `ghcr.io` with tags `latest`, the version from `package.json`, and the short SHA |
 | **GitHub Release** | Push to master/main | If the version in `package.json` doesn't have a matching Git tag, creates a new tag and GitHub Release with auto-generated release notes |
@@ -334,9 +335,9 @@ selphyoto/
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts              Vite config (injects version + commit hash)
-├── vitest.config.ts            Vitest config (unit + integration tests)
+├── bunfig.toml                 Bun test configuration (preload, coverage)
 ├── Makefile                    Make targets for dev, test, build, run
-├── Dockerfile                  Multi-stage build (Node + nginx)
+├── Dockerfile                  Multi-stage build (Bun + nginx)
 ├── .dockerignore
 ├── .github/
 │   └── workflows/
@@ -352,19 +353,19 @@ selphyoto/
 │   ├── style.css               Dark theme styles
 │   └── vite-env.d.ts           Vite type declarations
 ├── tests/
-│   ├── setup.ts                Vitest setup (global stubs)
+│   ├── setup.ts                Bun test setup (happy-dom, global stubs)
 │   ├── unit/
 │   │   ├── constants.test.ts   Constant value validation
 │   │   ├── utils.test.ts       Utility function tests
 │   │   ├── canvas-manager.test.ts  CanvasManager with mocked Fabric.js
 │   │   └── auto-save.test.ts   collectState() tests
 │   ├── integration/
-│   │   ├── layer-manager.test.ts   LayerManager DOM tests (jsdom)
+│   │   ├── layer-manager.test.ts   LayerManager DOM tests (happy-dom)
 │   │   ├── project-roundtrip.test.ts  ZIP import/export roundtrip
 │   │   └── auto-save-idb.test.ts  IndexedDB operations (fake-indexeddb)
 │   └── e2e/
 │       ├── playwright.config.ts    Playwright config
-│       └── app.spec.ts             Full browser tests (30 tests)
+│       └── app.spec.ts             Full browser tests
 ├── research.md                 Research notes and calibration data
 └── agents.md                   LLM context file
 ```
@@ -380,6 +381,7 @@ selphyoto/
 | Export resolution | 1748 × 1181 px |
 | Canvas library | Fabric.js v7 |
 | Build tool | Vite |
+| Runtime | Bun |
 | Language | TypeScript |
-| Unit/Integration tests | Vitest + jsdom + fake-indexeddb |
+| Unit/Integration tests | bun:test + happy-dom + fake-indexeddb |
 | E2E tests | Playwright (Chromium) |

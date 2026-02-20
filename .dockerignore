@@ -1,6 +1,5 @@
 node_modules
 dist
-bun.lock
 .git
 .gitignore
 .vscode

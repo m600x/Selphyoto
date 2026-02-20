@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'bun:test';
 import { pad2, timestamp, sanitizeFilename } from '../../src/utils';
 
 describe('pad2', () => {
@@ -42,8 +42,10 @@ describe('sanitizeFilename', () => {
 });
 
 describe('timestamp', () => {
+  let realDate: typeof globalThis.Date;
+
   afterEach(() => {
-    vi.useRealTimers();
+    if (realDate) globalThis.Date = realDate;
   });
 
   it('matches YYYYMMDD_HHmmSS pattern', () => {
@@ -51,20 +53,41 @@ describe('timestamp', () => {
   });
 
   it('produces correct timestamp for a known date', () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(2026, 1, 18, 9, 5, 3));
+    realDate = globalThis.Date;
+    const fixed = new realDate(2026, 1, 18, 9, 5, 3);
+    const OrigDate = realDate;
+    globalThis.Date = class extends OrigDate {
+      constructor(...args: unknown[]) {
+        if (args.length === 0) super(fixed.getTime());
+        else super(...(args as [number]));
+      }
+    } as DateConstructor;
     expect(timestamp()).toBe('20260218_090503');
   });
 
   it('handles midnight correctly', () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(2025, 0, 1, 0, 0, 0));
+    realDate = globalThis.Date;
+    const fixed = new realDate(2025, 0, 1, 0, 0, 0);
+    const OrigDate = realDate;
+    globalThis.Date = class extends OrigDate {
+      constructor(...args: unknown[]) {
+        if (args.length === 0) super(fixed.getTime());
+        else super(...(args as [number]));
+      }
+    } as DateConstructor;
     expect(timestamp()).toBe('20250101_000000');
   });
 
   it('handles end of day correctly', () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(2025, 11, 31, 23, 59, 59));
+    realDate = globalThis.Date;
+    const fixed = new realDate(2025, 11, 31, 23, 59, 59);
+    const OrigDate = realDate;
+    globalThis.Date = class extends OrigDate {
+      constructor(...args: unknown[]) {
+        if (args.length === 0) super(fixed.getTime());
+        else super(...(args as [number]));
+      }
+    } as DateConstructor;
     expect(timestamp()).toBe('20251231_235959');
   });
 });

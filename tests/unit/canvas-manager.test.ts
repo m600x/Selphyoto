@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, mock, beforeEach } from 'bun:test';
 
-vi.mock('fabric', () => {
+mock.module('fabric', () => {
   class MockCanvas {
     renderOnAddRemove = true;
     private objects: unknown[] = [];
@@ -70,7 +70,7 @@ vi.mock('fabric', () => {
     }
     setCoords() {}
     toDataURL() { return 'data:image/png;base64,IMGDATA'; }
-    static fromURL = vi.fn().mockImplementation(async () => new MockFabricImage());
+    static fromURL = mock().mockImplementation(async () => new MockFabricImage());
   }
 
   return {
@@ -387,7 +387,7 @@ describe('CanvasManager', () => {
 
   describe('onListChange callback', () => {
     it('is called on finalizeRestore', async () => {
-      const spy = vi.fn();
+      const spy = mock(() => {});
       cm.onListChange = spy;
       cm.finalizeRestore();
       expect(spy).toHaveBeenCalled();
@@ -397,21 +397,21 @@ describe('CanvasManager', () => {
       await cm.addImageFromDataURL('data:image/png;base64,TEST', {
         filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
       });
-      const spy = vi.fn();
+      const spy = mock(() => {});
       cm.onListChange = spy;
       cm.removeImage(0);
       expect(spy).toHaveBeenCalled();
     });
 
     it('is called on clearAll', () => {
-      const spy = vi.fn();
+      const spy = mock(() => {});
       cm.onListChange = spy;
       cm.clearAll();
       expect(spy).toHaveBeenCalled();
     });
 
     it('is called on createGroup', () => {
-      const spy = vi.fn();
+      const spy = mock(() => {});
       cm.onListChange = spy;
       cm.createGroup();
       expect(spy).toHaveBeenCalled();

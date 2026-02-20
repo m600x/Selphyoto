@@ -18,7 +18,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `npm run dev -- --port ${PORT}`,
+    command: `bun run dev -- --port ${PORT}`,
     port: PORT,
     reuseExistingServer: !process.env.CI,
     cwd: '../..',

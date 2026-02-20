@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, mock, beforeEach } from 'bun:test';
 import { HistoryManager, type HistorySnapshot } from '../../src/history-manager';
 
 function makeSnapshot(overrides: Partial<HistorySnapshot> = {}): HistorySnapshot {
@@ -143,7 +143,7 @@ describe('HistoryManager', () => {
 
   describe('onDirty callback', () => {
     it('fires on push', () => {
-      const cb = vi.fn();
+      const cb = mock(() => {});
       hm.onDirty = cb;
       hm.push(makeSnapshot());
       expect(cb).toHaveBeenCalledTimes(1);
@@ -151,7 +151,7 @@ describe('HistoryManager', () => {
 
     it('fires on undo', () => {
       hm.push(makeSnapshot());
-      const cb = vi.fn();
+      const cb = mock(() => {});
       hm.onDirty = cb;
       hm.undo(makeSnapshot());
       expect(cb).toHaveBeenCalledTimes(1);
@@ -160,7 +160,7 @@ describe('HistoryManager', () => {
     it('fires on redo', () => {
       hm.push(makeSnapshot());
       hm.undo(makeSnapshot());
-      const cb = vi.fn();
+      const cb = mock(() => {});
       hm.onDirty = cb;
       hm.redo(makeSnapshot());
       expect(cb).toHaveBeenCalledTimes(1);
@@ -168,7 +168,7 @@ describe('HistoryManager', () => {
 
     it('fires on clear', () => {
       hm.push(makeSnapshot());
-      const cb = vi.fn();
+      const cb = mock(() => {});
       hm.onDirty = cb;
       hm.clear();
       expect(cb).toHaveBeenCalledTimes(1);

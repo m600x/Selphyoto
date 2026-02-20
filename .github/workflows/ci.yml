@@ -23,15 +23,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
+      - uses: oven-sh/setup-bun@v2
 
-      - run: npm install
+      - run: bun install
 
-      - name: npm audit
-        run: npm audit --omit=dev
+      - name: bun audit
+        run: bun audit
 
   # ── Lint & tests ───────────────────────────────────────────────────
   test:
@@ -40,30 +37,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
+      - uses: oven-sh/setup-bun@v2
 
-      - run: npm install
+      - run: bun install
 
       - name: Lint
-        run: npx eslint .
+        run: bunx eslint .
 
       - name: TypeScript check
-        run: npx tsc --noEmit
+        run: bunx tsc --noEmit
 
       - name: Unit tests
-        run: npx vitest run tests/unit/
+        run: bun test tests/unit/
 
       - name: Integration tests
-        run: npx vitest run tests/integration/
+        run: bun test tests/integration/
 
       - name: Install Playwright browsers
-        run: npx playwright install chromium --with-deps
+        run: bunx playwright install chromium --with-deps
 
       - name: E2E tests
-        run: npx playwright test --config tests/e2e/playwright.config.ts
+        run: bunx playwright test --config tests/e2e/playwright.config.ts
 
       - name: Upload test results
         if: ${{ !cancelled() }}
@@ -142,10 +136,12 @@ jobs:
       - name: Lowercase image name
         run: echo "IMAGE_NAME_LC=${IMAGE_NAME,,}" >> "$GITHUB_ENV"
 
+      - uses: oven-sh/setup-bun@v2
+
       - name: Read package.json version
         id: pkg
         run: |
-          VERSION=$(node -p "require('./package.json').version")
+          VERSION=$(bun -e "const p = await Bun.file('./package.json').json(); console.log(p.version)")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx

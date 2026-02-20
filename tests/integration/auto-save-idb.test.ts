@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'bun:test';
 import 'fake-indexeddb/auto';
 import { saveAutoState, loadAutoState, clearAutoState, type AutoSaveState } from '../../src/auto-save';
 

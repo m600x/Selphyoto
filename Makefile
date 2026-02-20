@@ -1,4 +1,4 @@
-.PHONY: help dev install install-playwright lint lint-fix unit-tests integration-tests e2e-tests tests tests-coverage build run stop clean
+.PHONY: help dev install install-playwright lint lint-fix unit-tests integration-tests e2e-tests tests tests-coverage build run stop clean reinstall
 
 DOCKER_IMAGE := selphyoto
 DOCKER_CONTAINER := selphyoto
@@ -11,37 +11,37 @@ help: ## Show this help
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 
-install: ## Install npm dependencies and Playwright browsers
-	npm install
-	npx playwright install chromium
+install: ## Install dependencies and Playwright browsers
+	bun install
+	bunx playwright install chromium
 
 install-playwright: ## Download Playwright browsers only (after upgrade)
-	npx playwright install chromium
+	bunx playwright install chromium
 
 lint: ## Lint all TypeScript and JavaScript files (ESLint)
-	npx eslint .
+	bunx eslint .
 
 lint-fix: ## Lint and auto-fix issues
-	npx eslint . --fix
+	bunx eslint . --fix
 
 dev: ## Start the Vite dev server (http://localhost:5173)
-	npx vite
+	bunx vite
 
-unit-tests: ## Run unit tests only (Vitest)
-	npx vitest run --config vitest.config.ts tests/unit/
+unit-tests: ## Run unit tests only (bun:test)
+	bun test tests/unit/
 
-integration-tests: ## Run integration tests only (Vitest + jsdom)
-	npx vitest run --config vitest.config.ts tests/integration/
+integration-tests: ## Run integration tests only (bun:test + happy-dom)
+	bun test tests/integration/
 
 e2e-tests: ## Run end-to-end tests (Playwright + Chromium)
-	npx playwright test --config tests/e2e/playwright.config.ts
+	bunx playwright test --config tests/e2e/playwright.config.ts
 
 tests: ## Run the full test suite (unit + integration + e2e)
-	npx vitest run
-	npx playwright test --config tests/e2e/playwright.config.ts
+	bun test tests/unit/ tests/integration/
+	bunx playwright test --config tests/e2e/playwright.config.ts
 
-tests-coverage: ## Run unit + integration tests with V8 coverage report
-	npx vitest run --coverage
+tests-coverage: ## Run unit + integration tests with coverage report
+	bun test --coverage tests/unit/ tests/integration/
 
 build: ## Build the Docker image (with embedded commit hash)
 	docker build -t $(DOCKER_IMAGE) --build-arg COMMIT_HASH=$(COMMIT_HASH) .
@@ -55,3 +55,5 @@ stop: ## Stop and remove the Docker container
 
 clean: ## Remove node_modules and dist
 	rm -rf node_modules dist
+
+reinstall: clean install ## Clean and reinstall everything
