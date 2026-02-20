@@ -1,5 +1,5 @@
 export function openDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const req = indexedDB.open('selphyoto', 2);
     req.onupgradeneeded = () => {
       const db = req.result;
@@ -11,6 +11,5 @@ export function openDB(): Promise<IDBDatabase> {
       }
     };
     req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
   });
 }

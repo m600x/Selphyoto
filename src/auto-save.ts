@@ -77,29 +77,31 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
-export async function saveAutoState(state: AutoSaveState): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    tx.objectStore(STORE_NAME).put(state, STATE_KEY);
+function writeTx(store: string, action: (s: IDBObjectStore) => void): Promise<void> {
+  return openDB().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readwrite');
+    action(tx.objectStore(store));
     tx.oncomplete = () => { db.close(); resolve(); };
     tx.onerror = () => { db.close(); reject(tx.error); };
-  });
+  }));
+}
+
+function readTx<T>(store: string, key: string): Promise<T | undefined> {
+  return openDB().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).get(key);
+    req.onsuccess = () => { db.close(); resolve(req.result); };
+    req.onerror = () => { db.close(); reject(req.error); };
+  }));
+}
+
+export function saveAutoState(state: AutoSaveState): Promise<void> {
+  return writeTx(STORE_NAME, s => s.put(state, STATE_KEY));
 }
 
 export async function loadAutoState(): Promise<AutoSaveState | null> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readonly');
-    const req = tx.objectStore(STORE_NAME).get(STATE_KEY);
-    req.onsuccess = () => {
-      db.close();
-      const raw = req.result;
-      if (!raw) { resolve(null); return; }
-      resolve(migrateState(raw));
-    };
-    req.onerror = () => { db.close(); reject(req.error); };
-  });
+  const raw = await readTx<AutoSaveState | LegacyAutoSaveState>(STORE_NAME, STATE_KEY);
+  return raw ? migrateState(raw) : null;
 }
 
 function migrateState(raw: AutoSaveState | LegacyAutoSaveState): AutoSaveState {
@@ -119,44 +121,21 @@ function migrateState(raw: AutoSaveState | LegacyAutoSaveState): AutoSaveState {
   };
 }
 
-export async function clearAutoState(): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    tx.objectStore(STORE_NAME).delete(STATE_KEY);
-    tx.oncomplete = () => { db.close(); resolve(); };
-    tx.onerror = () => { db.close(); reject(tx.error); };
-  });
+export function clearAutoState(): Promise<void> {
+  return writeTx(STORE_NAME, s => s.delete(STATE_KEY));
 }
 
-export async function saveHistoryState(data: PersistedHistory): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(HISTORY_STORE, 'readwrite');
-    tx.objectStore(HISTORY_STORE).put(data, HISTORY_KEY);
-    tx.oncomplete = () => { db.close(); resolve(); };
-    tx.onerror = () => { db.close(); reject(tx.error); };
-  });
+export function saveHistoryState(data: PersistedHistory): Promise<void> {
+  return writeTx(HISTORY_STORE, s => s.put(data, HISTORY_KEY));
 }
 
 export async function loadHistoryState(): Promise<PersistedHistory | null> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(HISTORY_STORE, 'readonly');
-    const req = tx.objectStore(HISTORY_STORE).get(HISTORY_KEY);
-    req.onsuccess = () => { db.close(); resolve(req.result ?? null); };
-    req.onerror = () => { db.close(); reject(req.error); };
-  });
+  const result = await readTx<PersistedHistory>(HISTORY_STORE, HISTORY_KEY);
+  return result ?? null;
 }
 
-export async function clearHistoryState(): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(HISTORY_STORE, 'readwrite');
-    tx.objectStore(HISTORY_STORE).delete(HISTORY_KEY);
-    tx.oncomplete = () => { db.close(); resolve(); };
-    tx.onerror = () => { db.close(); reject(tx.error); };
-  });
+export function clearHistoryState(): Promise<void> {
+  return writeTx(HISTORY_STORE, s => s.delete(HISTORY_KEY));
 }
 
 export function collectPageData(cm: CanvasManager, backgroundColor?: string, markColor?: string): PageData {

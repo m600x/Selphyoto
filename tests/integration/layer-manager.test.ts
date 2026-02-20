@@ -262,6 +262,355 @@ describe('LayerManager', () => {
     });
   });
 
+  describe('group name rename', () => {
+    it('double-click makes group name editable', () => {
+      const groups: GroupEntry[] = [{ id: 'g1', name: 'My Group', visible: true }];
+      lm.render([], groups, -1);
+      const name = container.querySelector('.group-name') as HTMLElement;
+      expect(name.contentEditable).not.toBe('true');
+      name.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      expect(name.contentEditable).toBe('true');
+    });
+
+    it('Enter commits group rename', () => {
+      const groups: GroupEntry[] = [{ id: 'g1', name: 'Old', visible: true }];
+      lm.render([], groups, -1);
+      const name = container.querySelector('.group-name') as HTMLElement;
+      name.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      name.textContent = 'New';
+      name.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      expect(callbacks.onRenameGroup).toHaveBeenCalledWith('g1', 'New');
+    });
+
+    it('Escape reverts group rename', () => {
+      const groups: GroupEntry[] = [{ id: 'g1', name: 'Original', visible: true }];
+      lm.render([], groups, -1);
+      const name = container.querySelector('.group-name') as HTMLElement;
+      name.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      name.textContent = 'Changed';
+      name.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      expect(name.textContent).toBe('Original');
+      expect(callbacks.onRenameGroup).not.toHaveBeenCalled();
+    });
+
+    it('blur commits group rename', () => {
+      const groups: GroupEntry[] = [{ id: 'g1', name: 'Before', visible: true }];
+      lm.render([], groups, -1);
+      const name = container.querySelector('.group-name') as HTMLElement;
+      name.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      name.textContent = 'After';
+      name.dispatchEvent(new Event('blur'));
+      expect(callbacks.onRenameGroup).toHaveBeenCalledWith('g1', 'After');
+    });
+
+    it('blur reverts if name is empty', () => {
+      const groups: GroupEntry[] = [{ id: 'g1', name: 'Keep', visible: true }];
+      lm.render([], groups, -1);
+      const name = container.querySelector('.group-name') as HTMLElement;
+      name.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      name.textContent = '';
+      name.dispatchEvent(new Event('blur'));
+      expect(name.textContent).toBe('Keep');
+      expect(callbacks.onRenameGroup).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('drag and drop - image rows', () => {
+    function makeDragEvent(type: string, opts: Partial<{ clientY: number }> = {}): DragEvent {
+      const ev = new Event(type, { bubbles: true, cancelable: true }) as DragEvent;
+      Object.defineProperty(ev, 'dataTransfer', {
+        value: { effectAllowed: 'move', dropEffect: 'move' },
+      });
+      if (opts.clientY !== undefined) {
+        Object.defineProperty(ev, 'clientY', { value: opts.clientY });
+      }
+      return ev;
+    }
+
+    it('dragstart sets dragging state', () => {
+      lm.render([makeFakeImage({ filename: 'a.png' }), makeFakeImage({ filename: 'b.png' })], [], -1);
+      const rows = container.querySelectorAll('.layer-row');
+      rows[0].dispatchEvent(makeDragEvent('dragstart'));
+      expect(rows[0].classList.contains('dragging')).toBe(true);
+    });
+
+    it('dragend clears dragging state', () => {
+      lm.render([makeFakeImage({ filename: 'a.png' })], [], -1);
+      const row = container.querySelector('.layer-row') as HTMLElement;
+      row.dispatchEvent(makeDragEvent('dragstart'));
+      row.dispatchEvent(makeDragEvent('dragend'));
+      expect(row.classList.contains('dragging')).toBe(false);
+    });
+
+    it('dragover adds indicator classes', () => {
+      lm.render([makeFakeImage({ filename: 'a.png' }), makeFakeImage({ filename: 'b.png' })], [], -1);
+      const rows = container.querySelectorAll('.layer-row');
+
+      rows[0].dispatchEvent(makeDragEvent('dragstart'));
+
+      const rect = (rows[1] as HTMLElement).getBoundingClientRect();
+      rows[1].dispatchEvent(makeDragEvent('dragover', { clientY: rect.top }));
+      expect(
+        rows[1].classList.contains('drag-over-above') ||
+        rows[1].classList.contains('drag-over-below'),
+      ).toBe(true);
+    });
+
+    it('dragleave removes indicator classes', () => {
+      lm.render([makeFakeImage({ filename: 'a.png' }), makeFakeImage({ filename: 'b.png' })], [], -1);
+      const rows = container.querySelectorAll('.layer-row');
+      rows[0].dispatchEvent(makeDragEvent('dragstart'));
+      rows[1].dispatchEvent(makeDragEvent('dragover', { clientY: 0 }));
+      rows[1].dispatchEvent(makeDragEvent('dragleave'));
+      expect(rows[1].classList.contains('drag-over-above')).toBe(false);
+      expect(rows[1].classList.contains('drag-over-below')).toBe(false);
+    });
+
+    it('drop on another row calls onReorder', () => {
+      lm.render([makeFakeImage({ filename: 'a.png' }), makeFakeImage({ filename: 'b.png' })], [], -1);
+      const rows = container.querySelectorAll('.layer-row');
+      rows[0].dispatchEvent(makeDragEvent('dragstart'));
+      rows[1].dispatchEvent(makeDragEvent('dragover', { clientY: 9999 }));
+      rows[1].dispatchEvent(makeDragEvent('drop'));
+      expect(callbacks.onReorder).toHaveBeenCalled();
+    });
+
+    it('drop on same row does nothing', () => {
+      lm.render([makeFakeImage({ filename: 'a.png' })], [], -1);
+      const row = container.querySelector('.layer-row') as HTMLElement;
+      row.dispatchEvent(makeDragEvent('dragstart'));
+      row.dispatchEvent(makeDragEvent('drop'));
+      expect(callbacks.onReorder).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('drag and drop - group headers', () => {
+    function makeDragEvent(type: string, opts: Partial<{ clientY: number }> = {}): DragEvent {
+      const ev = new Event(type, { bubbles: true, cancelable: true }) as DragEvent;
+      Object.defineProperty(ev, 'dataTransfer', {
+        value: { effectAllowed: 'move', dropEffect: 'move' },
+      });
+      if (opts.clientY !== undefined) {
+        Object.defineProperty(ev, 'clientY', { value: opts.clientY });
+      }
+      return ev;
+    }
+
+    it('group dragstart sets state', () => {
+      const groups: GroupEntry[] = [{ id: 'g1', name: 'G', visible: true }];
+      lm.render([], groups, -1);
+      const header = container.querySelector('.group-header') as HTMLElement;
+      header.dispatchEvent(makeDragEvent('dragstart'));
+      expect(header.classList.contains('dragging')).toBe(true);
+    });
+
+    it('group dragend clears state', () => {
+      const groups: GroupEntry[] = [{ id: 'g1', name: 'G', visible: true }];
+      lm.render([], groups, -1);
+      const header = container.querySelector('.group-header') as HTMLElement;
+      header.dispatchEvent(makeDragEvent('dragstart'));
+      header.dispatchEvent(makeDragEvent('dragend'));
+      expect(header.classList.contains('dragging')).toBe(false);
+    });
+
+    it('dragover on group header shows indicator', () => {
+      const groups: GroupEntry[] = [
+        { id: 'g1', name: 'G1', visible: true },
+        { id: 'g2', name: 'G2', visible: true },
+      ];
+      lm.render([], groups, -1);
+      const headers = container.querySelectorAll('.group-header');
+      headers[0].dispatchEvent(makeDragEvent('dragstart'));
+      headers[1].dispatchEvent(makeDragEvent('dragover', { clientY: 0 }));
+      expect(
+        headers[1].classList.contains('drag-over-above') ||
+        headers[1].classList.contains('drag-over-below'),
+      ).toBe(true);
+    });
+
+    it('dragleave on group header clears indicators', () => {
+      const groups: GroupEntry[] = [
+        { id: 'g1', name: 'G1', visible: true },
+        { id: 'g2', name: 'G2', visible: true },
+      ];
+      lm.render([], groups, -1);
+      const headers = container.querySelectorAll('.group-header');
+      headers[0].dispatchEvent(makeDragEvent('dragstart'));
+      headers[1].dispatchEvent(makeDragEvent('dragover', { clientY: 0 }));
+      headers[1].dispatchEvent(makeDragEvent('dragleave'));
+      expect(headers[1].classList.contains('drag-over-above')).toBe(false);
+      expect(headers[1].classList.contains('drag-over-below')).toBe(false);
+    });
+
+    it('drop group onto another group calls onReorderGroup', () => {
+      const groups: GroupEntry[] = [
+        { id: 'g1', name: 'G1', visible: true },
+        { id: 'g2', name: 'G2', visible: true },
+      ];
+      lm.render([], groups, -1);
+      const headers = container.querySelectorAll('.group-header');
+      headers[0].dispatchEvent(makeDragEvent('dragstart'));
+      headers[1].dispatchEvent(makeDragEvent('dragover', { clientY: 0 }));
+      headers[1].dispatchEvent(makeDragEvent('drop'));
+      expect(callbacks.onReorderGroup).toHaveBeenCalled();
+    });
+
+    it('drop image onto group header calls onAddToGroup when in middle zone', () => {
+      const groups: GroupEntry[] = [{ id: 'g1', name: 'G1', visible: true }];
+      const images = [makeFakeImage({ filename: 'a.png' })];
+      lm.render(images, groups, -1);
+
+      const row = container.querySelector('.layer-row') as HTMLElement;
+      const header = container.querySelector('.group-header') as HTMLElement;
+
+      row.dispatchEvent(makeDragEvent('dragstart'));
+
+      const rect = header.getBoundingClientRect();
+      const midY = rect.top + rect.height * 0.5;
+      header.dispatchEvent(makeDragEvent('dragover', { clientY: midY }));
+      header.dispatchEvent(makeDragEvent('drop'));
+      expect(callbacks.onAddToGroup).toHaveBeenCalledWith(0, 'g1');
+    });
+
+    it('drop image above group header calls onReorder', () => {
+      const groups: GroupEntry[] = [{ id: 'g1', name: 'G1', visible: true }];
+      const images = [
+        makeFakeImage({ filename: 'a.png' }),
+        makeFakeImage({ filename: 'b.png', groupId: 'g1' }),
+      ];
+      lm.render(images, groups, -1);
+
+      const rows = container.querySelectorAll('.layer-row');
+      const header = container.querySelector('.group-header') as HTMLElement;
+
+      rows[0].dispatchEvent(makeDragEvent('dragstart'));
+      // clientY=-1 with zero-height rect yields relY=-Infinity → triggers < 0.25 (above zone)
+      header.dispatchEvent(makeDragEvent('dragover', { clientY: -1 }));
+      header.dispatchEvent(makeDragEvent('drop'));
+      expect(callbacks.onReorder).toHaveBeenCalled();
+    });
+
+    it('drop image below group header calls onReorder', () => {
+      const groups: GroupEntry[] = [{ id: 'g1', name: 'G1', visible: true }];
+      const images = [
+        makeFakeImage({ filename: 'a.png' }),
+        makeFakeImage({ filename: 'b.png', groupId: 'g1' }),
+      ];
+      lm.render(images, groups, -1);
+
+      const rows = container.querySelectorAll('.layer-row');
+      const header = container.querySelector('.group-header') as HTMLElement;
+
+      rows[0].dispatchEvent(makeDragEvent('dragstart'));
+      // clientY=9999 with zero-height rect yields relY=+Infinity → triggers > 0.75 (below zone)
+      header.dispatchEvent(makeDragEvent('dragover', { clientY: 9999 }));
+      header.dispatchEvent(makeDragEvent('drop'));
+      expect(callbacks.onReorder).toHaveBeenCalled();
+    });
+
+    it('drop group onto image row calls onReorderGroup', () => {
+      const groups: GroupEntry[] = [{ id: 'g1', name: 'G1', visible: true }];
+      const images = [makeFakeImage({ filename: 'a.png' })];
+      lm.render(images, groups, -1);
+
+      const header = container.querySelector('.group-header') as HTMLElement;
+      const row = container.querySelector('.layer-row') as HTMLElement;
+
+      header.dispatchEvent(makeDragEvent('dragstart'));
+      row.dispatchEvent(makeDragEvent('dragover', { clientY: 0 }));
+      row.dispatchEvent(makeDragEvent('drop'));
+      expect(callbacks.onReorderGroup).toHaveBeenCalled();
+    });
+  });
+
+  describe('drag edge cases', () => {
+    function makeDragEvent(type: string, opts: Partial<{ clientY: number }> = {}): DragEvent {
+      const ev = new Event(type, { bubbles: true, cancelable: true }) as DragEvent;
+      Object.defineProperty(ev, 'dataTransfer', {
+        value: { effectAllowed: 'move', dropEffect: 'move' },
+      });
+      if (opts.clientY !== undefined) {
+        Object.defineProperty(ev, 'clientY', { value: opts.clientY });
+      }
+      return ev;
+    }
+
+    it('dragover on image row is ignored when no drag source', () => {
+      lm.render([makeFakeImage({ filename: 'a.png' })], [], -1);
+      const row = container.querySelector('.layer-row') as HTMLElement;
+      row.dispatchEvent(makeDragEvent('dragover', { clientY: 0 }));
+      expect(row.classList.contains('drag-over-above')).toBe(false);
+      expect(row.classList.contains('drag-over-below')).toBe(false);
+    });
+
+    it('dragover on group header is ignored when no drag source', () => {
+      const groups: GroupEntry[] = [{ id: 'g1', name: 'G', visible: true }];
+      lm.render([], groups, -1);
+      const header = container.querySelector('.group-header') as HTMLElement;
+      header.dispatchEvent(makeDragEvent('dragover', { clientY: 0 }));
+      expect(header.classList.contains('drag-over-above')).toBe(false);
+    });
+
+    it('dragover on same group header is ignored', () => {
+      const groups: GroupEntry[] = [{ id: 'g1', name: 'G', visible: true }];
+      lm.render([], groups, -1);
+      const header = container.querySelector('.group-header') as HTMLElement;
+      header.dispatchEvent(makeDragEvent('dragstart'));
+      header.dispatchEvent(makeDragEvent('dragover', { clientY: 0 }));
+      expect(header.classList.contains('drag-over-above')).toBe(false);
+    });
+
+    it('dragover on same image row is ignored', () => {
+      lm.render([makeFakeImage({ filename: 'a.png' })], [], -1);
+      const row = container.querySelector('.layer-row') as HTMLElement;
+      row.dispatchEvent(makeDragEvent('dragstart'));
+      row.dispatchEvent(makeDragEvent('dragover', { clientY: 0 }));
+      expect(row.classList.contains('drag-over-above')).toBe(false);
+    });
+
+    it('drop on group header with no drag source does nothing', () => {
+      const groups: GroupEntry[] = [{ id: 'g1', name: 'G', visible: true }];
+      lm.render([], groups, -1);
+      const header = container.querySelector('.group-header') as HTMLElement;
+      header.dispatchEvent(makeDragEvent('drop'));
+      expect(callbacks.onReorder).not.toHaveBeenCalled();
+      expect(callbacks.onReorderGroup).not.toHaveBeenCalled();
+      expect(callbacks.onAddToGroup).not.toHaveBeenCalled();
+    });
+
+    it('drop group onto group below zone calls onReorderGroup', () => {
+      const groups: GroupEntry[] = [
+        { id: 'g1', name: 'G1', visible: true },
+        { id: 'g2', name: 'G2', visible: true },
+      ];
+      lm.render([], groups, -1);
+      const headers = container.querySelectorAll('.group-header');
+      headers[0].dispatchEvent(makeDragEvent('dragstart'));
+
+      const rect = (headers[1] as HTMLElement).getBoundingClientRect();
+      headers[1].dispatchEvent(makeDragEvent('dragover', { clientY: rect.bottom }));
+      headers[1].dispatchEvent(makeDragEvent('drop'));
+      expect(callbacks.onReorderGroup).toHaveBeenCalled();
+    });
+
+    it('drop group onto group with images uses image range', () => {
+      const groups: GroupEntry[] = [
+        { id: 'g1', name: 'G1', visible: true },
+        { id: 'g2', name: 'G2', visible: true },
+      ];
+      const images = [
+        makeFakeImage({ filename: 'b.png', groupId: 'g2' }),
+      ];
+      lm.render(images, groups, -1);
+      const headers = container.querySelectorAll('.group-header');
+
+      headers[0].dispatchEvent(makeDragEvent('dragstart'));
+      headers[1].dispatchEvent(makeDragEvent('dragover', { clientY: 0 }));
+      headers[1].dispatchEvent(makeDragEvent('drop'));
+      expect(callbacks.onReorderGroup).toHaveBeenCalled();
+    });
+  });
+
   describe('lock button rendering', () => {
     it('shows unlocked style for unlocked image', () => {
       lm.render([makeFakeImage({ locked: false })], [], -1);

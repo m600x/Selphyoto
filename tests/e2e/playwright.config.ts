@@ -7,6 +7,8 @@ export default defineConfig({
   testMatch: '*.pw.ts',
   timeout: 30_000,
   retries: 0,
+  outputDir: '../../test-results',
+  reporter: [['html', { outputFolder: '../../playwright-report', open: 'never' }]],
   use: {
     baseURL: `http://localhost:${PORT}`,
     headless: true,

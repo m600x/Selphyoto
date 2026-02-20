@@ -8,6 +8,7 @@ mock.module('fabric', () => {
     private _width = 740;
     private _height = 500;
     private _zoom = 1;
+    private _listeners: Record<string, Function[]> = {};
 
     add(obj: unknown) { this.objects.push(obj); }
     remove(obj: unknown) {
@@ -28,7 +29,13 @@ mock.module('fabric', () => {
     getHeight() { return this._height; }
     setZoom(z: number) { this._zoom = z; }
     getZoom() { return this._zoom; }
-    on() {}
+    on(event: string, fn: Function) {
+      if (!this._listeners[event]) this._listeners[event] = [];
+      this._listeners[event].push(fn);
+    }
+    emit(event: string) {
+      (this._listeners[event] ?? []).forEach(fn => fn());
+    }
     toDataURL() { return 'data:image/png;base64,TEST'; }
   }
 
@@ -763,6 +770,315 @@ describe('CanvasManager', () => {
       const origLeft = cm.images[0].fabricImage.left ?? 0;
       const dupeLeft = cm.images[1].fabricImage.left ?? 0;
       expect(dupeLeft).toBe(origLeft + 15);
+    });
+  });
+
+  describe('deleteSelected', () => {
+    it('removes the selected image', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'a.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.selectImage(0);
+      cm.deleteSelected();
+      expect(cm.images.length).toBe(0);
+    });
+
+    it('does nothing when nothing is selected', () => {
+      expect(() => cm.deleteSelected()).not.toThrow();
+    });
+  });
+
+  describe('scaleSelected', () => {
+    it('scales the active object by factor', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.selectImage(0);
+      cm.scaleSelected(2);
+      expect(cm.images[0].fabricImage.scaleX).toBe(2);
+      expect(cm.images[0].fabricImage.scaleY).toBe(2);
+    });
+
+    it('does nothing without selection', () => {
+      expect(() => cm.scaleSelected(2)).not.toThrow();
+    });
+  });
+
+  describe('nudgeSelected', () => {
+    it('nudges the active object by dx/dy', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 100, top: 200, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.selectImage(0);
+      cm.nudgeSelected(5, -3);
+      expect(cm.images[0].fabricImage.left).toBe(105);
+      expect(cm.images[0].fabricImage.top).toBe(197);
+    });
+
+    it('does nothing without selection', () => {
+      expect(() => cm.nudgeSelected(1, 1)).not.toThrow();
+    });
+  });
+
+  describe('rotation', () => {
+    it('setRotation sets angle on active object', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.selectImage(0);
+      cm.setRotation(45);
+      expect(cm.images[0].fabricImage.angle).toBe(45);
+    });
+
+    it('setRotation does nothing without selection', () => {
+      expect(() => cm.setRotation(90)).not.toThrow();
+    });
+
+    it('getRotation returns active object angle', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 30,
+      });
+      cm.selectImage(0);
+      expect(cm.getRotation()).toBe(30);
+    });
+
+    it('getRotation returns 0 without selection', () => {
+      expect(cm.getRotation()).toBe(0);
+    });
+  });
+
+  describe('mark color', () => {
+    it('setMarkColor updates divider and cutting marks', () => {
+      cm.setMarkColor('#00ff00');
+      expect(cm.getMarkColor()).toBe('#00ff00');
+    });
+
+    it('getMarkColor returns the current color', () => {
+      const color = cm.getMarkColor();
+      expect(typeof color).toBe('string');
+    });
+  });
+
+  describe('requestRenderAll', () => {
+    it('delegates to canvas.requestRenderAll', () => {
+      expect(() => cm.requestRenderAll()).not.toThrow();
+    });
+  });
+
+  describe('exportImageDataUrl', () => {
+    it('returns a data URL string', () => {
+      const result = cm.exportImageDataUrl('png');
+      expect(result).toContain('data:image');
+    });
+
+    it('works with jpeg format', () => {
+      const result = cm.exportImageDataUrl('jpeg');
+      expect(result).toContain('data:image');
+    });
+  });
+
+  describe('exportImage', () => {
+    it('creates a download link and clicks it', () => {
+      const clickSpy = mock(() => {});
+      const origCreateElement = document.createElement.bind(document);
+      document.createElement = ((tag: string) => {
+        const el = origCreateElement(tag);
+        if (tag === 'a') {
+          el.click = clickSpy;
+        }
+        return el;
+      }) as typeof document.createElement;
+
+      cm.exportImage('png');
+      expect(clickSpy).toHaveBeenCalled();
+
+      document.createElement = origCreateElement;
+    });
+
+    it('uses jpg extension for jpeg format', () => {
+      let downloadName = '';
+      const origCreateElement = document.createElement.bind(document);
+      document.createElement = ((tag: string) => {
+        const el = origCreateElement(tag);
+        if (tag === 'a') {
+          el.click = () => {};
+          const origSet = Object.getOwnPropertyDescriptor(HTMLAnchorElement.prototype, 'download')?.set;
+          Object.defineProperty(el, 'download', {
+            set(v: string) { downloadName = v; origSet?.call(el, v); },
+            get() { return downloadName; },
+          });
+        }
+        return el;
+      }) as typeof document.createElement;
+
+      cm.exportImage('jpeg');
+      expect(downloadName).toContain('.jpg');
+
+      document.createElement = origCreateElement;
+    });
+  });
+
+  describe('fitToContainer', () => {
+    it('sets canvas dimensions from container size', () => {
+      const container = document.createElement('div');
+      Object.defineProperty(container, 'clientWidth', { value: 800 });
+      Object.defineProperty(container, 'clientHeight', { value: 600 });
+
+      cm.fitToContainer(container);
+      const w = cm.canvas.getWidth();
+      const h = cm.canvas.getHeight();
+      expect(w).toBeGreaterThan(0);
+      expect(h).toBeGreaterThan(0);
+    });
+
+    it('handles tall container (height-limited)', () => {
+      const container = document.createElement('div');
+      Object.defineProperty(container, 'clientWidth', { value: 2000 });
+      Object.defineProperty(container, 'clientHeight', { value: 300 });
+
+      cm.fitToContainer(container);
+      const h = cm.canvas.getHeight();
+      expect(h).toBeLessThanOrEqual(300);
+    });
+
+    it('does nothing with zero-size container', () => {
+      const container = document.createElement('div');
+      Object.defineProperty(container, 'clientWidth', { value: 0 });
+      Object.defineProperty(container, 'clientHeight', { value: 0 });
+
+      const wBefore = cm.canvas.getWidth();
+      cm.fitToContainer(container);
+      expect(cm.canvas.getWidth()).toBe(wBefore);
+    });
+  });
+
+  describe('constrainDataUrl', () => {
+    it('returns small data URLs unchanged', async () => {
+      const small = 'data:image/png;base64,TINY';
+      const result = await CanvasManager.constrainDataUrl(small);
+      expect(result).toBe(small);
+    });
+
+    it('downsizes oversized data URLs', async () => {
+      const OrigImage = globalThis.Image;
+      const origCreateElement = document.createElement.bind(document);
+
+      globalThis.Image = class MockImage {
+        naturalWidth = 200;
+        naturalHeight = 200;
+        onload: (() => void) | null = null;
+        set src(_v: string) {
+          setTimeout(() => this.onload?.(), 0);
+        }
+      } as unknown as typeof Image;
+
+      document.createElement = ((tag: string) => {
+        const el = origCreateElement(tag);
+        if (tag === 'canvas') {
+          (el as any).getContext = () => ({
+            drawImage() {},
+          });
+          (el as any).toDataURL = () => 'data:image/jpeg;base64,SMALL';
+        }
+        return el;
+      }) as typeof document.createElement;
+
+      const huge = 'data:image/png;base64,' + 'A'.repeat(200);
+      const result = await CanvasManager.constrainDataUrl(huge, 50);
+      expect(typeof result).toBe('string');
+      expect(result.length).toBeLessThanOrEqual(50);
+
+      globalThis.Image = OrigImage;
+      document.createElement = origCreateElement;
+    });
+  });
+
+  describe('addImage (File-based)', () => {
+    it('adds an image from a File object', async () => {
+      const file = new File(['fake'], 'photo.jpg', { type: 'image/jpeg' });
+      await cm.addImage(file);
+      expect(cm.images.length).toBe(1);
+      expect(cm.images[0].filename).toBe('photo.jpg');
+      expect(cm.images[0].type).toBe('image');
+    });
+  });
+
+  describe('selection events', () => {
+    it('onSelectionChange is called on selection:created', async () => {
+      const spy = mock(() => {});
+      cm.onSelectionChange = spy;
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.selectImage(0);
+      (cm.canvas as any).emit('selection:created');
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('onSelectionChange is called on selection:updated', async () => {
+      const spy = mock(() => {});
+      cm.onSelectionChange = spy;
+      (cm.canvas as any).emit('selection:updated');
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('onSelectionChange is called on selection:cleared', () => {
+      const spy = mock(() => {});
+      cm.onSelectionChange = spy;
+      (cm.canvas as any).emit('selection:cleared');
+      expect(spy).toHaveBeenCalled();
+    });
+
+    it('text:editing:exited updates filename from text content', () => {
+      cm.addText();
+      const tb = cm.images[0].fabricImage as any;
+      tb.text = 'Hello World';
+      cm.canvas.setActiveObject(tb);
+
+      const listSpy = mock(() => {});
+      cm.onListChange = listSpy;
+
+      (cm.canvas as any).emit('text:editing:exited');
+      expect(cm.images[0].filename).toBe('Hello World');
+      expect(listSpy).toHaveBeenCalled();
+    });
+
+    it('text:editing:exited truncates long text', () => {
+      cm.addText();
+      const tb = cm.images[0].fabricImage as any;
+      tb.text = 'A'.repeat(50);
+      cm.canvas.setActiveObject(tb);
+
+      (cm.canvas as any).emit('text:editing:exited');
+      expect(cm.images[0].filename.length).toBeLessThanOrEqual(31);
+      expect(cm.images[0].filename.endsWith('…')).toBe(true);
+    });
+
+    it('text:editing:exited does nothing for non-text entries', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.selectImage(0);
+      const origName = cm.images[0].filename;
+
+      (cm.canvas as any).emit('text:editing:exited');
+      expect(cm.images[0].filename).toBe(origName);
+    });
+
+    it('text:editing:exited does nothing when no active object', () => {
+      cm.canvas.discardActiveObject();
+      expect(() => (cm.canvas as any).emit('text:editing:exited')).not.toThrow();
+    });
+
+    it('text:editing:exited keeps filename if text is empty', () => {
+      cm.addText();
+      const tb = cm.images[0].fabricImage as any;
+      tb.text = '   ';
+      cm.canvas.setActiveObject(tb);
+      const origName = cm.images[0].filename;
+
+      (cm.canvas as any).emit('text:editing:exited');
+      expect(cm.images[0].filename).toBe(origName);
     });
   });
 });

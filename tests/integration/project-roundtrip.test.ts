@@ -1,6 +1,7 @@
 import { describe, it, expect, mock, spyOn, beforeEach } from 'bun:test';
 import JSZip from 'jszip';
-import { importProject, type ProjectManifest, type ProjectSettings } from '../../src/project-io';
+import { importProject, exportProject, type ProjectManifest, type ProjectSettings } from '../../src/project-io';
+import type { PageData } from '../../src/page-manager';
 
 function makeMockCM() {
   const state = {
@@ -81,6 +82,58 @@ function makeMockCM() {
   };
 }
 
+function makeFabricImage(overrides: Record<string, unknown> = {}) {
+  const props: Record<string, unknown> = {
+    left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+    flipX: false, flipY: false, opacity: 1,
+    width: 100, height: 100,
+    ...overrides,
+  };
+  return {
+    ...props,
+    set(key: string | Record<string, unknown>, val?: unknown) {
+      if (typeof key === 'string') props[key] = val;
+      else Object.assign(props, key);
+      Object.assign(this, props);
+    },
+    toDataURL() { return 'data:image/png;base64,TESTDATA'; },
+    setCoords() {},
+  };
+}
+
+function makeExportCM(overrides: Partial<{
+  images: Array<{
+    type?: 'image' | 'text';
+    fabricImage: ReturnType<typeof makeFabricImage>;
+    filename: string;
+    visible: boolean;
+    locked: boolean;
+    groupId?: string;
+    originalDataUrl: string;
+  }>;
+  groups: Array<{ id: string; name: string; visible: boolean }>;
+  textCounter: number;
+  corrX: number;
+  corrY: number;
+  bgColor: string;
+  markColor: string;
+  guidelinesVisible: boolean;
+}> = {}) {
+  const images = overrides.images ?? [];
+  const groups = overrides.groups ?? [];
+  return {
+    images,
+    groups,
+    getGroupCounter: mock(() => groups.length),
+    getTextCounter: mock(() => overrides.textCounter ?? 0),
+    getCorrectionX: mock(() => overrides.corrX ?? 0.961),
+    getCorrectionY: mock(() => overrides.corrY ?? 0.961),
+    getBackgroundColor: mock(() => overrides.bgColor ?? '#ffffff'),
+    getMarkColor: mock(() => overrides.markColor ?? '#cc0000'),
+    getGuidelinesVisible: mock(() => overrides.guidelinesVisible ?? true),
+  };
+}
+
 async function buildProjectZip(manifest: ProjectManifest, imageData?: Record<string, string>): Promise<File> {
   const zip = new JSZip();
   zip.file('project.json', JSON.stringify(manifest));
@@ -97,6 +150,22 @@ async function buildProjectZip(manifest: ProjectManifest, imageData?: Record<str
 }
 
 const TINY_PNG_B64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+async function captureExportedZip(fn: () => Promise<void>): Promise<JSZip> {
+  let capturedBlob: Blob | null = null;
+  const origCreateObjectURL = URL.createObjectURL;
+  URL.createObjectURL = (blob: Blob) => {
+    capturedBlob = blob;
+    return 'blob:test';
+  };
+  try {
+    await fn();
+  } finally {
+    URL.createObjectURL = origCreateObjectURL;
+  }
+  if (!capturedBlob) throw new Error('No blob captured');
+  return JSZip.loadAsync(capturedBlob);
+}
 
 describe('project import', () => {
   let cm: ReturnType<typeof makeMockCM>;
@@ -284,5 +353,317 @@ describe('project import', () => {
 
     expect(cm.addImageFromDataURL).not.toHaveBeenCalled();
     expect(cm.restoreGroups).toHaveBeenCalled();
+  });
+
+  it('imports multi-page project', async () => {
+    const manifest: ProjectManifest = {
+      version: 1,
+      pages: [
+        {
+          images: [
+            { file: 'images/p0_0_a.png', filename: 'a.png', visible: true, locked: false, groupId: null, left: 10, top: 20, scaleX: 1, scaleY: 1, angle: 0, flipX: false, flipY: false, opacity: 1 },
+          ],
+          groups: [{ id: 'group-1', name: 'G1', visible: true }],
+          groupCounter: 1,
+          textCounter: 0,
+        },
+        {
+          images: [
+            { type: 'text', file: '', filename: 'Text 1', visible: true, locked: false, groupId: null, left: 50, top: 60, scaleX: 1, scaleY: 1, angle: 0, text: 'Page 2 text', fontFamily: 'Arial', fontSize: 40, fill: '#000000', fontWeight: 'normal', fontStyle: 'normal', textAlign: 'center', width: 200 },
+            { file: 'images/p1_0_b.png', filename: 'b.png', visible: true, locked: true, groupId: null, left: 0, top: 0, scaleX: 2, scaleY: 2, angle: 90, flipX: true, flipY: true, opacity: 0.5 },
+          ],
+          groups: [],
+          groupCounter: 0,
+          textCounter: 1,
+        },
+      ],
+      images: [
+        { file: 'images/p0_0_a.png', filename: 'a.png', visible: true, locked: false, groupId: null, left: 10, top: 20, scaleX: 1, scaleY: 1, angle: 0 },
+      ],
+      groups: [{ id: 'group-1', name: 'G1', visible: true }],
+      groupCounter: 1,
+      settings: { correctionX: 0.95, correctionY: 0.96, backgroundColor: '#000000', markColor: '#ffffff', guidelinesVisible: false, exportFormat: 'jpeg' },
+    };
+
+    const file = await buildProjectZip(manifest, {
+      'p0_0_a.png': TINY_PNG_B64,
+      'p1_0_b.png': TINY_PNG_B64,
+    });
+
+    let appliedSettings: ProjectSettings | null = null;
+    const result = await importProject(file, cm as never, (s) => { appliedSettings = s; });
+
+    expect(result.pages).toHaveLength(2);
+    expect(result.pages[0].images).toHaveLength(1);
+    expect(result.pages[0].images[0].filename).toBe('a.png');
+    expect(result.pages[0].groups).toHaveLength(1);
+    expect(result.pages[0].groups[0].name).toBe('G1');
+
+    expect(result.pages[1].images).toHaveLength(2);
+    expect(result.pages[1].images[0].type).toBe('text');
+    expect(result.pages[1].images[0].text).toBe('Page 2 text');
+    expect(result.pages[1].images[1].filename).toBe('b.png');
+    expect(result.pages[1].images[1].flipX).toBe(true);
+    expect(result.pages[1].images[1].opacity).toBe(0.5);
+    expect(result.pages[1].textCounter).toBe(1);
+
+    expect(cm.clearAll).toHaveBeenCalled();
+    expect(cm.addImageFromDataURL).toHaveBeenCalledTimes(1);
+    expect(cm.state.images[0].filename).toBe('a.png');
+
+    expect(cm.setCorrectionX).toHaveBeenCalledWith(0.95);
+    expect(cm.setBackground).toHaveBeenCalledWith('#000000');
+    expect(cm.setMarkColor).toHaveBeenCalledWith('#ffffff');
+    expect(cm.setGuidelinesVisible).toHaveBeenCalledWith(false);
+    expect(cm.finalizeRestore).toHaveBeenCalled();
+
+    expect(appliedSettings).not.toBeNull();
+    expect(appliedSettings!.exportFormat).toBe('jpeg');
+    expect(result.settings.backgroundColor).toBe('#000000');
+  });
+
+  it('computes maxCounter from group IDs when groupCounter is missing', async () => {
+    const manifest = {
+      version: 1 as const,
+      images: [] as ProjectManifest['images'],
+      groups: [
+        { id: 'group-3', name: 'A', visible: true },
+        { id: 'group-7', name: 'B', visible: true },
+      ],
+      settings: { correctionX: 0.961, correctionY: 0.961, backgroundColor: '#ffffff', markColor: '#cc0000', guidelinesVisible: true, exportFormat: 'png' as const },
+    };
+
+    const zip = new JSZip();
+    zip.file('project.json', JSON.stringify(manifest));
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const file = new File([blob], 'legacy.zip', { type: 'application/zip' });
+
+    await importProject(file, cm as never, mock(() => {}));
+
+    expect(cm.restoreGroups).toHaveBeenCalledWith(
+      expect.any(Array),
+      7,
+    );
+  });
+});
+
+describe('project export', () => {
+  it('exports a single-page project with images', async () => {
+    const cm = makeExportCM({
+      images: [
+        {
+          type: 'image',
+          fabricImage: makeFabricImage({ left: 10, top: 20, scaleX: 0.5, scaleY: 0.5, angle: 45 }),
+          filename: 'photo.png',
+          visible: true,
+          locked: false,
+          groupId: 'group-1',
+          originalDataUrl: 'data:image/png;base64,ABC',
+        },
+      ],
+      groups: [{ id: 'group-1', name: 'My Group', visible: true }],
+      corrX: 0.95,
+      corrY: 0.96,
+      bgColor: '#000000',
+      markColor: '#ffffff',
+      guidelinesVisible: false,
+    });
+
+    const zip = await captureExportedZip(() =>
+      exportProject(cm as never, { exportFormat: 'jpeg' }),
+    );
+
+    const manifestFile = zip.file('project.json');
+    expect(manifestFile).not.toBeNull();
+    const manifest: ProjectManifest = JSON.parse(await manifestFile!.async('string'));
+
+    expect(manifest.version).toBe(1);
+    expect(manifest.images).toHaveLength(1);
+    expect(manifest.images[0].filename).toBe('photo.png');
+    expect(manifest.images[0].visible).toBe(true);
+    expect(manifest.images[0].groupId).toBe('group-1');
+    expect(manifest.groups).toHaveLength(1);
+    expect(manifest.groups[0].name).toBe('My Group');
+    expect(manifest.settings.correctionX).toBe(0.95);
+    expect(manifest.settings.backgroundColor).toBe('#000000');
+    expect(manifest.settings.markColor).toBe('#ffffff');
+    expect(manifest.settings.exportFormat).toBe('jpeg');
+    expect(manifest.pages).toBeUndefined();
+
+    const imageFile = zip.file(manifest.images[0].file);
+    expect(imageFile).not.toBeNull();
+  });
+
+  it('exports a single-page project with text layers', async () => {
+    const textFabric = makeFabricImage({
+      left: 100, top: 200, scaleX: 1, scaleY: 1, angle: 0,
+      text: 'Hello', fontFamily: 'Georgia', fontSize: 60,
+      fill: '#ff0000', fontWeight: 'bold', fontStyle: 'italic',
+      textAlign: 'right', width: 300,
+    });
+
+    const cm = makeExportCM({
+      images: [
+        {
+          type: 'text',
+          fabricImage: textFabric,
+          filename: 'Text 1',
+          visible: true,
+          locked: false,
+          originalDataUrl: '',
+        },
+      ],
+      textCounter: 1,
+    });
+
+    const zip = await captureExportedZip(() =>
+      exportProject(cm as never, { exportFormat: 'png' }),
+    );
+
+    const manifest: ProjectManifest = JSON.parse(
+      await zip.file('project.json')!.async('string'),
+    );
+
+    expect(manifest.images).toHaveLength(1);
+    expect(manifest.images[0].type).toBe('text');
+    expect(manifest.images[0].file).toBe('');
+    expect(manifest.images[0].text).toBe('Hello');
+    expect(manifest.images[0].fontFamily).toBe('Georgia');
+    expect(manifest.images[0].fontSize).toBe(60);
+    expect(manifest.images[0].textAlign).toBe('right');
+    expect(manifest.textCounter).toBe(1);
+  });
+
+  it('exports a multi-page project with pages array', async () => {
+    const cm = makeExportCM({
+      images: [
+        {
+          type: 'image',
+          fabricImage: makeFabricImage({ left: 5, top: 5 }),
+          filename: 'current.png',
+          visible: true,
+          locked: false,
+          originalDataUrl: 'data:image/png;base64,CUR',
+        },
+      ],
+      groups: [{ id: 'group-1', name: 'G1', visible: true }],
+    });
+
+    const otherPages: PageData[] = [
+      {
+        images: [{
+          type: 'image',
+          dataUrl: 'data:image/png;base64,CUR',
+          filename: 'current.png',
+          visible: true, locked: false, groupId: null,
+          left: 5, top: 5, scaleX: 1, scaleY: 1, angle: 0,
+          flipX: false, flipY: false, opacity: 1,
+        }],
+        groups: [{ id: 'group-1', name: 'G1', visible: true }],
+        groupCounter: 1,
+        textCounter: 0,
+      },
+      {
+        images: [{
+          type: 'text',
+          dataUrl: '',
+          filename: 'Text 1',
+          visible: true, locked: false, groupId: null,
+          left: 50, top: 60, scaleX: 1, scaleY: 1, angle: 0,
+          flipX: false, flipY: false, opacity: 0.8,
+          text: 'Page two', fontFamily: 'Arial', fontSize: 40,
+          fill: '#000000', fontWeight: 'normal', fontStyle: 'normal',
+          textAlign: 'center', width: 200,
+        }],
+        groups: [],
+        groupCounter: 0,
+        textCounter: 1,
+      },
+    ];
+
+    const zip = await captureExportedZip(() =>
+      exportProject(cm as never, { exportFormat: 'png' }, otherPages, 0),
+    );
+
+    const manifest: ProjectManifest = JSON.parse(
+      await zip.file('project.json')!.async('string'),
+    );
+
+    expect(manifest.pages).toBeDefined();
+    expect(manifest.pages).toHaveLength(2);
+    expect(manifest.pages![0].images).toHaveLength(1);
+    expect(manifest.pages![0].images[0].filename).toBe('current.png');
+    expect(manifest.pages![0].groups).toHaveLength(1);
+
+    expect(manifest.pages![1].images).toHaveLength(1);
+    expect(manifest.pages![1].images[0].type).toBe('text');
+    expect(manifest.pages![1].images[0].text).toBe('Page two');
+    expect(manifest.pages![1].textCounter).toBe(1);
+  });
+
+  it('multi-page export serializes non-current pages from PageData', async () => {
+    const cm = makeExportCM({
+      images: [
+        {
+          type: 'image',
+          fabricImage: makeFabricImage(),
+          filename: 'page0.png',
+          visible: true,
+          locked: false,
+          originalDataUrl: 'data:image/png;base64,P0',
+        },
+      ],
+    });
+
+    const otherPages: PageData[] = [
+      {
+        images: [{ type: 'image', dataUrl: `data:image/png;base64,${TINY_PNG_B64}`, filename: 'page0.png', visible: true, locked: false, groupId: null, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0, flipX: false, flipY: false, opacity: 1 }],
+        groups: [], groupCounter: 0, textCounter: 0,
+      },
+      {
+        images: [{ type: 'image', dataUrl: `data:image/png;base64,${TINY_PNG_B64}`, filename: 'page1.png', visible: true, locked: false, groupId: null, left: 10, top: 10, scaleX: 1, scaleY: 1, angle: 0, flipX: false, flipY: false, opacity: 1 }],
+        groups: [{ id: 'group-1', name: 'G1', visible: true }], groupCounter: 1, textCounter: 0,
+      },
+    ];
+
+    const zip = await captureExportedZip(() =>
+      exportProject(cm as never, { exportFormat: 'png' }, otherPages, 0),
+    );
+
+    const manifest: ProjectManifest = JSON.parse(
+      await zip.file('project.json')!.async('string'),
+    );
+
+    expect(manifest.pages![1].images[0].filename).toBe('page1.png');
+    expect(manifest.pages![1].groups).toHaveLength(1);
+    expect(manifest.pages![1].groups[0].name).toBe('G1');
+
+    const p1ImageFile = zip.file(manifest.pages![1].images[0].file);
+    expect(p1ImageFile).not.toBeNull();
+  });
+
+  it('export adds file extension when filename has none', async () => {
+    const cm = makeExportCM({
+      images: [
+        {
+          type: 'image',
+          fabricImage: makeFabricImage(),
+          filename: 'noext',
+          visible: true,
+          locked: false,
+          originalDataUrl: 'data:image/png;base64,X',
+        },
+      ],
+    });
+
+    const zip = await captureExportedZip(() =>
+      exportProject(cm as never, { exportFormat: 'png' }),
+    );
+
+    const manifest: ProjectManifest = JSON.parse(
+      await zip.file('project.json')!.async('string'),
+    );
+
+    expect(manifest.images[0].file).toContain('.png');
   });
 });

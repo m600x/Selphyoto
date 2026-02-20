@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'bun:test';
 import { PageManager, emptyPage, type PageData } from '../../src/page-manager';
 
-function makePage(images: number = 0): PageData {
+function makePage(images: number = 0, groups: number = 0): PageData {
   const p = emptyPage();
   for (let i = 0; i < images; i++) {
     p.images.push({
@@ -18,8 +18,33 @@ function makePage(images: number = 0): PageData {
       opacity: 1,
     });
   }
+  for (let i = 0; i < groups; i++) {
+    p.groups.push({ id: `group-${i + 1}`, name: `Group ${i + 1}`, visible: true });
+    p.groupCounter = groups;
+  }
   return p;
 }
+
+describe('emptyPage', () => {
+  it('returns a page with empty arrays and zero counters', () => {
+    const page = emptyPage();
+    expect(page.images).toEqual([]);
+    expect(page.groups).toEqual([]);
+    expect(page.groupCounter).toBe(0);
+    expect(page.textCounter).toBe(0);
+    expect(page.name).toBeUndefined();
+    expect(page.backgroundColor).toBeUndefined();
+    expect(page.markColor).toBeUndefined();
+  });
+
+  it('returns a new object each call', () => {
+    const a = emptyPage();
+    const b = emptyPage();
+    expect(a).not.toBe(b);
+    a.images.push({} as never);
+    expect(b.images).toHaveLength(0);
+  });
+});
 
 describe('PageManager', () => {
   describe('initialization', () => {
@@ -144,35 +169,41 @@ describe('PageManager', () => {
   });
 
   describe('duplicatePage', () => {
-    it('creates a copy of the page', () => {
+    it('creates a copy of the page including groups', () => {
       const pm = new PageManager();
-      pm.setPageData(0, makePage(2));
+      pm.setPageData(0, makePage(2, 1));
       const newIdx = pm.duplicatePage(0);
       expect(newIdx).toBe(1);
       expect(pm.pageCount).toBe(2);
       expect(pm.getPageData(1)!.images).toHaveLength(2);
+      expect(pm.getPageData(1)!.groups).toHaveLength(1);
     });
 
     it('duplicate is independent from original', () => {
       const pm = new PageManager();
-      pm.setPageData(0, makePage(1));
+      pm.setPageData(0, makePage(1, 1));
       pm.duplicatePage(0);
       pm.getPageData(1)!.images.push(makePage(1).images[0]);
+      pm.getPageData(1)!.groups.push({ id: 'group-extra', name: 'Extra', visible: true });
       expect(pm.getPageData(0)!.images).toHaveLength(1);
+      expect(pm.getPageData(0)!.groups).toHaveLength(1);
       expect(pm.getPageData(1)!.images).toHaveLength(2);
+      expect(pm.getPageData(1)!.groups).toHaveLength(2);
     });
   });
 
   describe('getAllPages', () => {
-    it('returns deep copies of all pages', () => {
+    it('returns deep copies of all pages including groups', () => {
       const pm = new PageManager();
-      pm.setPageData(0, makePage(1));
+      pm.setPageData(0, makePage(1, 1));
       pm.addPage();
-      pm.setPageData(1, makePage(2));
+      pm.setPageData(1, makePage(2, 2));
       const all = pm.getAllPages();
       expect(all).toHaveLength(2);
       expect(all[0].images).toHaveLength(1);
+      expect(all[0].groups).toHaveLength(1);
       expect(all[1].images).toHaveLength(2);
+      expect(all[1].groups).toHaveLength(2);
     });
   });
 
@@ -206,6 +237,63 @@ describe('PageManager', () => {
       pm.reset();
       expect(pm.pageCount).toBe(1);
       expect(pm.currentPage).toBe(0);
+    });
+  });
+
+  describe('page name', () => {
+    it('getPageName returns undefined by default', () => {
+      const pm = new PageManager();
+      expect(pm.getPageName(0)).toBeUndefined();
+    });
+
+    it('setPageName stores and getPageName retrieves', () => {
+      const pm = new PageManager();
+      pm.setPageName(0, 'Front');
+      expect(pm.getPageName(0)).toBe('Front');
+    });
+
+    it('setPageName ignores invalid index', () => {
+      const pm = new PageManager();
+      pm.setPageName(5, 'Nope');
+      expect(pm.getPageName(5)).toBeUndefined();
+    });
+  });
+
+  describe('page background color', () => {
+    it('getPageBgColor returns undefined by default', () => {
+      const pm = new PageManager();
+      expect(pm.getPageBgColor(0)).toBeUndefined();
+    });
+
+    it('setPageBgColor stores and getPageBgColor retrieves', () => {
+      const pm = new PageManager();
+      pm.setPageBgColor(0, '#000000');
+      expect(pm.getPageBgColor(0)).toBe('#000000');
+    });
+
+    it('setPageBgColor ignores invalid index', () => {
+      const pm = new PageManager();
+      pm.setPageBgColor(99, '#ff0000');
+      expect(pm.getPageBgColor(99)).toBeUndefined();
+    });
+  });
+
+  describe('page mark color', () => {
+    it('getPageMarkColor returns undefined by default', () => {
+      const pm = new PageManager();
+      expect(pm.getPageMarkColor(0)).toBeUndefined();
+    });
+
+    it('setPageMarkColor stores and getPageMarkColor retrieves', () => {
+      const pm = new PageManager();
+      pm.setPageMarkColor(0, '#ffffff');
+      expect(pm.getPageMarkColor(0)).toBe('#ffffff');
+    });
+
+    it('setPageMarkColor ignores invalid index', () => {
+      const pm = new PageManager();
+      pm.setPageMarkColor(-1, '#cc0000');
+      expect(pm.getPageMarkColor(-1)).toBeUndefined();
     });
   });
 });
