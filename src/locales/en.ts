@@ -23,6 +23,7 @@ const en = {
   'toolbar.alignLeft': 'Align left',
   'toolbar.alignCenter': 'Align center',
   'toolbar.alignRight': 'Align right',
+  'toolbar.theme.toggle': 'Toggle theme',
 
   'color.white': 'White',
   'color.grey': 'Grey',

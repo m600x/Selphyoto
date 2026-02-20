@@ -382,6 +382,29 @@ langSelect.addEventListener('change', () => {
   refreshLayers();
 });
 
+// ── Theme toggle ──
+
+const THEME_KEY = 'selphyoto_theme';
+const themeToggle = document.getElementById('theme-toggle') as HTMLButtonElement;
+
+function applyTheme(theme: 'dark' | 'light') {
+  if (theme === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+  }
+}
+
+const savedTheme = (localStorage.getItem(THEME_KEY) as 'dark' | 'light') ?? 'dark';
+applyTheme(savedTheme);
+
+themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+  localStorage.setItem(THEME_KEY, next);
+});
+
 // ── Auto-save (debounced) ──
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;

@@ -25,6 +25,7 @@ const zh: Record<LocaleKey, string> = {
   'toolbar.alignLeft': '左对齐',
   'toolbar.alignCenter': '居中对齐',
   'toolbar.alignRight': '右对齐',
+  'toolbar.theme.toggle': '切换主题',
 
   'color.white': '白色',
   'color.grey': '灰色',

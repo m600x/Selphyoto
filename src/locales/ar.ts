@@ -25,6 +25,7 @@ const ar: Record<LocaleKey, string> = {
   'toolbar.alignLeft': 'محاذاة لليسار',
   'toolbar.alignCenter': 'محاذاة للوسط',
   'toolbar.alignRight': 'محاذاة لليمين',
+  'toolbar.theme.toggle': 'تبديل المظهر',
 
   'color.white': 'أبيض',
   'color.grey': 'رمادي',

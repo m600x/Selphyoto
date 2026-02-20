@@ -25,6 +25,7 @@ const hi: Record<LocaleKey, string> = {
   'toolbar.alignLeft': 'बाएँ संरेखित करें',
   'toolbar.alignCenter': 'केंद्र संरेखित करें',
   'toolbar.alignRight': 'दाएँ संरेखित करें',
+  'toolbar.theme.toggle': 'थीम बदलें',
 
   'color.white': 'सफ़ेद',
   'color.grey': 'धूसर',

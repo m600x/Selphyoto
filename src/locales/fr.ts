@@ -25,6 +25,7 @@ const fr: Record<LocaleKey, string> = {
   'toolbar.alignLeft': 'Aligner à gauche',
   'toolbar.alignCenter': 'Aligner au centre',
   'toolbar.alignRight': 'Aligner à droite',
+  'toolbar.theme.toggle': 'Changer le thème',
 
   'color.white': 'Blanc',
   'color.grey': 'Gris',
