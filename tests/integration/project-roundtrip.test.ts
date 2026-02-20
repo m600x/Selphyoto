@@ -7,6 +7,7 @@ function makeMockCM() {
     images: [] as Array<{
       filename: string; visible: boolean; locked: boolean; groupId?: string;
       left: number; top: number; scaleX: number; scaleY: number; angle: number;
+      flipX: boolean; flipY: boolean; opacity: number;
     }>,
     groups: [] as Array<{ id: string; name: string; visible: boolean }>,
     correctionX: 0.961,
@@ -33,6 +34,9 @@ function makeMockCM() {
         scaleX: props.scaleX as number,
         scaleY: props.scaleY as number,
         angle: props.angle as number,
+        flipX: (props.flipX ?? false) as boolean,
+        flipY: (props.flipY ?? false) as boolean,
+        opacity: (props.opacity ?? 1) as number,
       });
     }),
     restoreGroups: mock((groups: Array<{ id: string; name: string; visible: boolean }>, _counter: number) => {
@@ -82,6 +86,7 @@ describe('project import', () => {
           locked: false,
           groupId: 'group-1',
           left: 10, top: 20, scaleX: 0.5, scaleY: 0.5, angle: 45,
+          flipX: true, flipY: false, opacity: 0.8,
         },
         {
           file: 'images/1_bg.png',
@@ -119,10 +124,16 @@ describe('project import', () => {
     expect(cm.state.images[0].scaleX).toBe(0.5);
     expect(cm.state.images[0].angle).toBe(45);
     expect(cm.state.images[0].groupId).toBe('group-1');
+    expect(cm.state.images[0].flipX).toBe(true);
+    expect(cm.state.images[0].flipY).toBe(false);
+    expect(cm.state.images[0].opacity).toBe(0.8);
 
     expect(cm.state.images[1].filename).toBe('bg.png');
     expect(cm.state.images[1].locked).toBe(true);
     expect(cm.state.images[1].visible).toBe(false);
+    expect(cm.state.images[1].flipX).toBe(false);
+    expect(cm.state.images[1].flipY).toBe(false);
+    expect(cm.state.images[1].opacity).toBe(1);
 
     expect(cm.restoreGroups).toHaveBeenCalledWith(
       [{ id: 'group-1', name: 'Layer Group', visible: true }],

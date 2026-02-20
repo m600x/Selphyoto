@@ -43,6 +43,9 @@ describe('auto-save IndexedDB operations', () => {
           scaleX: 0.5,
           scaleY: 0.5,
           angle: 45,
+          flipX: true,
+          flipY: false,
+          opacity: 0.8,
         },
       ],
       groups: [{ id: 'group-1', name: 'Group 1', visible: true }],
@@ -95,8 +98,8 @@ describe('auto-save IndexedDB operations', () => {
   it('handles state with multiple images', async () => {
     const state = makeState({
       images: [
-        { dataUrl: 'data:a', filename: 'a.png', visible: true, locked: false, groupId: null, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0 },
-        { dataUrl: 'data:b', filename: 'b.jpg', visible: false, locked: true, groupId: 'g1', left: 50, top: 60, scaleX: 2, scaleY: 2, angle: 90 },
+        { dataUrl: 'data:a', filename: 'a.png', visible: true, locked: false, groupId: null, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0, flipX: false, flipY: false, opacity: 1 },
+        { dataUrl: 'data:b', filename: 'b.jpg', visible: false, locked: true, groupId: 'g1', left: 50, top: 60, scaleX: 2, scaleY: 2, angle: 90, flipX: true, flipY: true, opacity: 0.5 },
       ],
       groups: [{ id: 'g1', name: 'Photos', visible: true }],
     });

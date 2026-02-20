@@ -98,7 +98,7 @@ body {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 8px 16px;
+  padding: 4px 16px;
   background: var(--bg-panel);
   border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
@@ -201,9 +201,9 @@ body {
 }
 
 .undo-redo-btn {
-  width: 36px;
-  height: 36px;
-  padding: 6px !important;
+  width: 30px;
+  height: 30px;
+  padding: 4px !important;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -355,6 +355,26 @@ body {
   min-height: 0;
 }
 
+/* ─── Canvas panel (toolbar + canvas area, right of sidebar) ─── */
+
+#canvas-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+#canvas-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
 /* ─── Canvas ─── */
 
 #canvas-wrapper {
@@ -364,6 +384,68 @@ body {
   align-items: center;
   overflow: hidden;
   min-height: 0;
+}
+
+.canvas-toolbar-sep {
+  width: 1px;
+  height: 22px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.canvas-tool-btn {
+  width: 30px;
+  height: 30px;
+  padding: 4px !important;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.canvas-tool-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--text-dim);
+}
+
+.canvas-tool-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.canvas-tool-btn .btn-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.canvas-toolbar-label {
+  color: var(--text-dim);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+#opacity-slider {
+  width: 80px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+#opacity-slider:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+#opacity-value {
+  color: var(--text-dim);
+  font-size: 11px;
+  min-width: 32px;
+  text-align: right;
 }
 
 #canvas-container {
@@ -504,6 +586,8 @@ body {
   font-size: 10px;
   color: var(--text-dim);
   opacity: 0.6;
+  text-align: center;
+  width: 100%;
 }
 
 #app-version {

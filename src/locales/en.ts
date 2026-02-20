@@ -11,6 +11,9 @@ const en = {
   'toolbar.cuttingMarks': 'Cutting marks',
   'toolbar.corrX': 'Corr. X',
   'toolbar.corrY': 'Corr. Y',
+  'toolbar.flipH': 'Flip horizontal',
+  'toolbar.flipV': 'Flip vertical',
+  'toolbar.opacity': 'Opacity',
 
   'color.white': 'White',
   'color.grey': 'Grey',

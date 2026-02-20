@@ -58,6 +58,7 @@ mock.module('fabric', () => {
 
   class MockFabricImage {
     left = 0; top = 0; scaleX = 1; scaleY = 1; angle = 0;
+    flipX = false; flipY = false; opacity = 1;
     width = 100; height = 100; visible = true;
     selectable = true; evented = true;
 
@@ -382,6 +383,120 @@ describe('CanvasManager', () => {
       expect(cm.groups.length).toBe(0);
       expect(cm.images.length).toBe(1);
       expect(cm.images[0].filename).toBe('b.png');
+    });
+  });
+
+  describe('flip', () => {
+    async function addAndSelect() {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.selectImage(0);
+    }
+
+    it('flipSelectedH toggles flipX on the active object', async () => {
+      await addAndSelect();
+      const fi = cm.images[0].fabricImage;
+      expect(fi.flipX).toBe(false);
+      cm.flipSelectedH();
+      expect(fi.flipX).toBe(true);
+      cm.flipSelectedH();
+      expect(fi.flipX).toBe(false);
+    });
+
+    it('flipSelectedV toggles flipY on the active object', async () => {
+      await addAndSelect();
+      const fi = cm.images[0].fabricImage;
+      expect(fi.flipY).toBe(false);
+      cm.flipSelectedV();
+      expect(fi.flipY).toBe(true);
+      cm.flipSelectedV();
+      expect(fi.flipY).toBe(false);
+    });
+
+    it('flipSelectedH does nothing without selection', () => {
+      expect(() => cm.flipSelectedH()).not.toThrow();
+    });
+
+    it('flipSelectedV does nothing without selection', () => {
+      expect(() => cm.flipSelectedV()).not.toThrow();
+    });
+
+    it('addImageFromDataURL respects flipX/flipY props', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'flipped.png', visible: true,
+        left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+        flipX: true, flipY: true,
+      });
+      const fi = cm.images[0].fabricImage;
+      expect(fi.flipX).toBe(true);
+      expect(fi.flipY).toBe(true);
+    });
+
+    it('addImageFromDataURL defaults flipX/flipY to false', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'normal.png', visible: true,
+        left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      const fi = cm.images[0].fabricImage;
+      expect(fi.flipX).toBe(false);
+      expect(fi.flipY).toBe(false);
+    });
+  });
+
+  describe('opacity', () => {
+    it('setImageOpacity sets opacity on the fabric image', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.setImageOpacity(0, 0.5);
+      expect(cm.images[0].fabricImage.opacity).toBe(0.5);
+    });
+
+    it('getImageOpacity returns the current opacity', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      expect(cm.getImageOpacity(0)).toBe(1);
+      cm.setImageOpacity(0, 0.3);
+      expect(cm.getImageOpacity(0)).toBeCloseTo(0.3);
+    });
+
+    it('clamps opacity to [0, 1]', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.setImageOpacity(0, -0.5);
+      expect(cm.getImageOpacity(0)).toBe(0);
+      cm.setImageOpacity(0, 2.0);
+      expect(cm.getImageOpacity(0)).toBe(1);
+    });
+
+    it('does nothing for invalid index', async () => {
+      expect(() => cm.setImageOpacity(-1, 0.5)).not.toThrow();
+      expect(() => cm.setImageOpacity(99, 0.5)).not.toThrow();
+    });
+
+    it('getImageOpacity returns 1 for invalid index', () => {
+      expect(cm.getImageOpacity(-1)).toBe(1);
+      expect(cm.getImageOpacity(99)).toBe(1);
+    });
+
+    it('addImageFromDataURL respects opacity prop', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'semi.png', visible: true,
+        left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+        opacity: 0.7,
+      });
+      expect(cm.images[0].fabricImage.opacity).toBeCloseTo(0.7);
+    });
+
+    it('addImageFromDataURL defaults opacity to 1', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'full.png', visible: true,
+        left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      expect(cm.images[0].fabricImage.opacity).toBe(1);
     });
   });
 

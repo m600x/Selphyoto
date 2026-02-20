@@ -29,15 +29,6 @@
         </div>
       </div>
       <header id="toolbar">
-        <div class="tool-group undo-redo-group">
-          <button id="undo-btn" class="action-btn undo-redo-btn" data-i18n-title="toolbar.undo" title="Undo (Ctrl+Z)" disabled>
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-          </button>
-          <button id="redo-btn" class="action-btn undo-redo-btn" data-i18n-title="toolbar.redo" title="Redo (Ctrl+Y)" disabled>
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/></svg>
-          </button>
-        </div>
-
         <div class="tool-group">
           <label data-i18n="toolbar.guidelines">Guidelines</label>
           <button id="guidelines-btn" class="toggle-btn active" data-i18n="toolbar.guidelines.on">ON</button>
@@ -161,12 +152,35 @@
           </div>
         </section>
 
-        <main id="canvas-wrapper">
-          <div id="canvas-container">
-            <div id="drop-overlay" data-i18n="canvas.dropHere">Drop images here</div>
-            <canvas id="main-canvas"></canvas>
+        <div id="canvas-panel">
+          <div id="canvas-toolbar">
+            <div class="tool-group undo-redo-group">
+              <button id="undo-btn" class="action-btn undo-redo-btn" data-i18n-title="toolbar.undo" title="Undo (Ctrl+Z)" disabled>
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+              </button>
+              <button id="redo-btn" class="action-btn undo-redo-btn" data-i18n-title="toolbar.redo" title="Redo (Ctrl+Y)" disabled>
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/></svg>
+              </button>
+            </div>
+            <div class="canvas-toolbar-sep"></div>
+            <button id="flip-h-btn" class="action-btn canvas-tool-btn" data-i18n-title="toolbar.flipH" title="Flip horizontal" disabled>
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><polyline points="5 9 2 12 5 15"/><polyline points="19 9 22 12 19 15"/><path d="M2 12h6"/><path d="M16 12h6"/></svg>
+            </button>
+            <button id="flip-v-btn" class="action-btn canvas-tool-btn" data-i18n-title="toolbar.flipV" title="Flip vertical" disabled>
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="12" x2="22" y2="12"/><polyline points="9 5 12 2 15 5"/><polyline points="9 19 12 22 15 19"/><path d="M12 2v6"/><path d="M12 16v6"/></svg>
+            </button>
+            <div class="canvas-toolbar-sep"></div>
+            <label class="canvas-toolbar-label" data-i18n="toolbar.opacity">Opacity</label>
+            <input type="range" id="opacity-slider" min="0" max="1" step="0.05" value="1" disabled>
+            <span id="opacity-value">100%</span>
           </div>
-        </main>
+          <main id="canvas-wrapper">
+            <div id="canvas-container">
+              <div id="drop-overlay" data-i18n="canvas.dropHere">Drop images here</div>
+              <canvas id="main-canvas"></canvas>
+            </div>
+          </main>
+        </div>
       </div>
     </div>
     <div id="export-modal-overlay" class="modal-overlay hidden">

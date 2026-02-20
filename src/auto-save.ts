@@ -11,6 +11,9 @@ export interface AutoSaveImage {
   scaleX: number;
   scaleY: number;
   angle: number;
+  flipX: boolean;
+  flipY: boolean;
+  opacity: number;
 }
 
 export interface AutoSaveSettings {
@@ -131,6 +134,9 @@ export function collectState(
       scaleX: e.fabricImage.scaleX ?? 1,
       scaleY: e.fabricImage.scaleY ?? 1,
       angle: e.fabricImage.angle ?? 0,
+      flipX: e.fabricImage.flipX ?? false,
+      flipY: e.fabricImage.flipY ?? false,
+      opacity: e.fabricImage.opacity ?? 1,
     })),
     groups: cm.groups.map(g => ({ ...g })),
     groupCounter: cm.getGroupCounter(),

@@ -13,6 +13,9 @@ const zh: Record<LocaleKey, string> = {
   'toolbar.cuttingMarks': '裁切标记',
   'toolbar.corrX': '校正 X',
   'toolbar.corrY': '校正 Y',
+  'toolbar.flipH': '水平翻转',
+  'toolbar.flipV': '垂直翻转',
+  'toolbar.opacity': '不透明度',
 
   'color.white': '白色',
   'color.grey': '灰色',

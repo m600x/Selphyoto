@@ -13,6 +13,9 @@ export interface ProjectImageEntry {
   scaleX: number;
   scaleY: number;
   angle: number;
+  flipX?: boolean;
+  flipY?: boolean;
+  opacity?: number;
 }
 
 export interface ProjectSettings {
@@ -69,6 +72,9 @@ export async function exportProject(
       scaleX: fi.scaleX ?? 1,
       scaleY: fi.scaleY ?? 1,
       angle: fi.angle ?? 0,
+      flipX: fi.flipX ?? false,
+      flipY: fi.flipY ?? false,
+      opacity: fi.opacity ?? 1,
     });
   }
 
@@ -137,6 +143,9 @@ export async function importProject(
       scaleX: imgEntry.scaleX,
       scaleY: imgEntry.scaleY,
       angle: imgEntry.angle,
+      flipX: imgEntry.flipX ?? false,
+      flipY: imgEntry.flipY ?? false,
+      opacity: imgEntry.opacity ?? 1,
     });
   }
 

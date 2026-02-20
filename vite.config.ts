@@ -12,6 +12,9 @@ if (commitHash === 'dev') {
     // not a git repo or .git not available (e.g. Docker build)
   }
 }
+if (commitHash.length > 7) {
+  commitHash = commitHash.slice(0, 7);
+}
 
 export default defineConfig({
   define: {

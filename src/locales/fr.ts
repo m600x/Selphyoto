@@ -13,6 +13,9 @@ const fr: Record<LocaleKey, string> = {
   'toolbar.cuttingMarks': 'Marques de coupe',
   'toolbar.corrX': 'Corr. X',
   'toolbar.corrY': 'Corr. Y',
+  'toolbar.flipH': 'Retourner horizontalement',
+  'toolbar.flipV': 'Retourner verticalement',
+  'toolbar.opacity': 'Opacité',
 
   'color.white': 'Blanc',
   'color.grey': 'Gris',

@@ -11,6 +11,9 @@ export interface HistoryImage {
   scaleX: number;
   scaleY: number;
   angle: number;
+  flipX: boolean;
+  flipY: boolean;
+  opacity: number;
 }
 
 export interface HistorySnapshot {

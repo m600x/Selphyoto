@@ -623,6 +623,9 @@ export class CanvasManager {
       scaleX: number;
       scaleY: number;
       angle: number;
+      flipX?: boolean;
+      flipY?: boolean;
+      opacity?: number;
     },
   ): Promise<void> {
     dataUrl = await CanvasManager.constrainDataUrl(dataUrl);
@@ -634,6 +637,9 @@ export class CanvasManager {
       scaleX: props.scaleX,
       scaleY: props.scaleY,
       angle: props.angle,
+      flipX: props.flipX ?? false,
+      flipY: props.flipY ?? false,
+      opacity: props.opacity ?? 1,
       visible: props.visible,
       selectable: !locked,
       evented: !locked,
@@ -676,6 +682,38 @@ export class CanvasManager {
   getRotation(): number {
     const active = this.canvas.getActiveObject();
     return active ? active.angle ?? 0 : 0;
+  }
+
+  // ── Flip ──
+
+  flipSelectedH() {
+    const active = this.canvas.getActiveObject();
+    if (!active) return;
+    active.set('flipX', !active.flipX);
+    active.setCoords();
+    this.canvas.requestRenderAll();
+  }
+
+  flipSelectedV() {
+    const active = this.canvas.getActiveObject();
+    if (!active) return;
+    active.set('flipY', !active.flipY);
+    active.setCoords();
+    this.canvas.requestRenderAll();
+  }
+
+  // ── Opacity ──
+
+  setImageOpacity(index: number, opacity: number) {
+    if (index < 0 || index >= this._images.length) return;
+    const clamped = Math.max(0, Math.min(1, opacity));
+    this._images[index].fabricImage.set('opacity', clamped);
+    this.canvas.requestRenderAll();
+  }
+
+  getImageOpacity(index: number): number {
+    if (index < 0 || index >= this._images.length) return 1;
+    return this._images[index].fabricImage.opacity ?? 1;
   }
 
   // ── Cutting mark color ──

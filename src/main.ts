@@ -44,6 +44,10 @@ const bgButtons = document.querySelectorAll<HTMLButtonElement>('.bg-btn');
 const langSelect = document.getElementById('lang-select') as HTMLSelectElement;
 const undoBtn = document.getElementById('undo-btn') as HTMLButtonElement;
 const redoBtn = document.getElementById('redo-btn') as HTMLButtonElement;
+const flipHBtn = document.getElementById('flip-h-btn') as HTMLButtonElement;
+const flipVBtn = document.getElementById('flip-v-btn') as HTMLButtonElement;
+const opacitySlider = document.getElementById('opacity-slider') as HTMLInputElement;
+const opacityValue = document.getElementById('opacity-value') as HTMLSpanElement;
 
 // ── Export format state ──
 
@@ -73,6 +77,9 @@ function captureSnapshot(): HistorySnapshot {
         scaleX: img.scaleX,
         scaleY: img.scaleY,
         angle: img.angle,
+        flipX: img.flipX,
+        flipY: img.flipY,
+        opacity: img.opacity,
       };
     }),
     groups: state.groups,
@@ -111,6 +118,9 @@ async function restoreFromSnapshot(snapshot: HistorySnapshot): Promise<void> {
       scaleX: img.scaleX,
       scaleY: img.scaleY,
       angle: img.angle,
+      flipX: img.flipX ?? false,
+      flipY: img.flipY ?? false,
+      opacity: img.opacity ?? 1,
     });
   }
   cm.restoreGroups(snapshot.groups, snapshot.groupCounter);
@@ -146,6 +156,49 @@ redoBtn.addEventListener('click', async () => {
   if (snapshot) await restoreFromSnapshot(snapshot);
   updateUndoRedoButtons();
 });
+
+// ── Flip & Opacity ──
+
+flipHBtn.addEventListener('click', () => {
+  pushSnapshot();
+  cm.flipSelectedH();
+  scheduleSave();
+});
+
+flipVBtn.addEventListener('click', () => {
+  pushSnapshot();
+  cm.flipSelectedV();
+  scheduleSave();
+});
+
+opacitySlider.addEventListener('input', () => {
+  const idx = cm.getSelectedIndex();
+  if (idx < 0) return;
+  const val = parseFloat(opacitySlider.value);
+  cm.setImageOpacity(idx, val);
+  opacityValue.textContent = `${Math.round(val * 100)}%`;
+});
+
+opacitySlider.addEventListener('change', () => {
+  scheduleSave();
+});
+
+function updateCanvasToolbar() {
+  const idx = cm.getSelectedIndex();
+  const hasSelection = idx >= 0;
+  flipHBtn.disabled = !hasSelection;
+  flipVBtn.disabled = !hasSelection;
+  opacitySlider.disabled = !hasSelection;
+
+  if (hasSelection) {
+    const opacity = cm.getImageOpacity(idx);
+    opacitySlider.value = String(opacity);
+    opacityValue.textContent = `${Math.round(opacity * 100)}%`;
+  } else {
+    opacitySlider.value = '1';
+    opacityValue.textContent = '100%';
+  }
+}
 
 // ── Version display ──
 
@@ -289,6 +342,7 @@ function updateExportState() {
 cm.onListChange = () => refreshLayers();
 cm.onSelectionChange = (index) => {
   lm.highlightRow(index ?? -1);
+  updateCanvasToolbar();
 };
 
 // ── Canvas object transform → auto-save + history ──
@@ -742,6 +796,9 @@ async function restoreAutoSave() {
           scaleX: img.scaleX,
           scaleY: img.scaleY,
           angle: img.angle,
+          flipX: img.flipX ?? false,
+          flipY: img.flipY ?? false,
+          opacity: img.opacity ?? 1,
         });
       } catch (imgErr) {
         console.warn('Skipping corrupt auto-saved image:', img.filename, imgErr);

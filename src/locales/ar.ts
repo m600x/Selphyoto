@@ -13,6 +13,9 @@ const ar: Record<LocaleKey, string> = {
   'toolbar.cuttingMarks': 'علامات القص',
   'toolbar.corrX': 'تصحيح X',
   'toolbar.corrY': 'تصحيح Y',
+  'toolbar.flipH': 'قلب أفقي',
+  'toolbar.flipV': 'قلب عمودي',
+  'toolbar.opacity': 'الشفافية',
 
   'color.white': 'أبيض',
   'color.grey': 'رمادي',

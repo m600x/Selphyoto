@@ -18,6 +18,7 @@ function makeImageSnapshot(keys: string[]): HistorySnapshot {
       locked: false,
       groupId: null,
       left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      flipX: false, flipY: false, opacity: 1,
     })),
   });
 }

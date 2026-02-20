@@ -13,6 +13,9 @@ const hi: Record<LocaleKey, string> = {
   'toolbar.cuttingMarks': 'कटिंग मार्क',
   'toolbar.corrX': 'सुधार X',
   'toolbar.corrY': 'सुधार Y',
+  'toolbar.flipH': 'क्षैतिज पलटें',
+  'toolbar.flipV': 'लंबवत पलटें',
+  'toolbar.opacity': 'अपारदर्शिता',
 
   'color.white': 'सफ़ेद',
   'color.grey': 'धूसर',

@@ -4,7 +4,7 @@ import type { CanvasManager } from '../../src/canvas-manager';
 
 function makeMockCM(overrides: Partial<{
   images: Array<{
-    fabricImage: { left: number; top: number; scaleX: number; scaleY: number; angle: number };
+    fabricImage: { left: number; top: number; scaleX: number; scaleY: number; angle: number; flipX?: boolean; flipY?: boolean; opacity?: number };
     filename: string;
     visible: boolean;
     locked: boolean;
@@ -38,7 +38,7 @@ describe('collectState', () => {
     const cm = makeMockCM({
       images: [
         {
-          fabricImage: { left: 10, top: 20, scaleX: 0.5, scaleY: 0.5, angle: 45 },
+          fabricImage: { left: 10, top: 20, scaleX: 0.5, scaleY: 0.5, angle: 45, flipX: true, flipY: false, opacity: 0.8 },
           filename: 'photo.png',
           visible: true,
           locked: false,
@@ -69,6 +69,9 @@ describe('collectState', () => {
       scaleX: 0.5,
       scaleY: 0.5,
       angle: 45,
+      flipX: true,
+      flipY: false,
+      opacity: 0.8,
     });
 
     expect(state.groups).toHaveLength(1);

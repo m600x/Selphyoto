@@ -36,6 +36,7 @@ describe('history IndexedDB operations', () => {
             locked: false,
             groupId: null,
             left: 10, top: 20, scaleX: 1, scaleY: 1, angle: 0,
+            flipX: false, flipY: false, opacity: 1,
           }],
           groups: [{ id: 'g1', name: 'Group 1', visible: true }],
           groupCounter: 1,
