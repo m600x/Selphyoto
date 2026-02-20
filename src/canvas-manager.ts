@@ -802,6 +802,74 @@ export class CanvasManager {
     return this._images[index].fabricImage.opacity ?? 1;
   }
 
+  // ── Subframe alignment ──
+
+  getSubframeBounds(): { left: number; top: number; width: number; height: number }[] {
+    const halfW = C.POSTCARD_WIDTH_MM / 2;
+    const sfLeftX = (halfW - C.YOTO_WIDTH_MM) / 2;
+    const sfRightX = halfW + (halfW - C.YOTO_WIDTH_MM) / 2;
+    const sfY = (C.POSTCARD_HEIGHT_MM - C.YOTO_HEIGHT_MM) / 2;
+
+    const iW = C.YOTO_WIDTH_MM * this.corrX;
+    const iH = C.YOTO_HEIGHT_MM * this.corrY;
+
+    return [
+      {
+        left: this.mmToCanvasX(this.paperToImageX(sfLeftX)),
+        top: this.mmToCanvasY(this.paperToImageY(sfY)),
+        width: iW * C.DISPLAY_SCALE,
+        height: iH * C.DISPLAY_SCALE,
+      },
+      {
+        left: this.mmToCanvasX(this.paperToImageX(sfRightX)),
+        top: this.mmToCanvasY(this.paperToImageY(sfY)),
+        width: iW * C.DISPLAY_SCALE,
+        height: iH * C.DISPLAY_SCALE,
+      },
+    ];
+  }
+
+  private closestSubframe(objCenterX: number): { left: number; top: number; width: number; height: number } {
+    const bounds = this.getSubframeBounds();
+    const leftCenter = bounds[0].left + bounds[0].width / 2;
+    const rightCenter = bounds[1].left + bounds[1].width / 2;
+    return Math.abs(objCenterX - leftCenter) <= Math.abs(objCenterX - rightCenter)
+      ? bounds[0]
+      : bounds[1];
+  }
+
+  alignSelected(position: 'left' | 'right' | 'top' | 'bottom' | 'center-h' | 'center-v'): void {
+    const active = this.canvas.getActiveObject();
+    if (!active) return;
+
+    const br = active.getBoundingRect();
+    const sf = this.closestSubframe(br.left + br.width / 2);
+
+    switch (position) {
+      case 'left':
+        active.set('left', (active.left ?? 0) + sf.left - br.left);
+        break;
+      case 'right':
+        active.set('left', (active.left ?? 0) + (sf.left + sf.width) - (br.left + br.width));
+        break;
+      case 'top':
+        active.set('top', (active.top ?? 0) + sf.top - br.top);
+        break;
+      case 'bottom':
+        active.set('top', (active.top ?? 0) + (sf.top + sf.height) - (br.top + br.height));
+        break;
+      case 'center-h':
+        active.set('left', (active.left ?? 0) + (sf.left + sf.width / 2) - (br.left + br.width / 2));
+        break;
+      case 'center-v':
+        active.set('top', (active.top ?? 0) + (sf.top + sf.height / 2) - (br.top + br.height / 2));
+        break;
+    }
+
+    active.setCoords();
+    this.canvas.requestRenderAll();
+  }
+
   // ── Text layers ──
 
   getTextCounter(): number { return this._textCounter; }

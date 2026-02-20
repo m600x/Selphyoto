@@ -77,6 +77,14 @@ mock.module('fabric', () => {
       else Object.assign(this, key);
     }
     setCoords() {}
+    getBoundingRect() {
+      return {
+        left: this.left,
+        top: this.top,
+        width: this.width * this.scaleX,
+        height: this.height * this.scaleY,
+      };
+    }
     toDataURL() { return 'data:image/png;base64,IMGDATA'; }
     static fromURL = mock().mockImplementation(async () => new MockFabricImage());
   }
@@ -101,6 +109,14 @@ mock.module('fabric', () => {
     setCoords() {}
     calcTextWidth() { return (this.text?.length ?? 4) * 20; }
     initDimensions() {}
+    getBoundingRect() {
+      return {
+        left: this.left,
+        top: this.top,
+        width: this.width * this.scaleX,
+        height: this.height * this.scaleY,
+      };
+    }
     toDataURL() { return 'data:image/png;base64,TEXT'; }
   }
 
@@ -1089,6 +1105,93 @@ describe('CanvasManager', () => {
 
       mockCanvas(cm).emit('text:editing:exited');
       expect(cm.images[0].filename).toBe(origName);
+    });
+  });
+
+  describe('subframe alignment', () => {
+    it('getSubframeBounds returns two subframes', () => {
+      const bounds = cm.getSubframeBounds();
+      expect(bounds).toHaveLength(2);
+      expect(bounds[0].left).toBeLessThan(bounds[1].left);
+      expect(bounds[0].width).toBeGreaterThan(0);
+      expect(bounds[0].height).toBeGreaterThan(0);
+    });
+
+    it('alignSelected does nothing without selection', () => {
+      expect(() => cm.alignSelected('left')).not.toThrow();
+    });
+
+    describe('aligns to left subframe when object is on left side', () => {
+      let sf: { left: number; top: number; width: number; height: number };
+
+      beforeEach(async () => {
+        sf = cm.getSubframeBounds()[0];
+        await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+          filename: 'img.png', visible: true,
+          left: sf.left + 10, top: sf.top + 10,
+          scaleX: 0.5, scaleY: 0.5, angle: 0,
+        });
+        cm.selectImage(0);
+      });
+
+      it('align left', () => {
+        cm.alignSelected('left');
+        expect(cm.images[0].fabricImage.left).toBeCloseTo(sf.left);
+      });
+
+      it('align right', () => {
+        cm.alignSelected('right');
+        const objW = (cm.images[0].fabricImage.width ?? 0) * (cm.images[0].fabricImage.scaleX ?? 1);
+        expect(cm.images[0].fabricImage.left).toBeCloseTo(sf.left + sf.width - objW);
+      });
+
+      it('align top', () => {
+        cm.alignSelected('top');
+        expect(cm.images[0].fabricImage.top).toBeCloseTo(sf.top);
+      });
+
+      it('align bottom', () => {
+        cm.alignSelected('bottom');
+        const objH = (cm.images[0].fabricImage.height ?? 0) * (cm.images[0].fabricImage.scaleY ?? 1);
+        expect(cm.images[0].fabricImage.top).toBeCloseTo(sf.top + sf.height - objH);
+      });
+
+      it('center horizontally', () => {
+        cm.alignSelected('center-h');
+        const objW = (cm.images[0].fabricImage.width ?? 0) * (cm.images[0].fabricImage.scaleX ?? 1);
+        expect(cm.images[0].fabricImage.left).toBeCloseTo(sf.left + (sf.width - objW) / 2);
+      });
+
+      it('center vertically', () => {
+        cm.alignSelected('center-v');
+        const objH = (cm.images[0].fabricImage.height ?? 0) * (cm.images[0].fabricImage.scaleY ?? 1);
+        expect(cm.images[0].fabricImage.top).toBeCloseTo(sf.top + (sf.height - objH) / 2);
+      });
+    });
+
+    describe('aligns to right subframe when object is on right side', () => {
+      let sf: { left: number; top: number; width: number; height: number };
+
+      beforeEach(async () => {
+        sf = cm.getSubframeBounds()[1];
+        await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+          filename: 'img.png', visible: true,
+          left: sf.left + 10, top: sf.top + 10,
+          scaleX: 0.5, scaleY: 0.5, angle: 0,
+        });
+        cm.selectImage(0);
+      });
+
+      it('align left snaps to right subframe', () => {
+        cm.alignSelected('left');
+        expect(cm.images[0].fabricImage.left).toBeCloseTo(sf.left);
+      });
+
+      it('center horizontally in right subframe', () => {
+        cm.alignSelected('center-h');
+        const objW = (cm.images[0].fabricImage.width ?? 0) * (cm.images[0].fabricImage.scaleX ?? 1);
+        expect(cm.images[0].fabricImage.left).toBeCloseTo(sf.left + (sf.width - objW) / 2);
+      });
     });
   });
 });

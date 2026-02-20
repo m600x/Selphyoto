@@ -53,6 +53,14 @@ const flipHBtn = document.getElementById('flip-h-btn') as HTMLButtonElement;
 const flipVBtn = document.getElementById('flip-v-btn') as HTMLButtonElement;
 const opacitySlider = document.getElementById('opacity-slider') as HTMLInputElement;
 const opacityValue = document.getElementById('opacity-value') as HTMLSpanElement;
+const sfAlignBtns = {
+  left: document.getElementById('sf-align-left') as HTMLButtonElement,
+  centerH: document.getElementById('sf-align-center-h') as HTMLButtonElement,
+  right: document.getElementById('sf-align-right') as HTMLButtonElement,
+  top: document.getElementById('sf-align-top') as HTMLButtonElement,
+  centerV: document.getElementById('sf-align-center-v') as HTMLButtonElement,
+  bottom: document.getElementById('sf-align-bottom') as HTMLButtonElement,
+};
 const addTextBtn = document.getElementById('add-text-btn') as HTMLButtonElement;
 const fontSelect = document.getElementById('font-select') as HTMLSelectElement;
 const fontSizeInput = document.getElementById('font-size-input') as HTMLInputElement;
@@ -241,6 +249,21 @@ opacitySlider.addEventListener('change', () => {
   scheduleSave();
 });
 
+// ── Subframe alignment ──
+
+const alignActions = [
+  ['left', 'left'], ['centerH', 'center-h'], ['right', 'right'],
+  ['top', 'top'], ['centerV', 'center-v'], ['bottom', 'bottom'],
+] as const;
+
+for (const [key, position] of alignActions) {
+  sfAlignBtns[key].addEventListener('click', () => {
+    pushSnapshot();
+    cm.alignSelected(position);
+    scheduleSave();
+  });
+}
+
 // ── Add Text ──
 
 addTextBtn.addEventListener('click', () => {
@@ -329,6 +352,7 @@ function updateCanvasToolbar() {
   flipHBtn.disabled = !hasSelection;
   flipVBtn.disabled = !hasSelection;
   opacitySlider.disabled = !hasSelection;
+  Object.values(sfAlignBtns).forEach(b => { b.disabled = !hasSelection; });
 
   fontSelect.disabled = !isText;
   fontSizeInput.disabled = !isText;
