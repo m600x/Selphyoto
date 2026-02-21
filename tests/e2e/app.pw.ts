@@ -33,11 +33,11 @@ async function expandSidebar(page: Page) {
     await expect(panel).not.toHaveClass(/collapsed/);
   }
 }
-async function openOptionsMenu(page: Page) {
-  const menu = page.locator('#options-menu');
-  if (!(await menu.evaluate(el => el.classList.contains('open')))) {
-    await page.click('#options-btn');
-    await expect(menu).toHaveClass(/open/);
+async function expandSettingsPanel(page: Page) {
+  const panel = page.locator('#settings-panel');
+  if (await panel.evaluate(el => el.classList.contains('collapsed'))) {
+    await page.click('#settings-drawer-toggle');
+    await expect(panel).not.toHaveClass(/collapsed/);
   }
 }
 
@@ -63,13 +63,13 @@ test.describe('Page load', () => {
 
   test('outline button defaults to ON', async ({ page }) => {
     await page.goto('/');
-    await openOptionsMenu(page);
+    await expandSettingsPanel(page);
     await expect(page.locator('#outline-btn')).toHaveText('ON');
   });
 
   test('correction inputs have default values', async ({ page }) => {
     await page.goto('/');
-    await openOptionsMenu(page);
+    await expandSettingsPanel(page);
     await expect(page.locator('#correction-x')).toHaveValue('0.961');
     await expect(page.locator('#correction-y')).toHaveValue('0.961');
   });
@@ -159,7 +159,7 @@ test.describe('Layer operations', () => {
 test.describe('Settings', () => {
   test('change background color', async ({ page }) => {
     await page.goto('/');
-    await openOptionsMenu(page);
+    await expandSettingsPanel(page);
     const blackBtn = page.locator('.bg-btn[data-bg="#000000"]');
     await blackBtn.click();
     await expect(blackBtn).toHaveClass(/active/);
@@ -167,7 +167,7 @@ test.describe('Settings', () => {
 
   test('change cutting marks color', async ({ page }) => {
     await page.goto('/');
-    await openOptionsMenu(page);
+    await expandSettingsPanel(page);
     const yellowBtn = page.locator('.mark-btn[data-mark="#cccc00"]');
     await yellowBtn.click();
     await expect(yellowBtn).toHaveClass(/active/);
@@ -175,7 +175,7 @@ test.describe('Settings', () => {
 
   test('toggle outline', async ({ page }) => {
     await page.goto('/');
-    await openOptionsMenu(page);
+    await expandSettingsPanel(page);
     const btn = page.locator('#outline-btn');
     await expect(btn).toHaveText('ON');
     await btn.click();
@@ -186,7 +186,7 @@ test.describe('Settings', () => {
 
   test('modify correction factor X', async ({ page }) => {
     await page.goto('/');
-    await openOptionsMenu(page);
+    await expandSettingsPanel(page);
     const input = page.locator('#correction-x');
     await input.fill('0.95');
     await input.dispatchEvent('change');
@@ -255,6 +255,7 @@ test.describe('Project save/load', () => {
   test('export project triggers zip download', async ({ page }) => {
     await page.goto('/');
     await addImageViaButton(page);
+    await expandSettingsPanel(page);
 
     const [download] = await Promise.all([
       page.waitForEvent('download'),
@@ -409,7 +410,7 @@ test.describe('Undo / Redo', () => {
   test('background color change does not enable undo', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('#undo-btn')).toBeDisabled();
-    await openOptionsMenu(page);
+    await expandSettingsPanel(page);
     await page.click('.bg-btn[data-bg="#000000"]');
     await page.waitForTimeout(100);
     await expect(page.locator('#undo-btn')).toBeDisabled();
@@ -418,7 +419,7 @@ test.describe('Undo / Redo', () => {
   test('outline toggle does not enable undo', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('#undo-btn')).toBeDisabled();
-    await openOptionsMenu(page);
+    await expandSettingsPanel(page);
     await page.click('#outline-btn');
     await page.waitForTimeout(100);
     await expect(page.locator('#undo-btn')).toBeDisabled();
