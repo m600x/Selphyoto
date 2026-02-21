@@ -1,5 +1,12 @@
 # Selph'Yoto
 
+[![Audit](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/m600x/GIST_ID/raw/audit.json)](https://github.com/m600x/Selphyoto/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/m600x/GIST_ID/raw/tests.json)](https://github.com/m600x/Selphyoto/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/m600x/GIST_ID/raw/coverage.json)](https://github.com/m600x/Selphyoto/actions/workflows/ci.yml)
+[![Build](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/m600x/GIST_ID/raw/build.json)](https://github.com/m600x/Selphyoto/actions/workflows/ci.yml)
+[![Docker](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/m600x/GIST_ID/raw/docker.json)](https://github.com/m600x/Selphyoto/actions/workflows/ci.yml)
+[![Vulnerability](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/m600x/GIST_ID/raw/vulnerability.json)](https://github.com/m600x/Selphyoto/actions/workflows/ci.yml)
+
 Available (for now) at: https://selphyoto.m600.fr
 
 A web application for designing and printing precisely-sized YOTO card labels using a Canon Selphy CP1500 dye-sublimation printer with postcard paper (100 × 148 mm, borderless).
@@ -277,14 +284,20 @@ make reinstall           Clean and reinstall everything
 
 ## CI / CD
 
-A GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push and pull request to `master`/`main`:
+A single GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push and pull request to `master`/`main`:
 
-| Job | When | What it does |
-|-----|------|-------------|
-| **Vulnerability scan** | Always | `bun audit --omit=dev` to flag known vulnerabilities in production dependencies |
-| **Tests** | Always | ESLint, TypeScript check, unit tests, integration tests, and Playwright E2E tests |
-| **Docker build & push** | Push to master/main | Builds the image and pushes to `ghcr.io` with tags `latest`, the version from `package.json`, and the short SHA |
-| **GitHub Release** | Push to master/main | If the version in `package.json` doesn't have a matching Git tag, creates a new tag and GitHub Release with auto-generated release notes |
+| Job | Depends on | When | What it does |
+|-----|-----------|------|-------------|
+| **Audit** | — | Always | ESLint + TypeScript type-check |
+| **Vulnerability** | — | Always | `bun audit` + Trivy filesystem scan |
+| **Tests** | — | Always | Unit, integration, and Playwright E2E tests |
+| **Coverage** | Tests | Always | Coverage report with lcov summary and badge |
+| **Build** | Tests | Always | Vite production build + bundle size summary |
+| **Lighthouse** | — | Always | PWA, performance, and accessibility audit |
+| **Docker build** | Build | Push only | Multi-arch Docker image (amd64 + arm64) pushed to `ghcr.io` |
+| **Docker manifest** | Docker build | Push only | Merge multi-arch manifests and tag with version |
+| **Trivy** | Docker manifest | Push only | Scan the published Docker image for CVEs |
+| **Release** | Docker manifest | Push only | Create Git tag + GitHub Release if version bumped |
 
 ### Docker image tags
 
@@ -304,6 +317,8 @@ docker pull ghcr.io/<owner>/selphy-yoto-templater:0.1.0
 1. Bump the `version` in `package.json` (e.g. `0.1.0` to `0.2.0`)
 2. Commit and push to master/main
 3. The workflow automatically creates a `v0.2.0` Git tag, a GitHub Release, and pushes the Docker image tagged `0.2.0` + `latest`
+
+All badges are powered by [shields.io](https://shields.io) dynamic endpoints backed by a GitHub Gist, updated automatically on each push to master/main via [`schneegans/dynamic-badges-action`](https://github.com/Schneegans/dynamic-badges-action).
 
 Test artifacts (screenshots on failure, reports) are uploaded as workflow artifacts with 7-day retention.
 

@@ -19,6 +19,12 @@ mock.module('fabric', () => {
     setActiveObject(obj: unknown) { this.activeObject = obj; }
     discardActiveObject() { this.activeObject = null; }
     getActiveObject() { return this.activeObject; }
+    getActiveObjects() {
+      const ao = this.activeObject;
+      if (!ao) return [];
+      if (ao instanceof MockActiveSelection) return (ao as any)._objects as unknown[];
+      return [ao];
+    }
     requestRenderAll() {}
     renderAll() {}
     setDimensions(dims: { width?: number; height?: number }) {
@@ -120,6 +126,15 @@ mock.module('fabric', () => {
     toDataURL() { return 'data:image/png;base64,TEXT'; }
   }
 
+  class MockActiveSelection {
+    _objects: unknown[];
+    canvas: unknown;
+    constructor(objects: unknown[], opts?: Record<string, unknown>) {
+      this._objects = objects;
+      this.canvas = opts?.canvas;
+    }
+  }
+
   return {
     Canvas: MockCanvas,
     Rect: MockRect,
@@ -127,6 +142,7 @@ mock.module('fabric', () => {
     FabricImage: MockFabricImage,
     FabricObject: class {},
     Textbox: MockTextbox,
+    ActiveSelection: MockActiveSelection,
   };
 });
 
@@ -1203,6 +1219,145 @@ describe('CanvasManager', () => {
         const objW = (cm.images[0].fabricImage.width ?? 0) * (cm.images[0].fabricImage.scaleX ?? 1);
         expect(cm.images[0].fabricImage.left).toBeCloseTo(sf.left + (sf.width - objW) / 2);
       });
+    });
+  });
+
+  describe('selectAll', () => {
+    it('does nothing when no images exist', () => {
+      cm.selectAll();
+      expect(cm.canvas.getActiveObject()).toBeNull();
+    });
+
+    it('selects single visible image', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,A', {
+        filename: 'a.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.canvas.discardActiveObject();
+      cm.selectAll();
+      expect(cm.canvas.getActiveObject()).toBe(cm.images[0].fabricImage);
+    });
+
+    it('creates multi-selection for multiple visible images', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,A', {
+        filename: 'a.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      await cm.addImageFromDataURL('data:image/png;base64,B', {
+        filename: 'b.png', visible: true, left: 10, top: 10, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.selectAll();
+      const objs = cm.canvas.getActiveObjects();
+      expect(objs).toHaveLength(2);
+    });
+
+    it('skips locked and hidden images', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,A', {
+        filename: 'visible.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      await cm.addImageFromDataURL('data:image/png;base64,B', {
+        filename: 'hidden.png', visible: false, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      await cm.addImageFromDataURL('data:image/png;base64,C', {
+        filename: 'locked.png', visible: true, locked: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.selectAll();
+      expect(cm.canvas.getActiveObject()).toBe(cm.images[0].fabricImage);
+    });
+  });
+
+  describe('serializeSelected', () => {
+    it('returns null with no selection', () => {
+      expect(cm.serializeSelected()).toBeNull();
+    });
+
+    it('serializes a selected image layer', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,IMG', {
+        filename: 'photo.png', visible: true, left: 10, top: 20, scaleX: 0.5, scaleY: 0.8, angle: 45,
+        flipX: true, flipY: false, opacity: 0.7,
+      });
+      cm.selectImage(0);
+      const result = cm.serializeSelected();
+      expect(result).not.toBeNull();
+      expect(result!.type).toBe('image');
+      expect(result!.filename).toBe('photo.png');
+      expect(result!.left).toBe(10);
+      expect(result!.top).toBe(20);
+      expect(result!.scaleX).toBe(0.5);
+      expect(result!.scaleY).toBe(0.8);
+      expect(result!.angle).toBe(45);
+      expect(result!.flipX).toBe(true);
+      expect(result!.opacity).toBe(0.7);
+      expect(result!.dataUrl).toBeDefined();
+    });
+
+    it('serializes a selected text layer with text properties', () => {
+      cm.addTextLayer({
+        text: 'Hello', fontFamily: 'Verdana', fontSize: 24, fill: '#ff0000',
+        fontWeight: 'bold', fontStyle: 'italic', textAlign: 'left',
+        filename: 'hello', visible: true, left: 5, top: 15,
+        scaleX: 1, scaleY: 1, angle: 0, width: 300,
+      });
+      cm.selectImage(0);
+      const result = cm.serializeSelected();
+      expect(result).not.toBeNull();
+      expect(result!.type).toBe('text');
+      expect(result!.text).toBe('Hello');
+      expect(result!.fontFamily).toBe('Verdana');
+      expect(result!.fontSize).toBe(24);
+      expect(result!.fill).toBe('#ff0000');
+      expect(result!.fontWeight).toBe('bold');
+      expect(result!.fontStyle).toBe('italic');
+      expect(result!.textAlign).toBe('left');
+      expect(result!.width).toBe(300);
+    });
+  });
+
+  describe('serializeAllSelected', () => {
+    it('returns empty array with no selection', () => {
+      expect(cm.serializeAllSelected()).toEqual([]);
+    });
+
+    it('serializes a single selected image', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,A', {
+        filename: 'a.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.selectImage(0);
+      const results = cm.serializeAllSelected();
+      expect(results).toHaveLength(1);
+      expect(results[0].filename).toBe('a.png');
+    });
+
+    it('serializes multiple selected layers', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,A', {
+        filename: 'img.png', visible: true, left: 10, top: 20, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.addTextLayer({
+        text: 'Hi', fontFamily: 'Arial', fontSize: 40, fill: '#000',
+        fontWeight: 'normal', fontStyle: 'normal',
+        filename: 'text', visible: true, left: 30, top: 40,
+        scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.selectAll();
+      const results = cm.serializeAllSelected();
+      expect(results).toHaveLength(2);
+      const types = results.map(r => r.type).sort();
+      expect(types).toEqual(['image', 'text']);
+    });
+
+    it('preserves absolute coordinates after multi-serialize', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,A', {
+        filename: 'a.png', visible: true, left: 100, top: 200, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      await cm.addImageFromDataURL('data:image/png;base64,B', {
+        filename: 'b.png', visible: true, left: 300, top: 400, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.selectAll();
+      const results = cm.serializeAllSelected();
+      const aResult = results.find(r => r.filename === 'a.png')!;
+      const bResult = results.find(r => r.filename === 'b.png')!;
+      expect(aResult.left).toBe(100);
+      expect(aResult.top).toBe(200);
+      expect(bResult.left).toBe(300);
+      expect(bResult.top).toBe(400);
     });
   });
 });
