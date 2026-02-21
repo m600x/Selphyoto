@@ -10,6 +10,8 @@
     <title>Selph&#39;Yoto</title>
   </head>
   <body>
+    <input type="file" id="file-input" accept="image/*" multiple hidden />
+    <input type="file" id="project-file-input" accept=".zip" hidden />
     <div id="app">
       <div id="page-header">
       </div>
@@ -22,143 +24,120 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 18 6 12 12 6"/><polyline points="19 18 13 12 19 6"/></svg>
             </button>
           </div>
-          <span id="sidebar-title-collapsed">Click to expand</span>
+          <span id="sidebar-title-collapsed" class="sidebar-collapsed-title">LAYERS</span>
           <div class="add-buttons">
             <button id="new-group-btn" class="action-btn primary" data-i18n="sidebar.addGroup">Add group</button>
           </div>
-          <input type="file" id="file-input" accept="image/*" multiple hidden />
-          <input type="file" id="project-file-input" accept=".zip" hidden />
           <h3 data-i18n="sidebar.layers">Layers</h3>
           <div id="layer-list"></div>
           <p id="layer-empty" data-i18n="sidebar.emptyMsg">Background color and cutting marks are exported.<br/>Green guidelines are not exported, only used as visual reference.</p>
-          <div class="project-buttons">
-            <button id="load-project-btn" class="action-btn violet-btn"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> <span data-i18n="sidebar.import">Import</span></button>
-            <button id="save-project-btn" class="action-btn violet-btn"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> <span data-i18n="sidebar.export">Export</span></button>
+          <div id="sidebar-footer">
+            <span id="autosave-status"></span>
+            <a id="app-version" href="https://github.com/m600x/Selphyoto" target="_blank" rel="noopener noreferrer"></a>
           </div>
           <button id="clear-canvas-btn" class="action-btn danger-btn" data-i18n="sidebar.clearCanvas">Clear Canvas</button>
-          <div id="sidebar-footer">
-            <a id="app-version" href="https://github.com/m600x/Selphyoto" target="_blank" rel="noopener noreferrer"></a>
-            <span id="autosave-status"></span>
-          </div>
         </section>
 
         <div id="canvas-panel">
           <div id="canvas-toolbar">
-            <div class="tool-group undo-redo-group">
-              <button id="undo-btn" class="action-btn undo-redo-btn" data-i18n-title="toolbar.undo" title="Undo (Ctrl+Z)" disabled>
-                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            <button id="undo-btn" class="action-btn toolbar-dropdown-toggle" data-i18n-title="toolbar.undo" title="Undo (Ctrl+Z)" disabled>
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+              <span data-i18n="toolbar.undoLabel">Undo</span>
+            </button>
+            <button id="redo-btn" class="action-btn toolbar-dropdown-toggle" data-i18n-title="toolbar.redo" title="Redo (Ctrl+Y)" disabled>
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/></svg>
+              <span data-i18n="toolbar.redoLabel">Redo</span>
+            </button>
+            <div class="canvas-toolbar-sep"></div>
+            <div class="toolbar-dropdown">
+              <button id="tools-dropdown-btn" class="action-btn toolbar-dropdown-toggle" disabled>
+                <span data-i18n="toolbar.tools">TOOLS</span>
+                <svg class="toolbar-dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
               </button>
-              <button id="redo-btn" class="action-btn undo-redo-btn" data-i18n-title="toolbar.redo" title="Redo (Ctrl+Y)" disabled>
-                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10"/></svg>
-              </button>
-            </div>
-            <div class="canvas-toolbar-sep"></div>
-            <button id="flip-h-btn" class="action-btn canvas-tool-btn" data-i18n-title="toolbar.flipH" title="Flip horizontal" disabled>
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><polyline points="5 9 2 12 5 15"/><polyline points="19 9 22 12 19 15"/><path d="M2 12h6"/><path d="M16 12h6"/></svg>
-            </button>
-            <button id="flip-v-btn" class="action-btn canvas-tool-btn" data-i18n-title="toolbar.flipV" title="Flip vertical" disabled>
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="12" x2="22" y2="12"/><polyline points="9 5 12 2 15 5"/><polyline points="9 19 12 22 15 19"/><path d="M12 2v6"/><path d="M12 16v6"/></svg>
-            </button>
-            <div class="canvas-toolbar-sep"></div>
-            <label class="canvas-toolbar-label" data-i18n="toolbar.opacity">Opacity</label>
-            <input type="range" id="opacity-slider" min="0" max="1" step="0.05" value="1" disabled>
-            <span id="opacity-value">100%</span>
-            <div class="canvas-toolbar-sep"></div>
-            <button id="sf-align-left" class="action-btn canvas-tool-btn" data-i18n-title="align.left" title="Align left" disabled>
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="2" x2="4" y2="22"/><rect x="8" y="6" width="12" height="4" rx="1"/><rect x="8" y="14" width="8" height="4" rx="1"/></svg>
-            </button>
-            <button id="sf-align-center-h" class="action-btn canvas-tool-btn" data-i18n-title="align.centerH" title="Center horizontally" disabled>
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><rect x="5" y="6" width="14" height="4" rx="1"/><rect x="7" y="14" width="10" height="4" rx="1"/></svg>
-            </button>
-            <button id="sf-align-right" class="action-btn canvas-tool-btn" data-i18n-title="align.right" title="Align right" disabled>
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="20" y1="2" x2="20" y2="22"/><rect x="4" y="6" width="12" height="4" rx="1"/><rect x="8" y="14" width="8" height="4" rx="1"/></svg>
-            </button>
-            <button id="sf-align-top" class="action-btn canvas-tool-btn" data-i18n-title="align.top" title="Align top" disabled>
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="4" x2="22" y2="4"/><rect x="6" y="8" width="4" height="12" rx="1"/><rect x="14" y="8" width="4" height="8" rx="1"/></svg>
-            </button>
-            <button id="sf-align-center-v" class="action-btn canvas-tool-btn" data-i18n-title="align.centerV" title="Center vertically" disabled>
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="12" x2="22" y2="12"/><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="7" width="4" height="10" rx="1"/></svg>
-            </button>
-            <button id="sf-align-bottom" class="action-btn canvas-tool-btn" data-i18n-title="align.bottom" title="Align bottom" disabled>
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="20" x2="22" y2="20"/><rect x="6" y="4" width="4" height="12" rx="1"/><rect x="14" y="8" width="4" height="8" rx="1"/></svg>
-            </button>
-            <div class="canvas-toolbar-sep"></div>
-            <button id="add-text-btn" class="action-btn canvas-tool-btn" data-i18n-title="toolbar.addText" title="Add text">
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9.5" y1="20" x2="14.5" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
-            </button>
-            <select id="font-select" class="canvas-toolbar-select" disabled></select>
-            <input type="number" id="font-size-input" class="canvas-toolbar-input" min="8" max="200" value="40" step="1" disabled>
-            <input type="color" id="text-color-input" class="canvas-toolbar-color" value="#000000" disabled>
-            <button id="bold-btn" class="action-btn canvas-tool-btn" data-i18n-title="toolbar.bold" title="Bold" disabled>
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg>
-            </button>
-            <button id="italic-btn" class="action-btn canvas-tool-btn" data-i18n-title="toolbar.italic" title="Italic" disabled>
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>
-            </button>
-            <button id="align-left-btn" class="action-btn canvas-tool-btn" data-i18n-title="toolbar.alignLeft" title="Align left" disabled>
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="17" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg>
-            </button>
-            <button id="align-center-btn" class="action-btn canvas-tool-btn" data-i18n-title="toolbar.alignCenter" title="Align center" disabled>
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="10" x2="6" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="18" y1="14" x2="6" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg>
-            </button>
-            <button id="align-right-btn" class="action-btn canvas-tool-btn" data-i18n-title="toolbar.alignRight" title="Align right" disabled>
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="7" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg>
-            </button>
-            <div class="canvas-toolbar-spacer"></div>
-            <div class="options-dropdown">
-              <button id="options-btn" class="action-btn options-toggle-btn">
-                <span data-i18n="toolbar.options">OPTIONS</span>
-                <svg class="options-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-              </button>
-              <div id="options-menu" class="options-menu">
-                <div class="tool-group">
-                  <label data-i18n="toolbar.outline">OUTLINE</label>
-                  <button id="outline-btn" class="toggle-btn active" data-i18n="toolbar.guidelines.on">ON</button>
-                </div>
-                <div class="tool-group">
-                  <label data-i18n="toolbar.centerLines">CENTER LINES</label>
-                  <button id="center-lines-btn" class="toggle-btn" data-i18n="toolbar.guidelines.off">OFF</button>
-                </div>
-                <div class="tool-group">
-                  <label data-i18n="toolbar.background">Background</label>
-                  <div class="bg-buttons">
-                    <button class="bg-btn" data-bg="#000000" data-i18n-title="color.black" title="Black" style="background: #000000"></button>
-                    <button class="bg-btn" data-bg="#555555" data-i18n-title="color.darkGrey" title="Dark grey" style="background: #555555"></button>
-                    <button class="bg-btn" data-bg="#aaaaaa" data-i18n-title="color.lightGrey" title="Light grey" style="background: #aaaaaa"></button>
-                    <button class="bg-btn active" data-bg="#ffffff" data-i18n-title="color.white" title="White" style="background: #ffffff"></button>
+              <div id="tools-dropdown-menu" class="toolbar-dropdown-menu tools-dropdown-menu">
+                <div class="dropdown-section">
+                  <div class="dropdown-section-title" data-i18n="toolbar.align">ALIGN</div>
+                  <div class="dropdown-section-row">
+                    <button id="sf-align-left" class="action-btn canvas-tool-btn" data-i18n-title="align.left" title="Align left">
+                      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="2" x2="4" y2="22"/><rect x="8" y="6" width="12" height="4" rx="1"/><rect x="8" y="14" width="8" height="4" rx="1"/></svg>
+                    </button>
+                    <button id="sf-align-center-h" class="action-btn canvas-tool-btn" data-i18n-title="align.centerH" title="Center horizontally">
+                      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><rect x="5" y="6" width="14" height="4" rx="1"/><rect x="7" y="14" width="10" height="4" rx="1"/></svg>
+                    </button>
+                    <button id="sf-align-right" class="action-btn canvas-tool-btn" data-i18n-title="align.right" title="Align right">
+                      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="20" y1="2" x2="20" y2="22"/><rect x="4" y="6" width="12" height="4" rx="1"/><rect x="8" y="14" width="8" height="4" rx="1"/></svg>
+                    </button>
+                    <button id="sf-align-top" class="action-btn canvas-tool-btn" data-i18n-title="align.top" title="Align top">
+                      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="4" x2="22" y2="4"/><rect x="6" y="8" width="4" height="12" rx="1"/><rect x="14" y="8" width="4" height="8" rx="1"/></svg>
+                    </button>
+                    <button id="sf-align-center-v" class="action-btn canvas-tool-btn" data-i18n-title="align.centerV" title="Center vertically">
+                      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="12" x2="22" y2="12"/><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="7" width="4" height="10" rx="1"/></svg>
+                    </button>
+                    <button id="sf-align-bottom" class="action-btn canvas-tool-btn" data-i18n-title="align.bottom" title="Align bottom">
+                      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="20" x2="22" y2="20"/><rect x="6" y="4" width="4" height="12" rx="1"/><rect x="14" y="8" width="4" height="8" rx="1"/></svg>
+                    </button>
                   </div>
                 </div>
-                <div class="tool-group">
-                  <label data-i18n="toolbar.cuttingMarks">Cutting marks</label>
-                  <div class="mark-buttons">
-                    <button class="mark-btn" data-mark="#000000" data-i18n-title="color.black" title="Black" style="background: #000000"></button>
-                    <button class="mark-btn" data-mark="#ffffff" data-i18n-title="color.white" title="White" style="background: #ffffff"></button>
-                    <button class="mark-btn active" data-mark="#cc0000" data-i18n-title="color.red" title="Red" style="background: #cc0000"></button>
-                    <button class="mark-btn" data-mark="#cccc00" data-i18n-title="color.yellow" title="Yellow" style="background: #cccc00"></button>
+                <div class="dropdown-section">
+                  <div class="dropdown-section-title" data-i18n="toolbar.mirroring">MIRRORING</div>
+                  <div class="dropdown-section-row">
+                    <button id="flip-h-btn" class="action-btn canvas-tool-btn" data-i18n-title="toolbar.flipH" title="Flip horizontal">
+                      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><polyline points="5 9 2 12 5 15"/><polyline points="19 9 22 12 19 15"/><path d="M2 12h6"/><path d="M16 12h6"/></svg>
+                    </button>
+                    <button id="flip-v-btn" class="action-btn canvas-tool-btn" data-i18n-title="toolbar.flipV" title="Flip vertical">
+                      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="12" x2="22" y2="12"/><polyline points="9 5 12 2 15 5"/><polyline points="9 19 12 22 15 19"/><path d="M12 2v6"/><path d="M12 16v6"/></svg>
+                    </button>
                   </div>
                 </div>
-                <div class="tool-group">
-                  <label for="correction-x" data-i18n="toolbar.scalingX">SCALING X</label>
-                  <input type="number" id="correction-x" step="0.0001" min="0.5" max="1.5" />
-                </div>
-                <div class="tool-group">
-                  <label for="correction-y" data-i18n="toolbar.scalingY">SCALING Y</label>
-                  <input type="number" id="correction-y" step="0.0001" min="0.5" max="1.5" />
+                <div class="dropdown-section">
+                  <div class="dropdown-section-title" data-i18n="toolbar.opacity">OPACITY</div>
+                  <div class="dropdown-section-row">
+                    <input type="range" id="opacity-slider" min="0" max="1" step="0.05" value="1">
+                    <span id="opacity-value">100%</span>
+                  </div>
                 </div>
               </div>
             </div>
-            <select id="lang-select" title="Language">
-              <option value="en">EN</option>
-              <option value="zh">中文</option>
-              <option value="hi">हिन्दी</option>
-              <option value="es">ES</option>
-              <option value="fr">FR</option>
-              <option value="ar">عربي</option>
-            </select>
-            <button id="theme-toggle" class="theme-toggle-btn" data-i18n-title="toolbar.theme.toggle" title="Toggle theme">
-              <svg id="theme-icon-sun" class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-              <svg id="theme-icon-moon" class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-            </button>
+            <div class="toolbar-dropdown">
+              <button id="text-dropdown-btn" class="action-btn toolbar-dropdown-toggle">
+                <span data-i18n="toolbar.text">TEXT</span>
+                <svg class="toolbar-dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div id="text-dropdown-menu" class="toolbar-dropdown-menu text-dropdown-menu">
+                <button id="add-text-btn" class="action-btn primary add-text-dropdown-btn" data-i18n="toolbar.addText">Add text</button>
+                <div class="dropdown-section">
+                  <div class="dropdown-section-title" data-i18n="toolbar.font">FONT</div>
+                  <select id="font-select" class="canvas-toolbar-select" disabled></select>
+                </div>
+                <div class="dropdown-section">
+                  <div class="dropdown-section-title" data-i18n="toolbar.style">STYLE</div>
+                  <div class="dropdown-section-row">
+                    <input type="number" id="font-size-input" class="canvas-toolbar-input" min="8" max="200" value="40" step="1" disabled>
+                    <input type="color" id="text-color-input" class="canvas-toolbar-color" value="#000000" disabled>
+                    <button id="bold-btn" class="action-btn canvas-tool-btn" data-i18n-title="toolbar.bold" title="Bold" disabled>
+                      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg>
+                    </button>
+                    <button id="italic-btn" class="action-btn canvas-tool-btn" data-i18n-title="toolbar.italic" title="Italic" disabled>
+                      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="dropdown-section">
+                  <div class="dropdown-section-title" data-i18n="toolbar.textAlignment">ALIGNMENT</div>
+                  <div class="dropdown-section-row">
+                    <button id="align-left-btn" class="action-btn canvas-tool-btn" data-i18n-title="toolbar.alignLeft" title="Align left" disabled>
+                      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="17" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg>
+                    </button>
+                    <button id="align-center-btn" class="action-btn canvas-tool-btn" data-i18n-title="toolbar.alignCenter" title="Align center" disabled>
+                      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="10" x2="6" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="18" y1="14" x2="6" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg>
+                    </button>
+                    <button id="align-right-btn" class="action-btn canvas-tool-btn" data-i18n-title="toolbar.alignRight" title="Align right" disabled>
+                      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="7" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           <div id="page-tabs">
             <div id="page-tab-list"></div>
@@ -186,6 +165,85 @@
             </div>
           </footer>
         </div>
+
+        <section id="settings-panel" class="collapsed">
+          <div id="settings-panel-handle"></div>
+          <div id="settings-toolbar">
+            <button id="settings-drawer-toggle" title="Toggle settings">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 6 11 12 5 18"/><polyline points="12 6 18 12 12 18"/></svg>
+            </button>
+            <h2 id="settings-title" data-i18n="settings.title">Settings</h2>
+          </div>
+          <span id="settings-title-collapsed" class="sidebar-collapsed-title">SETTINGS</span>
+
+          <div class="settings-section">
+            <div class="settings-row">
+              <label data-i18n="settings.language">Language</label>
+              <select id="lang-select" title="Language">
+                <option value="en">English</option>
+                <option value="zh">中文</option>
+                <option value="hi">हिन्दी</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="ar">العربية</option>
+              </select>
+            </div>
+            <div class="settings-row">
+              <label data-i18n="settings.switchTheme">Switch theme</label>
+              <button id="theme-toggle" class="toggle-btn" data-i18n-title="toolbar.theme.toggle" title="Toggle theme">Dark</button>
+            </div>
+          </div>
+
+          <h3 data-i18n="settings.project">Project</h3>
+          <div class="settings-section">
+            <div class="settings-row-buttons">
+              <button id="load-project-btn" class="action-btn" data-i18n="sidebar.import">Import</button>
+              <button id="save-project-btn" class="action-btn" data-i18n="sidebar.export">Export</button>
+            </div>
+          </div>
+
+          <h3 data-i18n="settings.guidelines">Guidelines</h3>
+          <div class="settings-section">
+            <div class="settings-row">
+              <label data-i18n="settings.outlines">Outlines</label>
+              <button id="outline-btn" class="toggle-btn active" data-i18n="toolbar.guidelines.on">ON</button>
+            </div>
+            <div class="settings-row">
+              <label data-i18n="settings.centerLines">Center lines</label>
+              <button id="center-lines-btn" class="toggle-btn" data-i18n="toolbar.guidelines.off">OFF</button>
+            </div>
+            <div class="settings-row">
+              <label data-i18n="settings.bgColor">Background color</label>
+              <div class="bg-buttons">
+                <button class="bg-btn" data-bg="#000000" data-i18n-title="color.black" title="Black" style="background: #000000"></button>
+                <button class="bg-btn" data-bg="#555555" data-i18n-title="color.darkGrey" title="Dark grey" style="background: #555555"></button>
+                <button class="bg-btn" data-bg="#aaaaaa" data-i18n-title="color.lightGrey" title="Light grey" style="background: #aaaaaa"></button>
+                <button class="bg-btn active" data-bg="#ffffff" data-i18n-title="color.white" title="White" style="background: #ffffff"></button>
+              </div>
+            </div>
+            <div class="settings-row">
+              <label data-i18n="settings.cuttingMarks">Cutting marks</label>
+              <div class="mark-buttons">
+                <button class="mark-btn" data-mark="#000000" data-i18n-title="color.black" title="Black" style="background: #000000"></button>
+                <button class="mark-btn" data-mark="#ffffff" data-i18n-title="color.white" title="White" style="background: #ffffff"></button>
+                <button class="mark-btn active" data-mark="#cc0000" data-i18n-title="color.red" title="Red" style="background: #cc0000"></button>
+                <button class="mark-btn" data-mark="#cccc00" data-i18n-title="color.yellow" title="Yellow" style="background: #cccc00"></button>
+              </div>
+            </div>
+          </div>
+
+          <h3 data-i18n="settings.scaling">Scaling</h3>
+          <div class="settings-section">
+            <div class="settings-row">
+              <label for="correction-x" data-i18n="settings.scalingX">Scaling X</label>
+              <input type="number" id="correction-x" step="0.0001" min="0.5" max="1.5" />
+            </div>
+            <div class="settings-row">
+              <label for="correction-y" data-i18n="settings.scalingY">Scaling Y</label>
+              <input type="number" id="correction-y" step="0.0001" min="0.5" max="1.5" />
+            </div>
+          </div>
+        </section>
       </div>
     </div>
     <div id="export-modal-overlay" class="modal-overlay hidden">

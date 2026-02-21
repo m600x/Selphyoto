@@ -45,9 +45,12 @@ const projectFileInput = document.getElementById('project-file-input') as HTMLIn
 const exportBtn = document.getElementById('export-btn') as HTMLButtonElement;
 const exportDropdownBtn = document.getElementById('export-dropdown-btn') as HTMLButtonElement;
 const exportMenu = document.getElementById('export-menu')!;
-const optionsBtn = document.getElementById('options-btn') as HTMLButtonElement;
-const optionsMenu = document.getElementById('options-menu')!;
-const optionsArrow = optionsBtn.querySelector('.options-arrow')!;
+const toolsDropdownBtn = document.getElementById('tools-dropdown-btn') as HTMLButtonElement;
+const toolsDropdownMenu = document.getElementById('tools-dropdown-menu')!;
+const toolsDropdownArrow = toolsDropdownBtn.querySelector('.toolbar-dropdown-arrow')!;
+const textDropdownBtn = document.getElementById('text-dropdown-btn') as HTMLButtonElement;
+const textDropdownMenu = document.getElementById('text-dropdown-menu')!;
+const textDropdownArrow = textDropdownBtn.querySelector('.toolbar-dropdown-arrow')!;
 const canvasContainer = document.getElementById('canvas-container')!;
 const bgButtons = document.querySelectorAll<HTMLButtonElement>('.bg-btn');
 const langSelect = document.getElementById('lang-select') as HTMLSelectElement;
@@ -353,10 +356,12 @@ function updateCanvasToolbar() {
   const selType = hasSelection ? cm.getSelectedType() : null;
   const isText = selType === 'text';
 
-  flipHBtn.disabled = !hasSelection;
-  flipVBtn.disabled = !hasSelection;
-  opacitySlider.disabled = !hasSelection;
-  Object.values(sfAlignBtns).forEach(b => { b.disabled = !hasSelection; });
+  toolsDropdownBtn.disabled = !hasSelection;
+
+  if (!hasSelection) {
+    toolsDropdownMenu.classList.remove('open');
+    toolsDropdownArrow.classList.remove('open');
+  }
 
   fontSelect.disabled = !isText;
   fontSizeInput.disabled = !isText;
@@ -412,6 +417,8 @@ langSelect.value = getLocale();
 langSelect.addEventListener('change', () => {
   setLocale(langSelect.value);
   applyI18n();
+  const curTheme = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  applyTheme(curTheme as 'dark' | 'light');
   captureButtonLabels();
   refreshLayers();
   renderPageTabs();
@@ -428,6 +435,8 @@ function applyTheme(theme: 'dark' | 'light') {
   } else {
     document.documentElement.removeAttribute('data-theme');
   }
+  themeToggle.textContent = theme === 'light' ? t('settings.themeLight') : t('settings.themeDark');
+  themeToggle.classList.toggle('active', theme === 'light');
 }
 
 const savedTheme = (localStorage.getItem(THEME_KEY) as 'dark' | 'light') ?? 'dark';
@@ -1428,11 +1437,24 @@ document.addEventListener('keydown', (e) => {
 
 exportBtn.addEventListener('click', () => showExportModal(exportFormat));
 
+function closeAllDropdowns(except?: Element) {
+  const pairs: [Element, Element, Element][] = [
+    [toolsDropdownMenu, toolsDropdownArrow, toolsDropdownBtn],
+    [textDropdownMenu, textDropdownArrow, textDropdownBtn],
+  ];
+  for (const [menu, arrow] of pairs) {
+    if (menu !== except) {
+      menu.classList.remove('open');
+      arrow.classList.remove('open');
+    }
+  }
+  if (except !== exportMenu) exportMenu.classList.remove('open');
+}
+
 exportDropdownBtn.addEventListener('click', (e) => {
   e.stopPropagation();
+  closeAllDropdowns(exportMenu);
   exportMenu.classList.toggle('open');
-  optionsMenu.classList.remove('open');
-  optionsArrow.classList.remove('open');
 });
 
 exportMenu.querySelectorAll<HTMLButtonElement>('.split-btn-option').forEach((opt) => {
@@ -1443,19 +1465,22 @@ exportMenu.querySelectorAll<HTMLButtonElement>('.split-btn-option').forEach((opt
   });
 });
 
-optionsBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  optionsMenu.classList.toggle('open');
-  optionsArrow.classList.toggle('open');
-  exportMenu.classList.remove('open');
-});
+function setupDropdownToggle(btn: HTMLButtonElement, menu: Element, arrow: Element) {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (btn.disabled) return;
+    closeAllDropdowns(menu);
+    menu.classList.toggle('open');
+    arrow.classList.toggle('open');
+  });
+  menu.addEventListener('click', (e) => e.stopPropagation());
+}
 
-optionsMenu.addEventListener('click', (e) => e.stopPropagation());
+setupDropdownToggle(toolsDropdownBtn, toolsDropdownMenu, toolsDropdownArrow);
+setupDropdownToggle(textDropdownBtn, textDropdownMenu, textDropdownArrow);
 
 document.addEventListener('click', () => {
-  exportMenu.classList.remove('open');
-  optionsMenu.classList.remove('open');
-  optionsArrow.classList.remove('open');
+  closeAllDropdowns();
 });
 
 // ── Drag & drop on canvas ──
@@ -1601,8 +1626,12 @@ function toggleSidebar() {
   setSidebarCollapsed(!layerPanel.classList.contains('collapsed'));
 }
 
-if (localStorage.getItem(SIDEBAR_KEY) === 'expanded' && !isCanvasEmpty()) {
-  layerPanel.classList.remove('collapsed');
+function restoreSidebarState() {
+  if (localStorage.getItem(SIDEBAR_KEY) === 'expanded' && !isCanvasEmpty()) {
+    layerPanel.classList.remove('collapsed');
+    if (savedPanelWidth) layerPanel.style.width = savedPanelWidth;
+    setTimeout(() => cm.fitToContainer(document.getElementById('canvas-wrapper')!), 300);
+  }
 }
 
 drawerToggle.addEventListener('click', (e) => {
@@ -1634,6 +1663,74 @@ panelHandle.addEventListener('mousedown', (e) => {
 
   const onUp = () => {
     panelHandle.classList.remove('active');
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  };
+
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+});
+
+// ── Settings panel (right sidebar) toggle ──
+
+const SETTINGS_SIDEBAR_KEY = 'selphyoto_settings_sidebar';
+const settingsPanel = document.getElementById('settings-panel')!;
+const settingsDrawerToggle = document.getElementById('settings-drawer-toggle')!;
+let savedSettingsWidth = '';
+
+function setSettingsCollapsed(collapsed: boolean) {
+  if (collapsed) {
+    savedSettingsWidth = settingsPanel.style.width || '';
+    settingsPanel.classList.add('collapsed');
+  } else {
+    settingsPanel.classList.remove('collapsed');
+    if (savedSettingsWidth) settingsPanel.style.width = savedSettingsWidth;
+  }
+  localStorage.setItem(SETTINGS_SIDEBAR_KEY, collapsed ? 'collapsed' : 'expanded');
+  setTimeout(() => cm.fitToContainer(document.getElementById('canvas-wrapper')!), 300);
+}
+
+function toggleSettings() {
+  setSettingsCollapsed(!settingsPanel.classList.contains('collapsed'));
+}
+
+function restoreSettingsState() {
+  if (localStorage.getItem(SETTINGS_SIDEBAR_KEY) === 'expanded') {
+    settingsPanel.classList.remove('collapsed');
+    if (savedSettingsWidth) settingsPanel.style.width = savedSettingsWidth;
+    setTimeout(() => cm.fitToContainer(document.getElementById('canvas-wrapper')!), 300);
+  }
+}
+
+settingsDrawerToggle.addEventListener('click', (e) => {
+  e.stopPropagation();
+  toggleSettings();
+});
+
+settingsPanel.addEventListener('click', (e) => {
+  if (settingsPanel.classList.contains('collapsed')) {
+    e.stopPropagation();
+    toggleSettings();
+  }
+});
+
+// ── Settings panel resize handle ──
+
+const settingsHandle = document.getElementById('settings-panel-handle')!;
+
+settingsHandle.addEventListener('mousedown', (e) => {
+  e.preventDefault();
+  settingsHandle.classList.add('active');
+  const startX = e.clientX;
+  const startW = settingsPanel.offsetWidth;
+
+  const onMove = (ev: MouseEvent) => {
+    const newW = Math.max(150, startW - (ev.clientX - startX));
+    settingsPanel.style.width = `${newW}px`;
+  };
+
+  const onUp = () => {
+    settingsHandle.classList.remove('active');
     document.removeEventListener('mousemove', onMove);
     document.removeEventListener('mouseup', onUp);
   };
@@ -1754,5 +1851,7 @@ restoreAutoSave().then(async () => {
   captureButtonLabels();
   renderPageTabs();
   refreshLayers();
+  restoreSidebarState();
+  restoreSettingsState();
   fitCanvas();
 });

@@ -6,6 +6,8 @@ const fr: Record<LocaleKey, string> = {
 
   'toolbar.undo': 'Annuler (Ctrl+Z)',
   'toolbar.redo': 'Rétablir (Ctrl+Y)',
+  'toolbar.undoLabel': 'Annuler',
+  'toolbar.redoLabel': 'Rétablir',
   'toolbar.options': 'OPTIONS',
   'toolbar.outline': 'CONTOUR',
   'toolbar.centerLines': 'LIGNES CENTRALES',
@@ -15,6 +17,13 @@ const fr: Record<LocaleKey, string> = {
   'toolbar.cuttingMarks': 'Marques de coupe',
   'toolbar.scalingX': 'ÉCHELLE X',
   'toolbar.scalingY': 'ÉCHELLE Y',
+  'toolbar.tools': 'OUTILS',
+  'toolbar.align': 'ALIGNER',
+  'toolbar.text': 'TEXTE',
+  'toolbar.flip': 'RETOURNER',
+  'toolbar.mirroring': 'MIROIR',
+  'toolbar.style': 'STYLE',
+  'toolbar.textAlignment': 'ALIGNEMENT',
   'toolbar.flipH': 'Retourner horizontalement',
   'toolbar.flipV': 'Retourner verticalement',
   'toolbar.opacity': 'Opacité',
@@ -113,6 +122,21 @@ const fr: Record<LocaleKey, string> = {
   'export.allPages': 'Export de toutes les pages…',
 
   'canvas.dropHere': 'Déposez les images ici',
+
+  'settings.title': 'Paramètres',
+  'settings.language': 'Langue',
+  'settings.switchTheme': 'Changer le thème',
+  'settings.themeDark': 'Sombre',
+  'settings.themeLight': 'Clair',
+  'settings.project': 'Projet',
+  'settings.guidelines': 'Repères',
+  'settings.outlines': 'Contours',
+  'settings.centerLines': 'Lignes centrales',
+  'settings.bgColor': 'Couleur de fond',
+  'settings.cuttingMarks': 'Marques de coupe',
+  'settings.scaling': 'Échelle',
+  'settings.scalingX': 'Échelle X',
+  'settings.scalingY': 'Échelle Y',
 };
 
 export default fr;

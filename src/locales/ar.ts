@@ -6,6 +6,8 @@ const ar: Record<LocaleKey, string> = {
 
   'toolbar.undo': 'تراجع (Ctrl+Z)',
   'toolbar.redo': 'إعادة (Ctrl+Y)',
+  'toolbar.undoLabel': 'تراجع',
+  'toolbar.redoLabel': 'إعادة',
   'toolbar.options': 'OPTIONS',
   'toolbar.outline': 'الإطار',
   'toolbar.centerLines': 'خطوط المركز',
@@ -15,6 +17,13 @@ const ar: Record<LocaleKey, string> = {
   'toolbar.cuttingMarks': 'علامات القص',
   'toolbar.scalingX': 'تحجيم X',
   'toolbar.scalingY': 'تحجيم Y',
+  'toolbar.tools': 'أدوات',
+  'toolbar.align': 'محاذاة',
+  'toolbar.text': 'نص',
+  'toolbar.flip': 'قلب',
+  'toolbar.mirroring': 'انعكاس',
+  'toolbar.style': 'نمط',
+  'toolbar.textAlignment': 'المحاذاة',
   'toolbar.flipH': 'قلب أفقي',
   'toolbar.flipV': 'قلب عمودي',
   'toolbar.opacity': 'الشفافية',
@@ -113,6 +122,21 @@ const ar: Record<LocaleKey, string> = {
   'export.allPages': 'جارٍ تصدير جميع الصفحات…',
 
   'canvas.dropHere': 'أفلت الصور هنا',
+
+  'settings.title': 'الإعدادات',
+  'settings.language': 'اللغة',
+  'settings.switchTheme': 'تبديل المظهر',
+  'settings.themeDark': 'داكن',
+  'settings.themeLight': 'فاتح',
+  'settings.project': 'المشروع',
+  'settings.guidelines': 'الإرشادات',
+  'settings.outlines': 'الخطوط الخارجية',
+  'settings.centerLines': 'خطوط المركز',
+  'settings.bgColor': 'لون الخلفية',
+  'settings.cuttingMarks': 'علامات القطع',
+  'settings.scaling': 'التحجيم',
+  'settings.scalingX': 'التحجيم X',
+  'settings.scalingY': 'التحجيم Y',
 };
 
 export default ar;

@@ -6,6 +6,8 @@ const es: Record<LocaleKey, string> = {
 
   'toolbar.undo': 'Deshacer (Ctrl+Z)',
   'toolbar.redo': 'Rehacer (Ctrl+Y)',
+  'toolbar.undoLabel': 'Deshacer',
+  'toolbar.redoLabel': 'Rehacer',
   'toolbar.options': 'OPTIONS',
   'toolbar.outline': 'CONTORNO',
   'toolbar.centerLines': 'LÍNEAS CENTRALES',
@@ -15,6 +17,13 @@ const es: Record<LocaleKey, string> = {
   'toolbar.cuttingMarks': 'Marcas de corte',
   'toolbar.scalingX': 'ESCALA X',
   'toolbar.scalingY': 'ESCALA Y',
+  'toolbar.tools': 'HERRAM.',
+  'toolbar.align': 'ALINEAR',
+  'toolbar.text': 'TEXTO',
+  'toolbar.flip': 'VOLTEAR',
+  'toolbar.mirroring': 'ESPEJO',
+  'toolbar.style': 'ESTILO',
+  'toolbar.textAlignment': 'ALINEACIÓN',
   'toolbar.flipH': 'Voltear horizontal',
   'toolbar.flipV': 'Voltear vertical',
   'toolbar.opacity': 'Opacidad',
@@ -113,6 +122,21 @@ const es: Record<LocaleKey, string> = {
   'export.allPages': 'Exportando todas las páginas…',
 
   'canvas.dropHere': 'Arrastra las imágenes aquí',
+
+  'settings.title': 'Ajustes',
+  'settings.language': 'Idioma',
+  'settings.switchTheme': 'Cambiar tema',
+  'settings.themeDark': 'Oscuro',
+  'settings.themeLight': 'Claro',
+  'settings.project': 'Proyecto',
+  'settings.guidelines': 'Guías',
+  'settings.outlines': 'Contornos',
+  'settings.centerLines': 'Líneas centrales',
+  'settings.bgColor': 'Color de fondo',
+  'settings.cuttingMarks': 'Marcas de corte',
+  'settings.scaling': 'Escala',
+  'settings.scalingX': 'Escala X',
+  'settings.scalingY': 'Escala Y',
 };
 
 export default es;

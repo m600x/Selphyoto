@@ -6,6 +6,8 @@ const hi: Record<LocaleKey, string> = {
 
   'toolbar.undo': 'पूर्ववत करें (Ctrl+Z)',
   'toolbar.redo': 'फिर से करें (Ctrl+Y)',
+  'toolbar.undoLabel': 'पूर्ववत',
+  'toolbar.redoLabel': 'फिर से',
   'toolbar.options': 'OPTIONS',
   'toolbar.outline': 'रूपरेखा',
   'toolbar.centerLines': 'केंद्र रेखाएँ',
@@ -15,6 +17,13 @@ const hi: Record<LocaleKey, string> = {
   'toolbar.cuttingMarks': 'कटिंग मार्क',
   'toolbar.scalingX': 'स्केलिंग X',
   'toolbar.scalingY': 'स्केलिंग Y',
+  'toolbar.tools': 'उपकरण',
+  'toolbar.align': 'संरेखित',
+  'toolbar.text': 'टेक्स्ट',
+  'toolbar.flip': 'पलटें',
+  'toolbar.mirroring': 'प्रतिबिंब',
+  'toolbar.style': 'शैली',
+  'toolbar.textAlignment': 'संरेखण',
   'toolbar.flipH': 'क्षैतिज पलटें',
   'toolbar.flipV': 'लंबवत पलटें',
   'toolbar.opacity': 'अपारदर्शिता',
@@ -113,6 +122,21 @@ const hi: Record<LocaleKey, string> = {
   'export.allPages': 'सभी पेज निर्यात हो रहे हैं…',
 
   'canvas.dropHere': 'छवियाँ यहाँ छोड़ें',
+
+  'settings.title': 'सेटिंग्स',
+  'settings.language': 'भाषा',
+  'settings.switchTheme': 'थीम बदलें',
+  'settings.themeDark': 'डार्क',
+  'settings.themeLight': 'लाइट',
+  'settings.project': 'प्रोजेक्ट',
+  'settings.guidelines': 'दिशानिर्देश',
+  'settings.outlines': 'रूपरेखा',
+  'settings.centerLines': 'केंद्र रेखाएँ',
+  'settings.bgColor': 'पृष्ठभूमि रंग',
+  'settings.cuttingMarks': 'काटने के निशान',
+  'settings.scaling': 'स्केलिंग',
+  'settings.scalingX': 'स्केलिंग X',
+  'settings.scalingY': 'स्केलिंग Y',
 };
 
 export default hi;

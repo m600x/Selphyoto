@@ -4,6 +4,8 @@ const en = {
 
   'toolbar.undo': 'Undo (Ctrl+Z)',
   'toolbar.redo': 'Redo (Ctrl+Y)',
+  'toolbar.undoLabel': 'Undo',
+  'toolbar.redoLabel': 'Redo',
   'toolbar.options': 'OPTIONS',
   'toolbar.outline': 'OUTLINE',
   'toolbar.centerLines': 'CENTER LINES',
@@ -13,6 +15,13 @@ const en = {
   'toolbar.cuttingMarks': 'Cutting marks',
   'toolbar.scalingX': 'SCALING X',
   'toolbar.scalingY': 'SCALING Y',
+  'toolbar.tools': 'TOOLS',
+  'toolbar.align': 'ALIGN',
+  'toolbar.text': 'TEXT',
+  'toolbar.flip': 'FLIP',
+  'toolbar.mirroring': 'MIRRORING',
+  'toolbar.style': 'STYLE',
+  'toolbar.textAlignment': 'ALIGNMENT',
   'toolbar.flipH': 'Flip horizontal',
   'toolbar.flipV': 'Flip vertical',
   'toolbar.opacity': 'Opacity',
@@ -111,6 +120,21 @@ const en = {
   'export.allPages': 'Exporting all pages…',
 
   'canvas.dropHere': 'Drop images here',
+
+  'settings.title': 'Settings',
+  'settings.language': 'Language',
+  'settings.switchTheme': 'Switch theme',
+  'settings.themeDark': 'Dark',
+  'settings.themeLight': 'Light',
+  'settings.project': 'Project',
+  'settings.guidelines': 'Guidelines',
+  'settings.outlines': 'Outlines',
+  'settings.centerLines': 'Center lines',
+  'settings.bgColor': 'Background color',
+  'settings.cuttingMarks': 'Cutting marks',
+  'settings.scaling': 'Scaling',
+  'settings.scalingX': 'Scaling X',
+  'settings.scalingY': 'Scaling Y',
 } as const;
 
 export type LocaleKey = keyof typeof en;

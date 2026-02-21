@@ -6,6 +6,8 @@ const zh: Record<LocaleKey, string> = {
 
   'toolbar.undo': '撤销 (Ctrl+Z)',
   'toolbar.redo': '重做 (Ctrl+Y)',
+  'toolbar.undoLabel': '撤销',
+  'toolbar.redoLabel': '重做',
   'toolbar.options': 'OPTIONS',
   'toolbar.outline': '轮廓',
   'toolbar.centerLines': '中心线',
@@ -15,6 +17,13 @@ const zh: Record<LocaleKey, string> = {
   'toolbar.cuttingMarks': '裁切标记',
   'toolbar.scalingX': '缩放 X',
   'toolbar.scalingY': '缩放 Y',
+  'toolbar.tools': '工具',
+  'toolbar.align': '对齐',
+  'toolbar.text': '文字',
+  'toolbar.flip': '翻转',
+  'toolbar.mirroring': '镜像',
+  'toolbar.style': '样式',
+  'toolbar.textAlignment': '对齐方式',
   'toolbar.flipH': '水平翻转',
   'toolbar.flipV': '垂直翻转',
   'toolbar.opacity': '不透明度',
@@ -113,6 +122,21 @@ const zh: Record<LocaleKey, string> = {
   'export.allPages': '正在导出所有页面…',
 
   'canvas.dropHere': '将图片拖放到此处',
+
+  'settings.title': '设置',
+  'settings.language': '语言',
+  'settings.switchTheme': '切换主题',
+  'settings.themeDark': '深色',
+  'settings.themeLight': '浅色',
+  'settings.project': '项目',
+  'settings.guidelines': '参考线',
+  'settings.outlines': '轮廓线',
+  'settings.centerLines': '中心线',
+  'settings.bgColor': '背景颜色',
+  'settings.cuttingMarks': '裁切标记',
+  'settings.scaling': '缩放',
+  'settings.scalingX': '缩放 X',
+  'settings.scalingY': '缩放 Y',
 };
 
 export default zh;
