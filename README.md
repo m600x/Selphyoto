@@ -1,17 +1,15 @@
-# Selph'Yoto
+# Selph'Yoto - MYO label printing template for Selphy CP1500/CP1300
 
-[![Audit](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/m600x/GIST_ID/raw/audit.json)](https://github.com/m600x/Selphyoto/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/m600x/GIST_ID/raw/tests.json)](https://github.com/m600x/Selphyoto/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/m600x/GIST_ID/raw/coverage.json)](https://github.com/m600x/Selphyoto/actions/workflows/ci.yml)
-[![Build](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/m600x/GIST_ID/raw/build.json)](https://github.com/m600x/Selphyoto/actions/workflows/ci.yml)
-[![Docker](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/m600x/GIST_ID/raw/docker.json)](https://github.com/m600x/Selphyoto/actions/workflows/ci.yml)
-[![Vulnerability](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/m600x/GIST_ID/raw/vulnerability.json)](https://github.com/m600x/Selphyoto/actions/workflows/ci.yml)
+![Audit](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/m600x/9f456b3627d7e39fb064a2ec08789531/raw/audit.json)
+![Vulnerability](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/m600x/9f456b3627d7e39fb064a2ec08789531/raw/vulnerability.json)
+![Tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/m600x/9f456b3627d7e39fb064a2ec08789531/raw/tests.json)
+![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/m600x/9f456b3627d7e39fb064a2ec08789531/raw/coverage.json)
+![Build](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/m600x/9f456b3627d7e39fb064a2ec08789531/raw/build.json)
+![Docker](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/m600x/9f456b3627d7e39fb064a2ec08789531/raw/docker.json)
 
 Available (for now) at: https://selphyoto.m600.fr
 
-A web application for designing and printing precisely-sized YOTO card labels using a Canon Selphy CP1500 dye-sublimation printer with postcard paper (100 × 148 mm, borderless).
-
-The core challenge this app solves: the Selphy's borderless printing mode slightly enlarges images (~3.5–4%), making it impossible to get accurate real-life dimensions without compensation. This tool pre-corrects for that zoom so your printed cards come out at the exact right size.
+A web application for designing and printing precisely-sized YOTO card labels using a Canon Selphy CP1500 dye-sublimation printer with postcard paper (100 × 148 mm, borderless printing).
 
 ![Screenshot](./example.png)
 ![Deskview](./example2.jpg)
@@ -20,45 +18,13 @@ The core challenge this app solves: the Selphy's borderless printing mode slight
 
 ## Features
 
-### Canvas editor
-- **Fabric.js-powered canvas** — drag, scale, rotate, and position images freely
-- **Multi-image support** — layer multiple images with independent transforms
-- **Scroll to zoom** the selected image, arrow keys to nudge, Delete/Backspace to remove
-- **Lock layers** — prevent accidental manipulation while keeping visibility control
-- **Background color** — White, Grey, or Black (exported in the final image)
-- **Responsive** — canvas scales sharply to fill the browser window
-- **Auto-save** — state is persisted to IndexedDB so a page refresh won't lose your work
-
-### Guides and alignment
-- **Two YOTO card subframes** (54 × 85.6 mm, portrait) with green outlines and rounded corners, centered in each half of the postcard
-- **Center divider line** between the two card slots (exported)
-- **Cutting marks** at each subframe corner (exported) — color selectable: Black, White, Red, Yellow
-- **Dashed center guidelines** inside each subframe (vertical and horizontal) — visual only, never exported
-- **Guidelines toggle** to show/hide all green visual guides
-
-### Correction factors
-- **Separate X and Y correction factors** to compensate for the Selphy's anisotropic borderless zoom
-- Default: `0.9610` for both axes (calibrated from real test prints)
-- Editable in the toolbar — print, measure, adjust until your subframes are exactly 54 × 85.6 mm
-
-### Layer management
-- **Resizable sidebar** with drag handle on the right edge
-- **Layer list** with visibility toggles, lock, delete, and drag-to-reorder
-- **Logical groups** — create groups to toggle visibility or delete multiple layers at once
-- **Drag and drop** — reorder images and groups, drag images onto group headers to add them
-- **Double-click to rename** any image or group
-- **Delete confirmation** — prompts before removing images (sidebar button and keyboard)
-- **Import images** via button, file picker, or drag-and-drop onto the canvas
-
-### Project save/load
-- **Export project** — saves all images, transforms, groups, and settings as a `.zip` file (`selphyoto_project_YYYYMMDD_HHmmSS.zip`)
-- **Import project** — restores everything from a previously exported `.zip`
-
-### Image export
-- **Export as PNG or JPEG** at full 300 DPI (1748 × 1181 px)
-- Split button with dropdown for format selection
-- Output file named `selphyoto_exported_YYYYMMDD_HHmmSS.png` (or `.jpg`)
-- Export disabled when canvas is empty or all images are hidden
+- **Autosave** - Auto save locally, no need to worry
+- **Project import and export** - Save a backup of your work or share it
+- **Basic image manipulation** - Move, rotate, scale, mirror
+- **Text tool** - Add text element
+- **Layers** - Add multiple images, organize them in layers
+- **Pages** - Ability to make multiple design at once
+- **Duplicate** - Allow duplication of pages, useful when you do a serie
 
 ## Getting started
 
@@ -70,25 +36,21 @@ The core challenge this app solves: the Selphy's borderless printing mode slight
 ### Install dependencies
 
 ```bash
+# native
 bun install
 bunx playwright install chromium
-```
 
-Or with Make (runs both automatically):
-
-```bash
+# make
 make install
 ```
 
 ### Run the dev server
 
 ```bash
+# native
 bunx vite
-```
 
-Or with Make:
-
-```bash
+# make
 make dev
 ```
 
@@ -97,37 +59,12 @@ Open `http://localhost:5173` in your browser. Changes are hot-reloaded.
 ### Build for production (without Docker)
 
 ```bash
+# native
 bun run build
 bun run preview
 ```
 
 The built files are output to the `dist/` directory. This is a fully static site that can be hosted anywhere.
-
-## Linting
-
-The project uses [ESLint](https://eslint.org/) v9 with the TypeScript plugin (flat config).
-
-```bash
-bunx eslint .
-```
-
-Or with Make:
-
-```bash
-make lint
-```
-
-To auto-fix issues:
-
-```bash
-bunx eslint . --fix
-```
-
-Or with Make:
-
-```bash
-make lint-fix
-```
 
 ## Testing
 
@@ -136,85 +73,11 @@ The project includes a comprehensive test suite across three layers: unit tests,
 ### Run all tests
 
 ```bash
+# native
 bun test && bunx playwright test --config tests/e2e/playwright.config.ts
-```
 
-Or with Make:
-
-```bash
+# make
 make tests
-```
-
-### Unit tests only
-
-Unit tests cover constants validation, utility functions, and CanvasManager logic with mocked Fabric.js.
-
-```bash
-bun test tests/unit/
-```
-
-Or with Make:
-
-```bash
-make unit-tests
-```
-
-### Integration tests only
-
-Integration tests cover LayerManager DOM rendering, project import/export roundtrips, and IndexedDB auto-save operations.
-
-```bash
-bun test tests/integration/
-```
-
-Or with Make:
-
-```bash
-make integration-tests
-```
-
-### End-to-end tests only
-
-E2E tests use Playwright with Chromium to test the full application in a real browser. A Vite dev server is started automatically on port 5174.
-
-```bash
-bunx playwright test --config tests/e2e/playwright.config.ts
-```
-
-Or with Make:
-
-```bash
-make e2e-tests
-```
-
-> **Note:** After installing or upgrading `@playwright/test`, you must download the matching browser binary:
->
-> ```bash
-> bunx playwright install chromium
-> ```
->
-> Or with Make: `make install-playwright`
-
-### Test coverage
-
-Generate a coverage report for unit and integration tests:
-
-```bash
-bun test --coverage
-```
-
-Or with Make:
-
-```bash
-make tests-coverage
-```
-
-### Watch mode
-
-Re-run unit and integration tests on file changes:
-
-```bash
-bun test --watch
 ```
 
 ## Docker
@@ -224,40 +87,24 @@ bun test --watch
 The commit hash is embedded into the app at build time via a build argument.
 
 ```bash
+# native
 docker build -t selphyoto --build-arg COMMIT_HASH=$(git rev-parse --short HEAD) .
-```
 
-Or with Make:
-
-```bash
+# make
 make build
 ```
 
 ### Run the container
 
 ```bash
+# native
 docker run -d -p 8080:80 --name selphyoto selphyoto
-```
 
-Or with Make:
-
-```bash
+# make
 make run
 ```
 
 Open `http://localhost:8080` in your browser.
-
-### Stop the container
-
-```bash
-docker stop selphyoto && docker rm selphyoto
-```
-
-Or with Make:
-
-```bash
-make stop
-```
 
 ## Makefile reference
 
@@ -282,45 +129,13 @@ make clean               Remove node_modules and dist
 make reinstall           Clean and reinstall everything
 ```
 
-## CI / CD
-
-A single GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push and pull request to `master`/`main`:
-
-| Job | Depends on | When | What it does |
-|-----|-----------|------|-------------|
-| **Audit** | — | Always | ESLint + TypeScript type-check |
-| **Vulnerability** | — | Always | `bun audit` + Trivy filesystem scan |
-| **Tests** | — | Always | Unit, integration, and Playwright E2E tests |
-| **Coverage** | Tests | Always | Coverage report with lcov summary and badge |
-| **Build** | Tests | Always | Vite production build + bundle size summary |
-| **Lighthouse** | — | Always | PWA, performance, and accessibility audit |
-| **Docker build** | Build | Push only | Multi-arch Docker image (amd64 + arm64) pushed to `ghcr.io` |
-| **Docker manifest** | Docker build | Push only | Merge multi-arch manifests and tag with version |
-| **Trivy** | Docker manifest | Push only | Scan the published Docker image for CVEs |
-| **Release** | Docker manifest | Push only | Create Git tag + GitHub Release if version bumped |
-
-### Docker image tags
-
-Every push to master/main produces these tags:
-
-- `latest` — always points to the most recent build
-- `<version>` — matches the `version` field in `package.json` (e.g. `0.1.0`)
-- `<short-sha>` — the commit hash
-
-```bash
-docker pull ghcr.io/<owner>/selphy-yoto-templater:latest
-docker pull ghcr.io/<owner>/selphy-yoto-templater:0.1.0
-```
-
 ### Releasing a new version
 
 1. Bump the `version` in `package.json` (e.g. `0.1.0` to `0.2.0`)
 2. Commit and push to master/main
 3. The workflow automatically creates a `v0.2.0` Git tag, a GitHub Release, and pushes the Docker image tagged `0.2.0` + `latest`
 
-All badges are powered by [shields.io](https://shields.io) dynamic endpoints backed by a GitHub Gist, updated automatically on each push to master/main via [`schneegans/dynamic-badges-action`](https://github.com/Schneegans/dynamic-badges-action).
-
-Test artifacts (screenshots on failure, reports) are uploaded as workflow artifacts with 7-day retention.
+Every push to master/main also pushes a Docker image tagged with the branch name (e.g. `master`, `dev`). The `latest` and version tags are only updated when `package.json` contains a new version.
 
 ## Calibration workflow
 
