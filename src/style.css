@@ -108,6 +108,7 @@ body {
   border-radius: 4px;
   padding: 5px 24px 5px 8px;
   width: 100px;
+  height: 28px;
   font-size: 13px;
   cursor: pointer;
   overflow: hidden;
@@ -296,7 +297,7 @@ body {
 }
 
 .toggle-btn {
-  padding: 5px 14px;
+  padding: 0 14px;
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--bg);
@@ -306,6 +307,7 @@ body {
   cursor: pointer;
   transition: all 0.15s;
   width: 100px;
+  height: 22px;
   text-align: center;
   box-sizing: border-box;
 }
@@ -361,15 +363,17 @@ body {
 }
 
 .action-btn {
-  padding: 5px 14px;
+  padding: 0 14px;
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--bg);
   color: var(--text);
   font-size: 13px;
+  height: 22px;
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .action-btn:hover {
@@ -413,6 +417,7 @@ body {
 }
 
 .export-image-btn {
+  height: 34px;
   margin-top: 5px;
   margin-bottom: 5px;
   padding: 8px 34px !important;
@@ -421,6 +426,7 @@ body {
 }
 
 .split-btn-arrow {
+  height: 34px;
   margin-top: 5px;
   margin-bottom: 5px;
   border-top-left-radius: 0 !important;
@@ -774,7 +780,7 @@ body {
   border-right: 1px solid var(--border);
   padding: 0 12px 4px;
   flex-shrink: 0;
-  width: 340px;
+  width: 260px;
   min-width: 150px;
   overflow: hidden;
   display: flex;
@@ -909,7 +915,8 @@ body {
 }
 
 #layer-panel .action-btn {
-  padding: 8px 14px;
+  height: 34px;
+  padding: 0 14px;
   font-size: 14px;
 }
 
@@ -1341,12 +1348,14 @@ body {
 }
 
 .modal-buttons {
+  height: 34px;
   display: flex;
   gap: 12px;
   justify-content: center;
 }
 
 .modal-cancel-btn {
+  height: 34px;
   background: transparent;
   color: var(--text-dim);
   border: 1px solid var(--border);
@@ -1363,6 +1372,7 @@ body {
 }
 
 .modal-danger-btn {
+  height: 34px;
   background: var(--danger-btn-bg);
   color: #fff;
   border: none;
@@ -1374,6 +1384,7 @@ body {
 }
 
 .modal-danger-btn:hover {
+  height: 34px;
   background: var(--danger-btn-hover);
 }
 
@@ -1516,7 +1527,8 @@ body {
 
 .settings-row input[type='number'] {
   width: 100px;
-  padding: 4px 6px;
+  height: 30px;
+  padding: 0 6px;
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--bg);
@@ -1628,3 +1640,12 @@ body {
 .ctx-submenu {
   position: fixed;
 }
+
+/* ── Settings hint text ── */
+.settings-hint {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin: 0 0 8px;
+  line-height: 1.4;
+}
+

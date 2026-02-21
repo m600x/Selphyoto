@@ -34,6 +34,7 @@ export interface AutoSaveSettings {
   markColor: string;
   outlineVisible: boolean;
   centerLinesVisible: boolean;
+  rulerVisible?: boolean;
   guidelinesVisible?: boolean;
   exportFormat: 'png' | 'jpeg';
 }
@@ -196,6 +197,7 @@ export function collectState(
       markColor: cm.getMarkColor(),
       outlineVisible: cm.getOutlineVisible(),
       centerLinesVisible: cm.getCenterLinesVisible(),
+      rulerVisible: cm.getRulerVisible(),
       exportFormat,
     },
   };

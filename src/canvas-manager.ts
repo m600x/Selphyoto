@@ -37,6 +37,10 @@ export class CanvasManager {
   private guidelineObjects: FabricObject[] = [];
   private centerLinesVisible = false;
 
+  // Calibration rulers (rebuilt when correction changes)
+  private rulerObjects: FabricObject[] = [];
+  private rulerVisible = false;
+
   // Static visual guides (dimming + crop border, never change)
   private staticGuides: FabricObject[] = [];
 
@@ -217,6 +221,104 @@ export class CanvasManager {
 
     this.guideObjects.forEach((o) => o.set('visible', this.outlineVisible));
     this.guidelineObjects.forEach((o) => o.set('visible', this.centerLinesVisible));
+
+    this.buildRulers();
+  }
+
+  private buildRulers() {
+    this.rulerObjects = [];
+    const S = C.DISPLAY_SCALE;
+    const halfW = C.POSTCARD_WIDTH_MM / 2;
+    const sfW = C.YOTO_WIDTH_MM;
+    const sfH = C.YOTO_HEIGHT_MM;
+    const sfLeftX = (halfW - sfW) / 2;
+    const sfRightX = halfW + (halfW - sfW) / 2;
+    const sfY = (C.POSTCARD_HEIGHT_MM - sfH) / 2;
+
+    const H_LEN = 50;
+    const V_LEN = 50;
+    const GAP = 3;
+    const PAD = 1;
+
+    const T1 = 1.2;
+    const T5 = 2.0;
+    const T10 = 3.0;
+    const TW = 0.08;
+    const DEPTH = T10 + PAD;
+
+    const lnOpt = {
+      stroke: '#000000',
+      strokeWidth: TW * S,
+      selectable: false as const,
+      evented: false as const,
+    };
+
+    const tickLen = (mm: number) =>
+      mm % 10 === 0 ? T10 : mm % 5 === 0 ? T5 : T1;
+
+    const addBg = (x0: number, y0: number, x1: number, y1: number) => {
+      this.rulerObjects.push(new Rect({
+        left: this.mmToCanvasX(x0),
+        top: this.mmToCanvasY(y0),
+        width: (x1 - x0) * S,
+        height: (y1 - y0) * S,
+        fill: '#ffffff',
+        selectable: false, evented: false,
+        originX: 'left', originY: 'top',
+      }));
+    };
+
+    const pix = (p: number) => this.paperToImageX(p);
+    const piy = (p: number) => this.paperToImageY(p);
+    const mcx = (i: number) => this.mmToCanvasX(i);
+    const mcy = (i: number) => this.mmToCanvasY(i);
+
+    for (const sfX of [sfLeftX, sfRightX]) {
+      const hStart = sfX + (sfW - H_LEN) / 2;
+      const vStart = sfY + (sfH - V_LEN) / 2;
+
+      // ── Top ruler (ticks grow upward) ──
+      const topBase = sfY - GAP;
+      addBg(pix(hStart) - PAD, piy(topBase) - DEPTH, pix(hStart + H_LEN) + PAD, piy(topBase) + PAD);
+      for (let mm = 0; mm <= H_LEN; mm++) {
+        const x = mcx(pix(hStart + mm));
+        const yb = mcy(piy(topBase));
+        this.rulerObjects.push(new Line([x, yb, x, yb - tickLen(mm) * S], lnOpt));
+      }
+
+      // ── Bottom ruler (ticks grow downward) ──
+      const botBase = sfY + sfH + GAP;
+      addBg(pix(hStart) - PAD, piy(botBase) - PAD, pix(hStart + H_LEN) + PAD, piy(botBase) + DEPTH);
+      for (let mm = 0; mm <= H_LEN; mm++) {
+        const x = mcx(pix(hStart + mm));
+        const yb = mcy(piy(botBase));
+        this.rulerObjects.push(new Line([x, yb, x, yb + tickLen(mm) * S], lnOpt));
+      }
+
+      // ── Left ruler (ticks grow leftward) ──
+      const leftBase = sfX - GAP;
+      const lx1 = pix(leftBase) + PAD;
+      const lx0 = lx1 - DEPTH - PAD;
+      addBg(lx0, piy(vStart) - PAD, lx1, piy(vStart + V_LEN) + PAD);
+      for (let mm = 0; mm <= V_LEN; mm++) {
+        const y = mcy(piy(vStart + mm));
+        const xb = mcx(pix(leftBase));
+        this.rulerObjects.push(new Line([xb, y, xb - tickLen(mm) * S, y], lnOpt));
+      }
+
+      // ── Right ruler (ticks grow rightward) ──
+      const rightBase = sfX + sfW + GAP;
+      const rx0 = pix(rightBase) - PAD;
+      const rx1 = rx0 + DEPTH + PAD;
+      addBg(rx0, piy(vStart) - PAD, rx1, piy(vStart + V_LEN) + PAD);
+      for (let mm = 0; mm <= V_LEN; mm++) {
+        const y = mcy(piy(vStart + mm));
+        const xb = mcx(pix(rightBase));
+        this.rulerObjects.push(new Line([xb, y, xb + tickLen(mm) * S, y], lnOpt));
+      }
+    }
+
+    this.rulerObjects.forEach((o) => o.set('visible', this.rulerVisible));
   }
 
   private makeCuttingMarks(sfPaperX: number, sfPaperY: number): Line[] {
@@ -272,6 +374,7 @@ export class CanvasManager {
     this.cuttingMarks.forEach((m) => this.canvas.remove(m));
     this.guideObjects.forEach((o) => this.canvas.remove(o));
     this.guidelineObjects.forEach((o) => this.canvas.remove(o));
+    this.rulerObjects.forEach((o) => this.canvas.remove(o));
 
     this.buildCorrectedGuides();
     this.rebuildZOrder();
@@ -283,6 +386,7 @@ export class CanvasManager {
     const ordered: FabricObject[] = [
       this.bgRect,
       ...this._images.slice().reverse().map((e) => e.fabricImage),
+      ...this.rulerObjects,
       this.dividerLine,
       ...this.cuttingMarks,
       ...this.staticGuides,
@@ -1123,6 +1227,16 @@ export class CanvasManager {
 
   getCenterLinesVisible(): boolean {
     return this.centerLinesVisible;
+  }
+
+  setRulerVisible(visible: boolean) {
+    this.rulerVisible = visible;
+    this.rulerObjects.forEach((o) => o.set('visible', visible));
+    this.canvas.requestRenderAll();
+  }
+
+  getRulerVisible(): boolean {
+    return this.rulerVisible;
   }
 
   // ── Correction factors ──

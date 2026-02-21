@@ -33,6 +33,7 @@ const pm = new PageManager();
 
 const corrXInput = document.getElementById('correction-x') as HTMLInputElement;
 const corrYInput = document.getElementById('correction-y') as HTMLInputElement;
+const rulerToggleBtn = document.getElementById('ruler-toggle-btn')!;
 const fileInput = document.getElementById('file-input') as HTMLInputElement;
 const outlineBtn = document.getElementById('outline-btn')!;
 const centerLinesBtn = document.getElementById('center-lines-btn')!;
@@ -809,6 +810,16 @@ corrYInput.addEventListener('change', () => {
   }
 });
 
+// ── Ruler toggle ──
+
+rulerToggleBtn.addEventListener('click', () => {
+  const nowVisible = !cm.getRulerVisible();
+  cm.setRulerVisible(nowVisible);
+  rulerToggleBtn.textContent = nowVisible ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
+  rulerToggleBtn.classList.toggle('active', nowVisible);
+  scheduleSave();
+});
+
 // ── Guidelines toggle ──
 
 outlineBtn.addEventListener('click', () => {
@@ -967,6 +978,10 @@ function applyUIState(settings: ProjectSettings | AutoSaveSettings) {
   outlineBtn.classList.toggle('active', outlineVis);
   centerLinesBtn.textContent = centerVis ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
   centerLinesBtn.classList.toggle('active', centerVis);
+
+  const rulerVis = (settings as AutoSaveSettings).rulerVisible ?? false;
+  rulerToggleBtn.textContent = rulerVis ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
+  rulerToggleBtn.classList.toggle('active', rulerVis);
 
   exportFormat = settings.exportFormat;
 }
@@ -1956,7 +1971,9 @@ async function restoreAutoSave() {
       const cenVis = state.settings.centerLinesVisible ?? false;
       cm.setOutlineVisible(outVis);
       cm.setCenterLinesVisible(cenVis);
-      applyUIState({ ...state.settings, outlineVisible: outVis, centerLinesVisible: cenVis, backgroundColor: pageBg, markColor: pageMark });
+      const rulVis = state.settings.rulerVisible ?? false;
+      cm.setRulerVisible(rulVis);
+      applyUIState({ ...state.settings, outlineVisible: outVis, centerLinesVisible: cenVis, rulerVisible: rulVis, backgroundColor: pageBg, markColor: pageMark });
     }
     cm.finalizeRestore();
   } catch (err) {

@@ -136,6 +136,9 @@ const en = {
   'settings.scaling': 'Scaling',
   'settings.scalingX': 'Scaling X',
   'settings.scalingY': 'Scaling Y',
+
+  'settings.guides': 'Guides',
+  'settings.scalingHint': 'Guides are 50mm.<br><br>New scaling = current × (expected ÷ measured).<br><br>E.g. if scaling is 0.961 and you measure 52 mm instead of 50: 0.961 × (50 ÷ 52) ≈ 0.924.',
 } as const;
 
 export type LocaleKey = keyof typeof en;

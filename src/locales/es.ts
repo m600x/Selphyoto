@@ -138,6 +138,9 @@ const es: Record<LocaleKey, string> = {
   'settings.scaling': 'Escala',
   'settings.scalingX': 'Escala X',
   'settings.scalingY': 'Escala Y',
+
+  'settings.guides': 'Guías',
+  'settings.scalingHint': 'Las guías miden 50mm.<br><br>Nueva escala = actual × (esperado ÷ medido).<br><br>Ej. si escala = 0.961 y mides 52 mm en vez de 50: 0.961 × (50 ÷ 52) ≈ 0.924.',
 };
 
 export default es;

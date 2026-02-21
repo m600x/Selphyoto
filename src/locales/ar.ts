@@ -138,6 +138,9 @@ const ar: Record<LocaleKey, string> = {
   'settings.scaling': 'التحجيم',
   'settings.scalingX': 'التحجيم X',
   'settings.scalingY': 'التحجيم Y',
+
+  'settings.guides': 'الأدلة',
+  'settings.scalingHint': 'الأدلة 50 مم.<br><br>التحجيم الجديد = الحالي × (المتوقع ÷ المقاس).<br><br>مثال: إذا كان التحجيم 0.961 وقست 52 مم بدلاً من 50: 0.961 × (50 ÷ 52) ≈ 0.924.',
 };
 
 export default ar;

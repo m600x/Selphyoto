@@ -21,6 +21,7 @@ function makeMockCM(overrides: Partial<{
   markColor: string;
   outlineVisible: boolean;
   centerLinesVisible: boolean;
+  rulerVisible: boolean;
 }> = {}): CanvasManager {
   const images = (overrides.images ?? []).map(img => ({ type: 'image' as const, ...img }));
   const groups = overrides.groups ?? [];
@@ -35,6 +36,7 @@ function makeMockCM(overrides: Partial<{
     getMarkColor: mock(() => overrides.markColor ?? '#cc0000'),
     getOutlineVisible: mock(() => overrides.outlineVisible ?? true),
     getCenterLinesVisible: mock(() => overrides.centerLinesVisible ?? false),
+    getRulerVisible: mock(() => overrides.rulerVisible ?? false),
   } as unknown as CanvasManager;
 }
 
@@ -171,6 +173,7 @@ describe('collectState', () => {
       markColor: '#ffffff',
       outlineVisible: false,
       centerLinesVisible: true,
+      rulerVisible: false,
       exportFormat: 'jpeg',
     });
   });

@@ -138,6 +138,9 @@ const zh: Record<LocaleKey, string> = {
   'settings.scaling': '缩放',
   'settings.scalingX': '缩放 X',
   'settings.scalingY': '缩放 Y',
+
+  'settings.guides': '参考线',
+  'settings.scalingHint': '参考线为 50mm。<br><br>新缩放 = 当前值 × (预期 ÷ 测量)。<br><br>例：缩放为 0.961，测量 52mm 而非 50mm：0.961 × (50 ÷ 52) ≈ 0.924。',
 };
 
 export default zh;

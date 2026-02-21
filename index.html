@@ -19,10 +19,10 @@
         <section id="layer-panel" class="collapsed">
           <div id="layer-panel-handle"></div>
           <div id="sidebar-toolbar">
-            <h2 id="sidebar-title">Selph'Yoto</h2>
             <button id="sidebar-drawer-toggle" title="Toggle sidebar">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 18 6 12 12 6"/><polyline points="19 18 13 12 19 6"/></svg>
             </button>
+            <h2 id="sidebar-title">Selph'Yoto</h2>
           </div>
           <span id="sidebar-title-collapsed" class="sidebar-collapsed-title">LAYERS</span>
           <div class="add-buttons">
@@ -170,10 +170,10 @@
         <section id="settings-panel" class="collapsed">
           <div id="settings-panel-handle"></div>
           <div id="settings-toolbar">
+            <h2 id="settings-title" data-i18n="settings.title">Settings</h2>
             <button id="settings-drawer-toggle" title="Toggle settings">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 6 11 12 5 18"/><polyline points="12 6 18 12 12 18"/></svg>
             </button>
-            <h2 id="settings-title" data-i18n="settings.title">Settings</h2>
           </div>
           <span id="settings-title-collapsed" class="sidebar-collapsed-title">SETTINGS</span>
 
@@ -243,6 +243,11 @@
               <label for="correction-y" data-i18n="settings.scalingY">Scaling Y</label>
               <input type="number" id="correction-y" step="0.0001" min="0.5" max="1.5" />
             </div>
+            <div class="settings-row">
+              <label data-i18n="settings.guides">Guides</label>
+              <button id="ruler-toggle-btn" class="toggle-btn" data-i18n="toolbar.guidelines.off">OFF</button>
+            </div>
+            <p class="settings-hint" data-i18n="settings.scalingHint">Guides are 50mm.<br><br>New scaling = current × (expected ÷ measured).<br><br>E.g. if scaling is 0.961 and you measure 52 mm instead of 50: 0.961 × (50 ÷ 52) ≈ 0.924.</p>
           </div>
         </section>
       </div>
