@@ -117,6 +117,7 @@ const hi: Record<LocaleKey, string> = {
 
   'page.add': 'पेज जोड़ें',
   'page.delete': 'पेज हटाएँ',
+  'page.duplicate': 'पेज डुप्लिकेट करें',
   'page.label': 'पेज {{n}}',
   'page.deleteConfirm': 'पेज {{n}} और उसकी सभी सामग्री हटाएँ?',
   'export.allPages': 'सभी पेज निर्यात हो रहे हैं…',

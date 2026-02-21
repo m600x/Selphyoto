@@ -115,6 +115,7 @@ const en = {
 
   'page.add': 'Add page',
   'page.delete': 'Delete page',
+  'page.duplicate': 'Duplicate page',
   'page.label': 'Page {{n}}',
   'page.deleteConfirm': 'Delete page {{n}} and all its contents?',
   'export.allPages': 'Exporting all pages…',

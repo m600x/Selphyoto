@@ -925,6 +925,31 @@ body {
   text-align: center;
 }
 
+#dup-page-btn {
+  background: #e67e22;
+  border-color: #e67e22;
+  color: #fff;
+  font-weight: 600;
+}
+
+#dup-page-btn:hover {
+  background: #d35400;
+  border-color: #d35400;
+}
+
+#dup-page-btn:disabled {
+  background: var(--bg);
+  border-color: var(--border);
+  color: var(--text-dim);
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+#dup-page-btn:disabled:hover {
+  background: var(--bg);
+  border-color: var(--border);
+}
+
 .green-btn {
   background: var(--green) !important;
   border-color: var(--green) !important;

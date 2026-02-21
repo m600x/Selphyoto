@@ -4,7 +4,7 @@ import { CanvasManager } from './canvas-manager';
 import { LayerManager } from './layer-manager';
 import { DEFAULT_CORRECTION_X, DEFAULT_CORRECTION_Y } from './constants';
 import { exportProject, importProject, type ProjectSettings } from './project-io';
-import { saveAutoState, loadAutoState, clearAutoState, collectState, collectPageData, saveHistoryState, loadHistoryState, clearHistoryState, type AutoSaveSettings } from './auto-save';
+import { saveAutoState, loadAutoState, clearAutoState, collectState, collectPageData, saveHistoryState, loadHistoryState, clearHistoryState, type AutoSaveSettings, type AutoSaveImage } from './auto-save';
 import { HistoryManager, type HistorySnapshot } from './history-manager';
 import { PageManager } from './page-manager';
 import { t, setLocale, getLocale, detectLocale, applyI18n, registerLocale } from './i18n';
@@ -37,6 +37,7 @@ const fileInput = document.getElementById('file-input') as HTMLInputElement;
 const outlineBtn = document.getElementById('outline-btn')!;
 const centerLinesBtn = document.getElementById('center-lines-btn')!;
 const newGroupBtn = document.getElementById('new-group-btn')!;
+const dupPageBtn = document.getElementById('dup-page-btn') as HTMLButtonElement;
 const importBtn = document.getElementById('import-btn')!;
 const clearCanvasBtn = document.getElementById('clear-canvas-btn') as HTMLButtonElement;
 const saveProjectBtn = document.getElementById('save-project-btn') as HTMLButtonElement;
@@ -572,6 +573,7 @@ function updateExportState() {
   exportDropdownBtn.disabled = !hasAnyContent;
   clearCanvasBtn.disabled = !hasImages && !history.canUndo() && !history.canRedo();
   saveProjectBtn.disabled = !hasImages && pm.pageCount <= 1;
+  dupPageBtn.disabled = !hasImages;
 }
 
 // ── Canvas ↔ layer sync ──
@@ -831,6 +833,11 @@ newGroupBtn.addEventListener('click', () => {
   pushSnapshot();
   cm.createGroup();
   refreshLayers();
+});
+
+dupPageBtn.addEventListener('click', () => {
+  if (cm.images.length === 0) return;
+  handleDuplicatePage(pm.currentPage);
 });
 
 // ── Background color ──
@@ -1212,6 +1219,15 @@ async function handleDeletePage(index: number) {
   flushSave();
 }
 
+async function handleDuplicatePage(index: number) {
+  pm.setPageBgColor(pm.currentPage, cm.getBackgroundColor());
+  pm.setPageMarkColor(pm.currentPage, cm.getMarkColor());
+  pm.setPageData(pm.currentPage, collectPageData(cm, cm.getBackgroundColor(), cm.getMarkColor()));
+
+  const newIdx = pm.duplicatePage(index);
+  await handleSwitchPage(newIdx);
+}
+
 // ── Confirm modal (replaces browser confirm()) ──
 
 const confirmOverlay = document.getElementById('confirm-modal-overlay')!;
@@ -1514,6 +1530,113 @@ canvasContainer.addEventListener('drop', (e) => {
   }
 });
 
+// ── Paste from clipboard (image, text, or internal layer) ──
+
+let pasteCounter = 0;
+let layerClipboard: AutoSaveImage[] | null = null;
+const PASTE_OFFSET = 10;
+const LAYER_CLIPBOARD_MARKER = '###SELPHYOTO_LAYER###';
+
+async function pasteLayerData(data: AutoSaveImage): Promise<void> {
+  if ((data.type ?? 'image') === 'text') {
+    cm.addTextLayer({
+      text: data.text ?? 'Text',
+      fontFamily: data.fontFamily ?? 'Arial',
+      fontSize: data.fontSize ?? 40,
+      fill: data.fill ?? '#000000',
+      fontWeight: data.fontWeight ?? 'normal',
+      fontStyle: data.fontStyle ?? 'normal',
+      textAlign: data.textAlign ?? 'center',
+      filename: data.filename,
+      visible: true,
+      locked: false,
+      left: data.left,
+      top: data.top,
+      scaleX: data.scaleX,
+      scaleY: data.scaleY,
+      angle: data.angle,
+      flipX: data.flipX,
+      flipY: data.flipY,
+      opacity: data.opacity,
+      width: data.width,
+    });
+  } else {
+    if (!data.dataUrl) return;
+    await cm.addImageFromDataURL(data.dataUrl, {
+      filename: data.filename,
+      visible: true,
+      locked: false,
+      left: data.left,
+      top: data.top,
+      scaleX: data.scaleX,
+      scaleY: data.scaleY,
+      angle: data.angle,
+      flipX: data.flipX,
+      flipY: data.flipY,
+      opacity: data.opacity,
+    });
+  }
+}
+
+document.addEventListener('copy', (e: ClipboardEvent) => {
+  const active = document.activeElement;
+  if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || (active as HTMLElement).isContentEditable)) return;
+  if ((cm.canvas.getActiveObject() as any)?.isEditing) return;
+
+  const serialized = cm.serializeAllSelected();
+  if (serialized.length > 0) {
+    e.preventDefault();
+    e.clipboardData?.setData('text/plain', LAYER_CLIPBOARD_MARKER);
+    layerClipboard = serialized;
+  }
+});
+
+document.addEventListener('paste', (e: ClipboardEvent) => {
+  const active = document.activeElement;
+  if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || (active as HTMLElement).isContentEditable)) return;
+  if ((cm.canvas.getActiveObject() as any)?.isEditing) return;
+
+  const clipText = e.clipboardData?.getData('text/plain') ?? '';
+
+  if (clipText === LAYER_CLIPBOARD_MARKER && layerClipboard && layerClipboard.length > 0) {
+    e.preventDefault();
+    pushSnapshot();
+    (async () => {
+      for (const item of layerClipboard!) {
+        await pasteLayerData({ ...item, left: item.left + PASTE_OFFSET, top: item.top + PASTE_OFFSET });
+      }
+      refreshLayers();
+    })();
+    return;
+  }
+
+  const items = e.clipboardData?.items;
+  if (items) {
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        const blob = item.getAsFile();
+        if (!blob) continue;
+        e.preventDefault();
+        pasteCounter++;
+        const ext = blob.type.split('/')[1] || 'png';
+        const file = new File([blob], `pasted_${pasteCounter}.${ext}`, { type: blob.type });
+        pushSnapshot();
+        cm.addImage(file);
+        refreshLayers();
+        return;
+      }
+    }
+  }
+
+  const text = clipText.trim();
+  if (text) {
+    e.preventDefault();
+    pushSnapshot();
+    cm.addText(text);
+    refreshLayers();
+  }
+});
+
 // ── Scroll-to-zoom selected image ──
 
 cm.canvas.on('mouse:wheel', (opt) => {
@@ -1552,6 +1675,13 @@ document.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) {
     e.preventDefault();
     redoBtn.click();
+    return;
+  }
+
+  if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+    if ((cm.canvas.getActiveObject() as any)?.isEditing) return;
+    e.preventDefault();
+    cm.selectAll();
     return;
   }
 

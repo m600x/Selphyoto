@@ -117,6 +117,7 @@ const zh: Record<LocaleKey, string> = {
 
   'page.add': '添加页面',
   'page.delete': '删除页面',
+  'page.duplicate': '复制页面',
   'page.label': '页面 {{n}}',
   'page.deleteConfirm': '删除页面 {{n}} 及其所有内容？',
   'export.allPages': '正在导出所有页面…',

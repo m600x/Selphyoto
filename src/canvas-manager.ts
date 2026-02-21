@@ -1,6 +1,7 @@
-import { Canvas, Rect, Line, FabricImage, FabricObject, Textbox } from 'fabric';
+import { Canvas, Rect, Line, FabricImage, FabricObject, Textbox, ActiveSelection } from 'fabric';
 import * as C from './constants';
 import { t } from './i18n';
+import type { AutoSaveImage } from './auto-save';
 
 export interface ImageEntry {
   id: string;
@@ -544,6 +545,18 @@ export class CanvasManager {
     }
   }
 
+  selectAll(): void {
+    const selectable = this._images.filter(e => e.visible && !e.locked);
+    if (selectable.length === 0) return;
+    if (selectable.length === 1) {
+      this.canvas.setActiveObject(selectable[0].fabricImage);
+    } else {
+      const sel = new ActiveSelection(selectable.map(e => e.fabricImage), { canvas: this.canvas });
+      this.canvas.setActiveObject(sel);
+    }
+    this.canvas.requestRenderAll();
+  }
+
   getSelectedIndex(): number {
     const active = this.canvas.getActiveObject();
     if (!active) return -1;
@@ -877,10 +890,10 @@ export class CanvasManager {
   getTextCounter(): number { return this._textCounter; }
   setTextCounter(value: number) { this._textCounter = value; }
 
-  addText(): void {
+  addText(content?: string): void {
     this._textCounter++;
     const displayName = t('text.defaultName', { n: this._textCounter });
-    const textContent = t('text.defaultContent');
+    const textContent = content ?? t('text.defaultContent');
 
     const tb = new Textbox(textContent, {
       fontFamily: 'Arial',
@@ -979,6 +992,72 @@ export class CanvasManager {
     const idx = this.getSelectedIndex();
     if (idx < 0) return null;
     return this._images[idx].type;
+  }
+
+  private serializeEntry(e: ImageEntry): AutoSaveImage {
+    const fi = e.fabricImage;
+    const base: AutoSaveImage = {
+      type: e.type,
+      dataUrl: e.originalDataUrl,
+      filename: e.filename,
+      visible: e.visible,
+      locked: e.locked,
+      groupId: e.groupId ?? null,
+      left: fi.left ?? 0,
+      top: fi.top ?? 0,
+      scaleX: fi.scaleX ?? 1,
+      scaleY: fi.scaleY ?? 1,
+      angle: fi.angle ?? 0,
+      flipX: fi.flipX ?? false,
+      flipY: fi.flipY ?? false,
+      opacity: fi.opacity ?? 1,
+    };
+    if (e.type === 'text') {
+      const tb = fi as unknown as Textbox;
+      base.text = tb.text ?? '';
+      base.fontFamily = (tb.fontFamily as string) ?? 'Arial';
+      base.fontSize = tb.fontSize ?? 40;
+      base.fill = (tb.fill as string) ?? '#000000';
+      base.fontWeight = (tb.fontWeight as string) ?? 'normal';
+      base.fontStyle = (tb.fontStyle as string) ?? 'normal';
+      base.textAlign = (tb.textAlign as string) ?? 'center';
+      base.width = tb.width ?? 200;
+    }
+    return base;
+  }
+
+  serializeSelected(): AutoSaveImage | null {
+    const idx = this.getSelectedIndex();
+    if (idx < 0) return null;
+    return this.serializeEntry(this._images[idx]);
+  }
+
+  serializeAllSelected(): AutoSaveImage[] {
+    const activeObjs = this.canvas.getActiveObjects();
+    if (!activeObjs || activeObjs.length === 0) return [];
+
+    if (activeObjs.length === 1) {
+      const idx = this._images.findIndex(e => e.fabricImage === activeObjs[0]);
+      if (idx < 0) return [];
+      return [this.serializeEntry(this._images[idx])];
+    }
+
+    // Multi-selection: discard group to restore absolute coordinates
+    this.canvas.discardActiveObject();
+
+    const results: AutoSaveImage[] = [];
+    for (const obj of activeObjs) {
+      const idx = this._images.findIndex(e => e.fabricImage === obj);
+      if (idx < 0) continue;
+      results.push(this.serializeEntry(this._images[idx]));
+    }
+
+    // Re-select all objects
+    const sel = new ActiveSelection(activeObjs, { canvas: this.canvas });
+    this.canvas.setActiveObject(sel);
+    this.canvas.requestRenderAll();
+
+    return results;
   }
 
   getTextProps(index: number): { text: string; fontFamily: string; fontSize: number; fill: string; fontWeight: string; fontStyle: string; textAlign: string; width: number } | null {

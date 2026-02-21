@@ -117,6 +117,7 @@ const fr: Record<LocaleKey, string> = {
 
   'page.add': 'Ajouter une page',
   'page.delete': 'Supprimer la page',
+  'page.duplicate': 'Dupliquer la page',
   'page.label': 'Page {{n}}',
   'page.deleteConfirm': 'Supprimer la page {{n}} et tout son contenu ?',
   'export.allPages': 'Export de toutes les pages…',

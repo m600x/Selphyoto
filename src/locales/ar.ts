@@ -117,6 +117,7 @@ const ar: Record<LocaleKey, string> = {
 
   'page.add': 'إضافة صفحة',
   'page.delete': 'حذف الصفحة',
+  'page.duplicate': 'تكرار الصفحة',
   'page.label': 'صفحة {{n}}',
   'page.deleteConfirm': 'حذف الصفحة {{n}} وكل محتوياتها؟',
   'export.allPages': 'جارٍ تصدير جميع الصفحات…',
