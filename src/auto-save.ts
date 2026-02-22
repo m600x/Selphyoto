@@ -34,8 +34,12 @@ export interface AutoSaveSettings {
   markColor: string;
   outlineVisible: boolean;
   centerLinesVisible: boolean;
-  rulerVisible?: boolean;
+  calibrationVisible?: boolean;
   guidelinesVisible?: boolean;
+  designRulerVisible?: boolean;
+  gridVisible?: boolean;
+  gridSizeMm?: number;
+  gridSnapEnabled?: boolean;
   exportFormat: 'png' | 'jpeg';
 }
 
@@ -197,7 +201,11 @@ export function collectState(
       markColor: cm.getMarkColor(),
       outlineVisible: cm.getOutlineVisible(),
       centerLinesVisible: cm.getCenterLinesVisible(),
-      rulerVisible: cm.getRulerVisible(),
+      calibrationVisible: cm.getCalibrationVisible(),
+      designRulerVisible: cm.getDesignRulerVisible(),
+      gridVisible: cm.getGridVisible(),
+      gridSizeMm: cm.getGridSizeMm(),
+      gridSnapEnabled: cm.getGridSnapEnabled(),
       exportFormat,
     },
   };

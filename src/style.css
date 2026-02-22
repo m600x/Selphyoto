@@ -1763,6 +1763,59 @@ body {
   position: fixed;
 }
 
+/* ── Grid & Ruler settings ── */
+
+.settings-subsection {
+  padding-left: 12px;
+  border-left: 2px solid var(--border);
+  margin-left: 8px;
+}
+
+.settings-subsection.hidden {
+  display: none;
+}
+
+.grid-size-selector {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.grid-size-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+}
+
+.grid-size-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.grid-size-input {
+  width: 40px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--text);
+  text-align: center;
+  font-size: 12px;
+  padding: 0 2px;
+}
+
+.grid-size-unit {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
 /* ── Settings hint text ── */
 .settings-hint {
   font-size: 12px;

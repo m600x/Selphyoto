@@ -139,8 +139,13 @@ const hi: Record<LocaleKey, string> = {
   'settings.scalingX': 'स्केलिंग X',
   'settings.scalingY': 'स्केलिंग Y',
 
-  'settings.guides': 'गाइड',
-  'settings.scalingHint': 'गाइड 50mm हैं।<br><br>नया स्केलिंग = वर्तमान × (अपेक्षित ÷ मापा)।<br><br>उदा. स्केलिंग 0.961 है और 50 की जगह 52 mm मापा: 0.961 × (50 ÷ 52) ≈ 0.924।',
+  'settings.calibrationGuides': 'अंशांकन गाइड',
+  'settings.scalingHint': 'अंशांकन गाइड 50mm हैं।<br><br>नया स्केलिंग = वर्तमान × (अपेक्षित ÷ मापा)।<br><br>उदा. स्केलिंग 0.961 है और 50 की जगह 52 mm मापा: 0.961 × (50 ÷ 52) ≈ 0.924।',
+  'settings.rulers': 'रूलर',
+  'settings.grid': 'ग्रिड',
+  'settings.gridSize': 'ग्रिड आकार',
+  'settings.gridSnap': 'स्नैप',
+  'settings.gridCustom': 'कस्टम',
 
   'sticker.title': 'स्टिकर',
   'sticker.search': 'स्टिकर खोजें…',

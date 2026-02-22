@@ -39,7 +39,7 @@ const pm = new PageManager();
 
 const corrXInput = document.getElementById('correction-x') as HTMLInputElement;
 const corrYInput = document.getElementById('correction-y') as HTMLInputElement;
-const rulerToggleBtn = document.getElementById('ruler-toggle-btn')!;
+const calibrationToggleBtn = document.getElementById('calibration-toggle-btn')!;
 const fileInput = document.getElementById('file-input') as HTMLInputElement;
 const outlineBtn = document.getElementById('outline-btn')!;
 const centerLinesBtn = document.getElementById('center-lines-btn')!;
@@ -91,6 +91,12 @@ const italicBtn = document.getElementById('italic-btn') as HTMLButtonElement;
 const alignLeftBtn = document.getElementById('align-left-btn') as HTMLButtonElement;
 const alignCenterBtn = document.getElementById('align-center-btn') as HTMLButtonElement;
 const alignRightBtn = document.getElementById('align-right-btn') as HTMLButtonElement;
+const designRulerBtn = document.getElementById('design-ruler-btn')!;
+const gridToggleBtn = document.getElementById('grid-toggle-btn')!;
+const gridOptions = document.getElementById('grid-options')!;
+const gridSizeBtns = document.querySelectorAll<HTMLButtonElement>('.grid-size-btn');
+const gridSizeCustom = document.getElementById('grid-size-custom') as HTMLInputElement;
+const gridSnapBtn = document.getElementById('grid-snap-btn')!;
 const pageTabList = document.getElementById('page-tab-list')!;
 const addPageBtn = document.getElementById('add-page-btn') as HTMLButtonElement;
 
@@ -822,13 +828,68 @@ corrYInput.addEventListener('change', () => {
   }
 });
 
-// ── Ruler toggle ──
+// ── Calibration toggle ──
 
-rulerToggleBtn.addEventListener('click', () => {
-  const nowVisible = !cm.getRulerVisible();
-  cm.setRulerVisible(nowVisible);
-  rulerToggleBtn.textContent = nowVisible ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
-  rulerToggleBtn.classList.toggle('active', nowVisible);
+calibrationToggleBtn.addEventListener('click', () => {
+  const nowVisible = !cm.getCalibrationVisible();
+  cm.setCalibrationVisible(nowVisible);
+  calibrationToggleBtn.textContent = nowVisible ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
+  calibrationToggleBtn.classList.toggle('active', nowVisible);
+  scheduleSave();
+});
+
+// ── Design ruler toggle ──
+
+designRulerBtn.addEventListener('click', () => {
+  const nowVisible = !cm.getDesignRulerVisible();
+  cm.setDesignRulerVisible(nowVisible);
+  designRulerBtn.textContent = nowVisible ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
+  designRulerBtn.classList.toggle('active', nowVisible);
+  scheduleSave();
+});
+
+// ── Grid toggle ──
+
+gridToggleBtn.addEventListener('click', () => {
+  const nowVisible = !cm.getGridVisible();
+  cm.setGridVisible(nowVisible);
+  gridToggleBtn.textContent = nowVisible ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
+  gridToggleBtn.classList.toggle('active', nowVisible);
+  gridOptions.classList.toggle('hidden', !nowVisible);
+  scheduleSave();
+});
+
+// ── Grid size presets ──
+
+gridSizeBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const size = Number(btn.dataset.size);
+    cm.setGridSizeMm(size);
+    gridSizeBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    gridSizeCustom.value = '';
+    scheduleSave();
+  });
+});
+
+// ── Grid size custom ──
+
+gridSizeCustom.addEventListener('change', () => {
+  const val = Number(gridSizeCustom.value);
+  if (val >= 1 && val <= 50) {
+    cm.setGridSizeMm(val);
+    gridSizeBtns.forEach(b => b.classList.remove('active'));
+    scheduleSave();
+  }
+});
+
+// ── Grid snap toggle ──
+
+gridSnapBtn.addEventListener('click', () => {
+  const nowEnabled = !cm.getGridSnapEnabled();
+  cm.setGridSnapEnabled(nowEnabled);
+  gridSnapBtn.textContent = nowEnabled ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
+  gridSnapBtn.classList.toggle('active', nowEnabled);
   scheduleSave();
 });
 
@@ -991,9 +1052,29 @@ function applyUIState(settings: ProjectSettings | AutoSaveSettings) {
   centerLinesBtn.textContent = centerVis ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
   centerLinesBtn.classList.toggle('active', centerVis);
 
-  const rulerVis = (settings as AutoSaveSettings).rulerVisible ?? false;
-  rulerToggleBtn.textContent = rulerVis ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
-  rulerToggleBtn.classList.toggle('active', rulerVis);
+  const calVis = (settings as AutoSaveSettings).calibrationVisible ?? (settings as unknown as Record<string, unknown>).rulerVisible ?? false;
+  calibrationToggleBtn.textContent = calVis ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
+  calibrationToggleBtn.classList.toggle('active', calVis as boolean);
+
+  const designRulerVis = (settings as any).designRulerVisible ?? false;
+  designRulerBtn.textContent = designRulerVis ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
+  designRulerBtn.classList.toggle('active', designRulerVis);
+
+  const gridVis = (settings as any).gridVisible ?? false;
+  gridToggleBtn.textContent = gridVis ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
+  gridToggleBtn.classList.toggle('active', gridVis);
+  gridOptions.classList.toggle('hidden', !gridVis);
+
+  const gridSize = (settings as any).gridSizeMm ?? 5;
+  gridSizeBtns.forEach(b => b.classList.toggle('active', Number(b.dataset.size) === gridSize));
+  if (![2, 5, 10].includes(gridSize)) {
+    gridSizeCustom.value = String(gridSize);
+    gridSizeBtns.forEach(b => b.classList.remove('active'));
+  }
+
+  const snapEnabled = (settings as any).gridSnapEnabled ?? false;
+  gridSnapBtn.textContent = snapEnabled ? t('toolbar.guidelines.on') : t('toolbar.guidelines.off');
+  gridSnapBtn.classList.toggle('active', snapEnabled);
 
   exportFormat = settings.exportFormat;
 }
@@ -1876,6 +1957,7 @@ function isCanvasEmpty(): boolean {
 }
 
 function setSidebarCollapsed(collapsed: boolean) {
+  panelTransitioning = true;
   if (collapsed) {
     savedPanelWidth = layerPanel.style.width || '';
     layerPanel.classList.add('collapsed');
@@ -1884,7 +1966,6 @@ function setSidebarCollapsed(collapsed: boolean) {
     if (savedPanelWidth) layerPanel.style.width = savedPanelWidth;
   }
   localStorage.setItem(SIDEBAR_KEY, collapsed ? 'collapsed' : 'expanded');
-  setTimeout(() => cm.fitToContainer(document.getElementById('canvas-wrapper')!), 300);
 }
 
 function toggleSidebar() {
@@ -1895,7 +1976,6 @@ function restoreSidebarState() {
   if (localStorage.getItem(SIDEBAR_KEY) === 'expanded' && !isCanvasEmpty()) {
     layerPanel.classList.remove('collapsed');
     if (savedPanelWidth) layerPanel.style.width = savedPanelWidth;
-    setTimeout(() => cm.fitToContainer(document.getElementById('canvas-wrapper')!), 300);
   }
 }
 
@@ -1944,6 +2024,7 @@ const settingsDrawerToggle = document.getElementById('settings-drawer-toggle')!;
 let savedSettingsWidth = '';
 
 function setSettingsCollapsed(collapsed: boolean) {
+  panelTransitioning = true;
   if (collapsed) {
     savedSettingsWidth = settingsPanel.style.width || '';
     settingsPanel.classList.add('collapsed');
@@ -1952,7 +2033,6 @@ function setSettingsCollapsed(collapsed: boolean) {
     if (savedSettingsWidth) settingsPanel.style.width = savedSettingsWidth;
   }
   localStorage.setItem(SETTINGS_SIDEBAR_KEY, collapsed ? 'collapsed' : 'expanded');
-  setTimeout(() => cm.fitToContainer(document.getElementById('canvas-wrapper')!), 300);
 }
 
 function toggleSettings() {
@@ -1963,7 +2043,6 @@ function restoreSettingsState() {
   if (localStorage.getItem(SETTINGS_SIDEBAR_KEY) === 'expanded') {
     settingsPanel.classList.remove('collapsed');
     if (savedSettingsWidth) settingsPanel.style.width = savedSettingsWidth;
-    setTimeout(() => cm.fitToContainer(document.getElementById('canvas-wrapper')!), 300);
   }
 }
 
@@ -2007,14 +2086,35 @@ settingsHandle.addEventListener('mousedown', (e) => {
 // ── Responsive canvas sizing ──
 
 const canvasWrapper = document.getElementById('canvas-wrapper')!;
+let fitCanvasTimer: ReturnType<typeof setTimeout> | null = null;
+let panelTransitioning = false;
 
 function fitCanvas() {
   cm.fitToContainer(canvasWrapper);
 }
 
-const resizeObserver = new ResizeObserver(fitCanvas);
+function fitCanvasDebounced() {
+  if (panelTransitioning) return;
+  if (fitCanvasTimer !== null) clearTimeout(fitCanvasTimer);
+  fitCanvasTimer = setTimeout(() => {
+    fitCanvasTimer = null;
+    fitCanvas();
+  }, 150);
+}
+
+const resizeObserver = new ResizeObserver(fitCanvasDebounced);
 resizeObserver.observe(canvasWrapper);
 fitCanvas();
+
+for (const panel of [layerPanel, settingsPanel]) {
+  panel.addEventListener('transitionend', (e) => {
+    if ((e as TransitionEvent).propertyName !== 'width') return;
+    panelTransitioning = false;
+    if (fitCanvasTimer !== null) clearTimeout(fitCanvasTimer);
+    fitCanvasTimer = null;
+    fitCanvas();
+  });
+}
 
 // ── Restore from auto-save, then initial render ──
 
@@ -2091,9 +2191,17 @@ async function restoreAutoSave() {
       const cenVis = state.settings.centerLinesVisible ?? false;
       cm.setOutlineVisible(outVis);
       cm.setCenterLinesVisible(cenVis);
-      const rulVis = state.settings.rulerVisible ?? false;
-      cm.setRulerVisible(rulVis);
-      applyUIState({ ...state.settings, outlineVisible: outVis, centerLinesVisible: cenVis, rulerVisible: rulVis, backgroundColor: pageBg, markColor: pageMark });
+      const calVis = (state.settings as AutoSaveSettings).calibrationVisible ?? (state.settings as unknown as Record<string, unknown>).rulerVisible ?? false;
+      cm.setCalibrationVisible(calVis as boolean);
+      const designRulerVis = state.settings.designRulerVisible ?? false;
+      cm.setDesignRulerVisible(designRulerVis);
+      const gridVis = state.settings.gridVisible ?? false;
+      cm.setGridVisible(gridVis);
+      const gridSize = state.settings.gridSizeMm ?? 5;
+      cm.setGridSizeMm(gridSize);
+      const snapEnabled = state.settings.gridSnapEnabled ?? false;
+      cm.setGridSnapEnabled(snapEnabled);
+      applyUIState({ ...state.settings, calibrationVisible: calVis as boolean, outlineVisible: outVis, centerLinesVisible: cenVis, backgroundColor: pageBg, markColor: pageMark, designRulerVisible: designRulerVis, gridVisible: gridVis, gridSizeMm: gridSize, gridSnapEnabled: snapEnabled });
     }
     cm.finalizeRestore();
   } catch (err) {

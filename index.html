@@ -227,6 +227,30 @@
               <button id="center-lines-btn" class="toggle-btn" data-i18n="toolbar.guidelines.off">OFF</button>
             </div>
             <div class="settings-row">
+              <label data-i18n="settings.rulers">Rulers</label>
+              <button id="design-ruler-btn" class="toggle-btn" data-i18n="toolbar.guidelines.off">OFF</button>
+            </div>
+            <div class="settings-row">
+              <label data-i18n="settings.grid">Grid</label>
+              <button id="grid-toggle-btn" class="toggle-btn" data-i18n="toolbar.guidelines.off">OFF</button>
+            </div>
+            <div id="grid-options" class="settings-subsection hidden">
+              <div class="settings-row">
+                <label data-i18n="settings.gridSize">Grid size</label>
+                <div class="grid-size-selector">
+                  <button class="grid-size-btn" data-size="2">2</button>
+                  <button class="grid-size-btn active" data-size="5">5</button>
+                  <button class="grid-size-btn" data-size="10">10</button>
+                  <input type="number" id="grid-size-custom" min="1" max="50" step="1" placeholder="mm" class="grid-size-input" />
+                  <span class="grid-size-unit">mm</span>
+                </div>
+              </div>
+              <div class="settings-row">
+                <label data-i18n="settings.gridSnap">Snap</label>
+                <button id="grid-snap-btn" class="toggle-btn" data-i18n="toolbar.guidelines.off">OFF</button>
+              </div>
+            </div>
+            <div class="settings-row">
               <label data-i18n="settings.bgColor">Background color</label>
               <div class="bg-buttons">
                 <button class="bg-btn" data-bg="#000000" data-i18n-title="color.black" title="Black" style="background: #000000"></button>
@@ -257,10 +281,10 @@
               <input type="number" id="correction-y" step="0.0001" min="0.5" max="1.5" />
             </div>
             <div class="settings-row">
-              <label data-i18n="settings.guides">Guides</label>
-              <button id="ruler-toggle-btn" class="toggle-btn" data-i18n="toolbar.guidelines.off">OFF</button>
+              <label data-i18n="settings.calibrationGuides">Calibration guides</label>
+              <button id="calibration-toggle-btn" class="toggle-btn" data-i18n="toolbar.guidelines.off">OFF</button>
             </div>
-            <p class="settings-hint" data-i18n="settings.scalingHint">Guides are 50mm.<br><br>New scaling = current × (expected ÷ measured).<br><br>E.g. if scaling is 0.961 and you measure 52 mm instead of 50: 0.961 × (50 ÷ 52) ≈ 0.924.</p>
+            <p class="settings-hint" data-i18n="settings.scalingHint">Calibration guides are 50mm.<br><br>New scaling = current × (expected ÷ measured).<br><br>E.g. if scaling is 0.961 and you measure 52 mm instead of 50: 0.961 × (50 ÷ 52) ≈ 0.924.</p>
           </div>
         </section>
       </div>

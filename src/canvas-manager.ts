@@ -1,4 +1,4 @@
-import { Canvas, Rect, Line, FabricImage, FabricObject, Textbox, ActiveSelection } from 'fabric';
+import { Canvas, Rect, Line, FabricImage, FabricObject, Textbox, ActiveSelection, Text } from 'fabric';
 import * as C from './constants';
 import { t } from './i18n';
 import type { AutoSaveImage } from './auto-save';
@@ -37,9 +37,21 @@ export class CanvasManager {
   private guidelineObjects: FabricObject[] = [];
   private centerLinesVisible = false;
 
-  // Calibration rulers (rebuilt when correction changes)
-  private rulerObjects: FabricObject[] = [];
-  private rulerVisible = false;
+  // Calibration guides (rebuilt when correction changes)
+  private calibrationObjects: FabricObject[] = [];
+  private calibrationVisible = false;
+
+  // Design rulers (per-subframe mm tick marks + labels)
+  private designRulerObjects: FabricObject[] = [];
+  private designRulerVisible = false;
+
+  // Grid overlay (inside subframes)
+  private gridObjects: FabricObject[] = [];
+  private gridVisible = false;
+  private gridSizeMm = 5;
+
+  // Snap-to-grid
+  private gridSnapEnabled = false;
 
   // Static visual guides (dimming + crop border, never change)
   private staticGuides: FabricObject[] = [];
@@ -222,11 +234,13 @@ export class CanvasManager {
     this.guideObjects.forEach((o) => o.set('visible', this.outlineVisible));
     this.guidelineObjects.forEach((o) => o.set('visible', this.centerLinesVisible));
 
-    this.buildRulers();
+    this.buildGrid();
+    this.buildCalibration();
+    this.buildDesignRulers();
   }
 
-  private buildRulers() {
-    this.rulerObjects = [];
+  private buildCalibration() {
+    this.calibrationObjects = [];
     const S = C.DISPLAY_SCALE;
     const halfW = C.POSTCARD_WIDTH_MM / 2;
     const sfW = C.YOTO_WIDTH_MM;
@@ -257,7 +271,7 @@ export class CanvasManager {
       mm % 10 === 0 ? T10 : mm % 5 === 0 ? T5 : T1;
 
     const addBg = (x0: number, y0: number, x1: number, y1: number) => {
-      this.rulerObjects.push(new Rect({
+      this.calibrationObjects.push(new Rect({
         left: this.mmToCanvasX(x0),
         top: this.mmToCanvasY(y0),
         width: (x1 - x0) * S,
@@ -283,7 +297,7 @@ export class CanvasManager {
       for (let mm = 0; mm <= H_LEN; mm++) {
         const x = mcx(pix(hStart + mm));
         const yb = mcy(piy(topBase));
-        this.rulerObjects.push(new Line([x, yb, x, yb - tickLen(mm) * S], lnOpt));
+        this.calibrationObjects.push(new Line([x, yb, x, yb - tickLen(mm) * S], lnOpt));
       }
 
       // ── Bottom ruler (ticks grow downward) ──
@@ -292,7 +306,7 @@ export class CanvasManager {
       for (let mm = 0; mm <= H_LEN; mm++) {
         const x = mcx(pix(hStart + mm));
         const yb = mcy(piy(botBase));
-        this.rulerObjects.push(new Line([x, yb, x, yb + tickLen(mm) * S], lnOpt));
+        this.calibrationObjects.push(new Line([x, yb, x, yb + tickLen(mm) * S], lnOpt));
       }
 
       // ── Left ruler (ticks grow leftward) ──
@@ -303,7 +317,7 @@ export class CanvasManager {
       for (let mm = 0; mm <= V_LEN; mm++) {
         const y = mcy(piy(vStart + mm));
         const xb = mcx(pix(leftBase));
-        this.rulerObjects.push(new Line([xb, y, xb - tickLen(mm) * S, y], lnOpt));
+        this.calibrationObjects.push(new Line([xb, y, xb - tickLen(mm) * S, y], lnOpt));
       }
 
       // ── Right ruler (ticks grow rightward) ──
@@ -314,11 +328,161 @@ export class CanvasManager {
       for (let mm = 0; mm <= V_LEN; mm++) {
         const y = mcy(piy(vStart + mm));
         const xb = mcx(pix(rightBase));
-        this.rulerObjects.push(new Line([xb, y, xb + tickLen(mm) * S, y], lnOpt));
+        this.calibrationObjects.push(new Line([xb, y, xb + tickLen(mm) * S, y], lnOpt));
       }
     }
 
-    this.rulerObjects.forEach((o) => o.set('visible', this.rulerVisible));
+    this.calibrationObjects.forEach((o) => o.set('visible', this.calibrationVisible));
+  }
+
+  private buildDesignRulers() {
+    this.designRulerObjects = [];
+    const S = C.DISPLAY_SCALE;
+    const halfW = C.POSTCARD_WIDTH_MM / 2;
+    const sfW = C.YOTO_WIDTH_MM;
+    const sfH = C.YOTO_HEIGHT_MM;
+    const sfLeftX = (halfW - sfW) / 2;
+    const sfRightX = halfW + (halfW - sfW) / 2;
+    const sfY = (C.POSTCARD_HEIGHT_MM - sfH) / 2;
+
+    const T1 = 1.0;
+    const T5 = 1.8;
+    const T10 = 2.8;
+    const TW = 0.08;
+    const RULER_DEPTH = T10 + 0.5;
+
+    const lnOpt = {
+      stroke: '#444444',
+      strokeWidth: TW * S,
+      selectable: false as const,
+      evented: false as const,
+    };
+
+    const tickLen = (mm: number) =>
+      mm % 10 === 0 ? T10 : mm % 5 === 0 ? T5 : T1;
+
+    const pix = (p: number) => this.paperToImageX(p);
+    const piy = (p: number) => this.paperToImageY(p);
+    const mcx = (i: number) => this.mmToCanvasX(i);
+    const mcy = (i: number) => this.mmToCanvasY(i);
+
+    const FONT_SIZE = 7;
+    const labelOpt = {
+      fontSize: FONT_SIZE,
+      fill: '#444444',
+      fontFamily: 'sans-serif',
+      selectable: false as const,
+      evented: false as const,
+      originX: 'center' as const,
+      originY: 'top' as const,
+    };
+
+    for (const sfX of [sfLeftX, sfRightX]) {
+      const imgLeft = pix(sfX);
+      const imgTop = piy(sfY);
+      const imgW = sfW * this.corrX;
+      const imgH = sfH * this.corrY;
+
+      // ── Background strips ──
+      this.designRulerObjects.push(new Rect({
+        left: mcx(imgLeft),
+        top: mcy(imgTop),
+        width: imgW * S,
+        height: RULER_DEPTH * S,
+        fill: 'rgba(255, 255, 255, 0.7)',
+        selectable: false, evented: false,
+        originX: 'left', originY: 'top',
+      }));
+      this.designRulerObjects.push(new Rect({
+        left: mcx(imgLeft),
+        top: mcy(imgTop),
+        width: RULER_DEPTH * S,
+        height: imgH * S,
+        fill: 'rgba(255, 255, 255, 0.7)',
+        selectable: false, evented: false,
+        originX: 'left', originY: 'top',
+      }));
+
+      // ── Top ruler (ticks grow downward from top edge) ──
+      const hCount = Math.floor(sfW);
+      for (let mm = 0; mm <= hCount; mm++) {
+        const paperX = sfX + mm;
+        const x = mcx(pix(paperX));
+        const yTop = mcy(imgTop);
+        const len = tickLen(mm);
+        this.designRulerObjects.push(new Line([x, yTop, x, yTop + len * S], lnOpt));
+
+        if (mm % 10 === 0 && mm > 0) {
+          this.designRulerObjects.push(new Text(String(mm), {
+            ...labelOpt,
+            left: x,
+            top: yTop + T10 * S + 0.2 * S,
+          }));
+        }
+      }
+
+      // ── Left ruler (ticks grow rightward from left edge) ──
+      const vCount = Math.floor(sfH);
+      for (let mm = 0; mm <= vCount; mm++) {
+        const paperY = sfY + mm;
+        const y = mcy(piy(paperY));
+        const xLeft = mcx(imgLeft);
+        const len = tickLen(mm);
+        this.designRulerObjects.push(new Line([xLeft, y, xLeft + len * S, y], lnOpt));
+
+        if (mm % 10 === 0 && mm > 0) {
+          this.designRulerObjects.push(new Text(String(mm), {
+            ...labelOpt,
+            left: xLeft + T10 * S + 0.2 * S,
+            top: y - FONT_SIZE / 2,
+            originX: 'left',
+          }));
+        }
+      }
+    }
+
+    this.designRulerObjects.forEach((o) => o.set('visible', this.designRulerVisible));
+  }
+
+  private buildGrid() {
+    this.gridObjects = [];
+    const S = C.DISPLAY_SCALE;
+    const halfW = C.POSTCARD_WIDTH_MM / 2;
+    const sfW = C.YOTO_WIDTH_MM;
+    const sfH = C.YOTO_HEIGHT_MM;
+    const sfLeftX = (halfW - sfW) / 2;
+    const sfRightX = halfW + (halfW - sfW) / 2;
+    const sfY = (C.POSTCARD_HEIGHT_MM - sfH) / 2;
+
+    const lineOpts = {
+      stroke: 'rgba(128, 128, 128, 0.3)',
+      strokeWidth: 0.15 * S,
+      selectable: false as const,
+      evented: false as const,
+    };
+
+    for (const sfX of [sfLeftX, sfRightX]) {
+      const imgLeft = this.paperToImageX(sfX);
+      const imgTop = this.paperToImageY(sfY);
+      const imgW = sfW * this.corrX;
+      const imgH = sfH * this.corrY;
+
+      for (let mm = this.gridSizeMm; mm < sfW; mm += this.gridSizeMm) {
+        const x = this.mmToCanvasX(this.paperToImageX(sfX + mm));
+        const yTop = this.mmToCanvasY(imgTop);
+        const yBot = this.mmToCanvasY(imgTop + imgH);
+        this.gridObjects.push(new Line([x, yTop, x, yBot], lineOpts));
+      }
+
+      for (let mm = this.gridSizeMm; mm < sfH; mm += this.gridSizeMm) {
+        const y = this.mmToCanvasY(this.paperToImageY(sfY + mm));
+        const xLeft = this.mmToCanvasX(imgLeft);
+        const xRight = this.mmToCanvasX(imgLeft + imgW);
+        this.gridObjects.push(new Line([xLeft, y, xRight, y], lineOpts));
+      }
+    }
+
+    this.gridObjects.forEach((o) => o.set('visible', this.gridVisible));
   }
 
   private makeCuttingMarks(sfPaperX: number, sfPaperY: number): Line[] {
@@ -374,7 +538,9 @@ export class CanvasManager {
     this.cuttingMarks.forEach((m) => this.canvas.remove(m));
     this.guideObjects.forEach((o) => this.canvas.remove(o));
     this.guidelineObjects.forEach((o) => this.canvas.remove(o));
-    this.rulerObjects.forEach((o) => this.canvas.remove(o));
+    this.gridObjects.forEach((o) => this.canvas.remove(o));
+    this.calibrationObjects.forEach((o) => this.canvas.remove(o));
+    this.designRulerObjects.forEach((o) => this.canvas.remove(o));
 
     this.buildCorrectedGuides();
     this.rebuildZOrder();
@@ -386,7 +552,9 @@ export class CanvasManager {
     const ordered: FabricObject[] = [
       this.bgRect,
       ...this._images.slice().reverse().map((e) => e.fabricImage),
-      ...this.rulerObjects,
+      ...this.gridObjects,
+      ...this.calibrationObjects,
+      ...this.designRulerObjects,
       this.dividerLine,
       ...this.cuttingMarks,
       ...this.staticGuides,
@@ -1260,14 +1428,82 @@ export class CanvasManager {
     return this.centerLinesVisible;
   }
 
-  setRulerVisible(visible: boolean) {
-    this.rulerVisible = visible;
-    this.rulerObjects.forEach((o) => o.set('visible', visible));
+  setCalibrationVisible(visible: boolean) {
+    this.calibrationVisible = visible;
+    this.calibrationObjects.forEach((o) => o.set('visible', visible));
     this.canvas.requestRenderAll();
   }
 
-  getRulerVisible(): boolean {
-    return this.rulerVisible;
+  getCalibrationVisible(): boolean {
+    return this.calibrationVisible;
+  }
+
+  setDesignRulerVisible(visible: boolean) {
+    this.designRulerVisible = visible;
+    this.designRulerObjects.forEach((o) => o.set('visible', visible));
+    this.canvas.requestRenderAll();
+  }
+
+  getDesignRulerVisible(): boolean {
+    return this.designRulerVisible;
+  }
+
+  // ── Grid overlay ──
+
+  setGridVisible(visible: boolean) {
+    this.gridVisible = visible;
+    this.gridObjects.forEach((o) => o.set('visible', visible));
+    this.canvas.requestRenderAll();
+  }
+
+  getGridVisible(): boolean {
+    return this.gridVisible;
+  }
+
+  setGridSizeMm(size: number) {
+    this.gridSizeMm = Math.max(1, Math.min(50, size));
+    this.rebuildGuidesForCorrection();
+  }
+
+  getGridSizeMm(): number {
+    return this.gridSizeMm;
+  }
+
+  // ── Snap-to-grid ──
+
+  setGridSnapEnabled(enabled: boolean) {
+    this.gridSnapEnabled = enabled;
+  }
+
+  getGridSnapEnabled(): boolean {
+    return this.gridSnapEnabled;
+  }
+
+  snapToGrid(left: number, top: number): { left: number; top: number } {
+    if (!this.gridSnapEnabled) return { left, top };
+
+    const halfW = C.POSTCARD_WIDTH_MM / 2;
+    const sfW = C.YOTO_WIDTH_MM;
+    const sfH = C.YOTO_HEIGHT_MM;
+    const sfLeftX = (halfW - sfW) / 2;
+    const sfRightX = halfW + (halfW - sfW) / 2;
+    const sfY = (C.POSTCARD_HEIGHT_MM - sfH) / 2;
+
+    const S = C.DISPLAY_SCALE;
+    const gridPxX = this.gridSizeMm * this.corrX * S;
+    const gridPxY = this.gridSizeMm * this.corrY * S;
+
+    const leftOriginX = this.mmToCanvasX(this.paperToImageX(sfLeftX));
+    const rightOriginX = this.mmToCanvasX(this.paperToImageX(sfRightX));
+    const originY = this.mmToCanvasY(this.paperToImageY(sfY));
+
+    const bestOriginX = Math.abs(left - rightOriginX) < Math.abs(left - leftOriginX)
+      ? rightOriginX : leftOriginX;
+
+    const snappedLeft = bestOriginX + Math.round((left - bestOriginX) / gridPxX) * gridPxX;
+    const snappedTop = originY + Math.round((top - originY) / gridPxY) * gridPxY;
+
+    return { left: snappedLeft, top: snappedTop };
   }
 
   // ── Correction factors ──
@@ -1300,6 +1536,9 @@ export class CanvasManager {
     this.guideObjects.forEach((o) => o.set('visible', false));
     this.staticGuides.forEach((o) => o.set('visible', false));
     this.guidelineObjects.forEach((o) => o.set('visible', false));
+    this.calibrationObjects.forEach((o) => o.set('visible', false));
+    this.designRulerObjects.forEach((o) => o.set('visible', false));
+    this.gridObjects.forEach((o) => o.set('visible', false));
 
     const dataUrl = this.canvas.toDataURL({
       format,
@@ -1315,6 +1554,9 @@ export class CanvasManager {
     this.guideObjects.forEach((o) => o.set('visible', this.outlineVisible));
     this.staticGuides.forEach((o) => o.set('visible', true));
     this.guidelineObjects.forEach((o) => o.set('visible', this.centerLinesVisible));
+    this.calibrationObjects.forEach((o) => o.set('visible', this.calibrationVisible));
+    this.designRulerObjects.forEach((o) => o.set('visible', this.designRulerVisible));
+    this.gridObjects.forEach((o) => o.set('visible', this.gridVisible));
 
     this.canvas.setDimensions({ width: displayW, height: displayH });
     this.canvas.setZoom(displayZoom);
@@ -1373,6 +1615,14 @@ export class CanvasManager {
     this.canvas.on('selection:created', notify);
     this.canvas.on('selection:updated', notify);
     this.canvas.on('selection:cleared', notify);
+
+    this.canvas.on('object:moving', (e: { target?: FabricObject }) => {
+      if (!this.gridSnapEnabled) return;
+      const obj = e.target;
+      if (!obj) return;
+      const snapped = this.snapToGrid(obj.left ?? 0, obj.top ?? 0);
+      obj.set({ left: snapped.left, top: snapped.top });
+    });
 
     this.canvas.on('text:editing:exited', () => {
       const active = this.canvas.getActiveObject();

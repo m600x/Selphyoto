@@ -8,7 +8,7 @@ mock.module('fabric', () => {
     private _width = 740;
     private _height = 500;
     private _zoom = 1;
-    private _listeners: Record<string, Array<() => void>> = {};
+    private _listeners: Record<string, Array<(data?: unknown) => void>> = {};
 
     add(obj: unknown) { this.objects.push(obj); }
     remove(obj: unknown) {
@@ -35,12 +35,12 @@ mock.module('fabric', () => {
     getHeight() { return this._height; }
     setZoom(z: number) { this._zoom = z; }
     getZoom() { return this._zoom; }
-    on(event: string, fn: () => void) {
+    on(event: string, fn: (data?: unknown) => void) {
       if (!this._listeners[event]) this._listeners[event] = [];
       this._listeners[event].push(fn);
     }
-    emit(event: string) {
-      (this._listeners[event] ?? []).forEach(fn => fn());
+    emit(event: string, data?: unknown) {
+      (this._listeners[event] ?? []).forEach(fn => fn(data));
     }
     toDataURL() { return 'data:image/png;base64,TEST'; }
   }
@@ -135,6 +135,19 @@ mock.module('fabric', () => {
     }
   }
 
+  class MockText {
+    text = ''; left = 0; top = 0; fontSize = 12; fill = '#000';
+    visible = true; selectable = false; evented = false;
+    constructor(text?: string, opts?: Record<string, unknown>) {
+      if (text) this.text = text;
+      if (opts) Object.assign(this, opts);
+    }
+    set(key: string | Record<string, unknown>, val?: unknown) {
+      if (typeof key === 'string') (this as Record<string, unknown>)[key] = val;
+      else Object.assign(this, key);
+    }
+  }
+
   return {
     Canvas: MockCanvas,
     Rect: MockRect,
@@ -143,6 +156,7 @@ mock.module('fabric', () => {
     FabricObject: class {},
     Textbox: MockTextbox,
     ActiveSelection: MockActiveSelection,
+    Text: MockText,
   };
 });
 
@@ -150,7 +164,7 @@ import { CanvasManager } from '../../src/canvas-manager';
 import type { Canvas } from 'fabric';
 
 interface MockCanvasWithEmit extends Canvas {
-  emit(event: string): void;
+  emit(event: string, data?: unknown): void;
 }
 
 function mockCanvas(cm: CanvasManager): MockCanvasWithEmit {
@@ -356,12 +370,23 @@ describe('CanvasManager', () => {
       expect(cm.getCenterLinesVisible()).toBe(false);
     });
 
-    it('setRulerVisible toggles state', () => {
-      expect(cm.getRulerVisible()).toBe(false);
-      cm.setRulerVisible(true);
-      expect(cm.getRulerVisible()).toBe(true);
-      cm.setRulerVisible(false);
-      expect(cm.getRulerVisible()).toBe(false);
+    it('setCalibrationVisible toggles state', () => {
+      expect(cm.getCalibrationVisible()).toBe(false);
+      cm.setCalibrationVisible(true);
+      expect(cm.getCalibrationVisible()).toBe(true);
+      cm.setCalibrationVisible(false);
+      expect(cm.getCalibrationVisible()).toBe(false);
+    });
+
+    it('design rulers are hidden by default', () => {
+      expect(cm.getDesignRulerVisible()).toBe(false);
+    });
+
+    it('setDesignRulerVisible toggles state', () => {
+      cm.setDesignRulerVisible(true);
+      expect(cm.getDesignRulerVisible()).toBe(true);
+      cm.setDesignRulerVisible(false);
+      expect(cm.getDesignRulerVisible()).toBe(false);
     });
 
     it('getBackgroundColor returns default white', () => {
@@ -1404,6 +1429,51 @@ describe('CanvasManager', () => {
       await cm.addSticker('data:image/svg+xml;base64,A', 'A');
       await cm.addSticker('data:image/svg+xml;base64,B', 'B');
       expect(cm.images[0].id).not.toBe(cm.images[1].id);
+    });
+  });
+
+  describe('grid overlay', () => {
+    it('grid is hidden by default', () => {
+      expect(cm.getGridVisible()).toBe(false);
+    });
+
+    it('setGridVisible toggles state', () => {
+      cm.setGridVisible(true);
+      expect(cm.getGridVisible()).toBe(true);
+      cm.setGridVisible(false);
+      expect(cm.getGridVisible()).toBe(false);
+    });
+
+    it('grid size defaults to 5mm', () => {
+      expect(cm.getGridSizeMm()).toBe(5);
+    });
+
+    it('setGridSizeMm updates grid size', () => {
+      cm.setGridSizeMm(2);
+      expect(cm.getGridSizeMm()).toBe(2);
+    });
+
+    it('setGridSizeMm clamps to min 1', () => {
+      cm.setGridSizeMm(0);
+      expect(cm.getGridSizeMm()).toBe(1);
+    });
+
+    it('setGridSizeMm clamps to max 50', () => {
+      cm.setGridSizeMm(100);
+      expect(cm.getGridSizeMm()).toBe(50);
+    });
+  });
+
+  describe('snap to grid', () => {
+    it('snap is disabled by default', () => {
+      expect(cm.getGridSnapEnabled()).toBe(false);
+    });
+
+    it('setGridSnapEnabled toggles state', () => {
+      cm.setGridSnapEnabled(true);
+      expect(cm.getGridSnapEnabled()).toBe(true);
+      cm.setGridSnapEnabled(false);
+      expect(cm.getGridSnapEnabled()).toBe(false);
     });
   });
 });

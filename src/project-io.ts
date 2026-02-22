@@ -38,6 +38,11 @@ export interface ProjectSettings {
   outlineVisible: boolean;
   centerLinesVisible: boolean;
   guidelinesVisible?: boolean;
+  calibrationVisible?: boolean;
+  designRulerVisible?: boolean;
+  gridVisible?: boolean;
+  gridSizeMm?: number;
+  gridSnapEnabled?: boolean;
   exportFormat: 'png' | 'jpeg';
 }
 
@@ -263,6 +268,11 @@ export async function exportProject(
         markColor: cm.getMarkColor(),
         outlineVisible: cm.getOutlineVisible(),
         centerLinesVisible: cm.getCenterLinesVisible(),
+        calibrationVisible: cm.getCalibrationVisible(),
+        designRulerVisible: cm.getDesignRulerVisible(),
+        gridVisible: cm.getGridVisible(),
+        gridSizeMm: cm.getGridSizeMm(),
+        gridSnapEnabled: cm.getGridSnapEnabled(),
         exportFormat: uiState.exportFormat,
       },
     };
@@ -283,6 +293,11 @@ export async function exportProject(
         markColor: cm.getMarkColor(),
         outlineVisible: cm.getOutlineVisible(),
         centerLinesVisible: cm.getCenterLinesVisible(),
+        calibrationVisible: cm.getCalibrationVisible(),
+        designRulerVisible: cm.getDesignRulerVisible(),
+        gridVisible: cm.getGridVisible(),
+        gridSizeMm: cm.getGridSizeMm(),
+        gridSnapEnabled: cm.getGridSnapEnabled(),
         exportFormat: uiState.exportFormat,
       },
     };
@@ -347,6 +362,16 @@ export async function importProject(
     migrateGuideSettings(manifest.settings);
     cm.setOutlineVisible(manifest.settings.outlineVisible);
     cm.setCenterLinesVisible(manifest.settings.centerLinesVisible);
+    if (manifest.settings.calibrationVisible !== undefined)
+      cm.setCalibrationVisible(manifest.settings.calibrationVisible);
+    if (manifest.settings.designRulerVisible !== undefined)
+      cm.setDesignRulerVisible(manifest.settings.designRulerVisible);
+    if (manifest.settings.gridVisible !== undefined)
+      cm.setGridVisible(manifest.settings.gridVisible);
+    if (manifest.settings.gridSizeMm !== undefined)
+      cm.setGridSizeMm(manifest.settings.gridSizeMm);
+    if (manifest.settings.gridSnapEnabled !== undefined)
+      cm.setGridSnapEnabled(manifest.settings.gridSnapEnabled);
     cm.finalizeRestore();
     applyUI(manifest.settings);
 
@@ -379,6 +404,16 @@ export async function importProject(
   migrateGuideSettings(manifest.settings);
   cm.setOutlineVisible(manifest.settings.outlineVisible);
   cm.setCenterLinesVisible(manifest.settings.centerLinesVisible);
+  if (manifest.settings.calibrationVisible !== undefined)
+    cm.setCalibrationVisible(manifest.settings.calibrationVisible);
+  if (manifest.settings.designRulerVisible !== undefined)
+    cm.setDesignRulerVisible(manifest.settings.designRulerVisible);
+  if (manifest.settings.gridVisible !== undefined)
+    cm.setGridVisible(manifest.settings.gridVisible);
+  if (manifest.settings.gridSizeMm !== undefined)
+    cm.setGridSizeMm(manifest.settings.gridSizeMm);
+  if (manifest.settings.gridSnapEnabled !== undefined)
+    cm.setGridSnapEnabled(manifest.settings.gridSnapEnabled);
   cm.finalizeRestore();
   applyUI(manifest.settings);
 

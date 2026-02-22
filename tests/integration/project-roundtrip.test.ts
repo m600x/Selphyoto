@@ -135,6 +135,11 @@ function makeExportCM(overrides: Partial<{
     getMarkColor: mock(() => overrides.markColor ?? '#cc0000'),
     getOutlineVisible: mock(() => overrides.outlineVisible ?? true),
     getCenterLinesVisible: mock(() => overrides.centerLinesVisible ?? false),
+    getCalibrationVisible: mock(() => false),
+    getDesignRulerVisible: mock(() => false),
+    getGridVisible: mock(() => false),
+    getGridSizeMm: mock(() => 5),
+    getGridSnapEnabled: mock(() => false),
   };
 }
 

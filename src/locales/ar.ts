@@ -139,8 +139,13 @@ const ar: Record<LocaleKey, string> = {
   'settings.scalingX': 'التحجيم X',
   'settings.scalingY': 'التحجيم Y',
 
-  'settings.guides': 'الأدلة',
-  'settings.scalingHint': 'الأدلة 50 مم.<br><br>التحجيم الجديد = الحالي × (المتوقع ÷ المقاس).<br><br>مثال: إذا كان التحجيم 0.961 وقست 52 مم بدلاً من 50: 0.961 × (50 ÷ 52) ≈ 0.924.',
+  'settings.calibrationGuides': 'أدلة المعايرة',
+  'settings.scalingHint': 'أدلة المعايرة 50 مم.<br><br>التحجيم الجديد = الحالي × (المتوقع ÷ المقاس).<br><br>مثال: إذا كان التحجيم 0.961 وقست 52 مم بدلاً من 50: 0.961 × (50 ÷ 52) ≈ 0.924.',
+  'settings.rulers': 'المساطر',
+  'settings.grid': 'الشبكة',
+  'settings.gridSize': 'حجم الشبكة',
+  'settings.gridSnap': 'محاذاة',
+  'settings.gridCustom': 'مخصص',
 
   'sticker.title': 'ملصقات',
   'sticker.search': 'بحث عن ملصقات…',

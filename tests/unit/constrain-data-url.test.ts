@@ -75,6 +75,28 @@ mock.module('fabric', () => {
     initDimensions() {}
   }
 
+  class MockText {
+    text = ''; left = 0; top = 0; fontSize = 12; fill = '#000';
+    visible = true; selectable = false; evented = false;
+    constructor(text?: string, opts?: Record<string, unknown>) {
+      if (text) this.text = text;
+      if (opts) Object.assign(this, opts);
+    }
+    set(key: string | Record<string, unknown>, val?: unknown) {
+      if (typeof key === 'string') (this as Record<string, unknown>)[key] = val;
+      else Object.assign(this, key);
+    }
+  }
+
+  class MockActiveSelection {
+    _objects: unknown[];
+    canvas: unknown;
+    constructor(objects: unknown[], opts?: Record<string, unknown>) {
+      this._objects = objects;
+      this.canvas = opts?.canvas;
+    }
+  }
+
   return {
     Canvas: MockCanvas,
     Rect: MockRect,
@@ -82,6 +104,8 @@ mock.module('fabric', () => {
     FabricImage: MockFabricImage,
     FabricObject: class {},
     Textbox: MockTextbox,
+    Text: MockText,
+    ActiveSelection: MockActiveSelection,
   };
 });
 

@@ -137,8 +137,13 @@ const en = {
   'settings.scalingX': 'Scaling X',
   'settings.scalingY': 'Scaling Y',
 
-  'settings.guides': 'Guides',
-  'settings.scalingHint': 'Guides are 50mm.<br><br>New scaling = current × (expected ÷ measured).<br><br>E.g. if scaling is 0.961 and you measure 52 mm instead of 50: 0.961 × (50 ÷ 52) ≈ 0.924.',
+  'settings.calibrationGuides': 'Calibration guides',
+  'settings.scalingHint': 'Calibration guides are 50mm.<br><br>New scaling = current × (expected ÷ measured).<br><br>E.g. if scaling is 0.961 and you measure 52 mm instead of 50: 0.961 × (50 ÷ 52) ≈ 0.924.',
+  'settings.rulers': 'Rulers',
+  'settings.grid': 'Grid',
+  'settings.gridSize': 'Grid size',
+  'settings.gridSnap': 'Snap',
+  'settings.gridCustom': 'Custom',
 
   'sticker.title': 'STICKERS',
   'sticker.search': 'Search stickers…',

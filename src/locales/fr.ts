@@ -139,8 +139,13 @@ const fr: Record<LocaleKey, string> = {
   'settings.scalingX': 'Échelle X',
   'settings.scalingY': 'Échelle Y',
 
-  'settings.guides': 'Guides',
-  'settings.scalingHint': 'Les guides font 50mm.<br><br>Nouvelle échelle = actuelle × (attendu ÷ mesuré).<br><br>Ex. si échelle = 0.961 et vous mesurez 52 mm au lieu de 50 : 0.961 × (50 ÷ 52) ≈ 0.924.',
+  'settings.calibrationGuides': 'Guides de calibration',
+  'settings.scalingHint': 'Les guides de calibration font 50mm.<br><br>Nouvelle échelle = actuelle × (attendu ÷ mesuré).<br><br>Ex. si échelle = 0.961 et vous mesurez 52 mm au lieu de 50 : 0.961 × (50 ÷ 52) ≈ 0.924.',
+  'settings.rulers': 'Règles',
+  'settings.grid': 'Grille',
+  'settings.gridSize': 'Taille de grille',
+  'settings.gridSnap': 'Aimanter',
+  'settings.gridCustom': 'Personnalisé',
 
   'sticker.title': 'STICKERS',
   'sticker.search': 'Rechercher des stickers…',
