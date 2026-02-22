@@ -48,11 +48,13 @@ mock.module('fabric', () => {
     left = 0; top = 0; scaleX = 1; scaleY = 1; angle = 0;
     width = 100; height = 100; visible = true;
     selectable = true; evented = true;
+    filters: unknown[] = [];
     set(key: string | Record<string, unknown>, val?: unknown) {
       if (typeof key === 'string') (this as Record<string, unknown>)[key] = val;
       else Object.assign(this, key);
     }
     setCoords() {}
+    applyFilters() {}
     static fromURL = mock().mockImplementation(async () => new MockFabricImage());
   }
 
@@ -97,6 +99,12 @@ mock.module('fabric', () => {
     }
   }
 
+  class MockBrightness { brightness = 0; constructor(opts?: any) { if (opts) Object.assign(this, opts); } }
+  class MockContrast { contrast = 0; constructor(opts?: any) { if (opts) Object.assign(this, opts); } }
+  class MockSaturation { saturation = 0; constructor(opts?: any) { if (opts) Object.assign(this, opts); } }
+  class MockVibrance { vibrance = 0; constructor(opts?: any) { if (opts) Object.assign(this, opts); } }
+  class MockConvolute { matrix: number[] = []; constructor(opts?: any) { if (opts) Object.assign(this, opts); } }
+
   return {
     Canvas: MockCanvas,
     Rect: MockRect,
@@ -106,6 +114,13 @@ mock.module('fabric', () => {
     Textbox: MockTextbox,
     Text: MockText,
     ActiveSelection: MockActiveSelection,
+    filters: {
+      Brightness: MockBrightness,
+      Contrast: MockContrast,
+      Saturation: MockSaturation,
+      Vibrance: MockVibrance,
+      Convolute: MockConvolute,
+    },
   };
 });
 

@@ -51,6 +51,52 @@
             </button>
             <div class="canvas-toolbar-sep"></div>
             <div class="toolbar-dropdown">
+              <button id="adjust-dropdown-btn" class="action-btn toolbar-dropdown-toggle" disabled>
+                <span data-i18n="toolbar.adjust">ADJUST</span>
+                <svg class="toolbar-dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div id="adjust-dropdown-menu" class="toolbar-dropdown-menu adjust-dropdown-menu">
+                <div class="dropdown-section">
+                  <div class="dropdown-section-title" data-i18n="filter.exposure">EXPOSURE</div>
+                  <div class="dropdown-section-row adjust-slider-row">
+                    <input type="range" id="filter-exposure" class="adjust-slider" min="-100" max="100" step="1" value="0">
+                    <span id="filter-exposure-value" class="adjust-value">0</span>
+                  </div>
+                </div>
+                <div class="dropdown-section">
+                  <div class="dropdown-section-title" data-i18n="filter.contrast">CONTRAST</div>
+                  <div class="dropdown-section-row adjust-slider-row">
+                    <input type="range" id="filter-contrast" class="adjust-slider" min="-100" max="100" step="1" value="0">
+                    <span id="filter-contrast-value" class="adjust-value">0</span>
+                  </div>
+                </div>
+                <div class="dropdown-section">
+                  <div class="dropdown-section-title" data-i18n="filter.clarity">CLARITY</div>
+                  <div class="dropdown-section-row adjust-slider-row">
+                    <input type="range" id="filter-clarity" class="adjust-slider" min="-100" max="100" step="1" value="0">
+                    <span id="filter-clarity-value" class="adjust-value">0</span>
+                  </div>
+                </div>
+                <div class="dropdown-section">
+                  <div class="dropdown-section-title" data-i18n="filter.vibrance">VIBRANCE</div>
+                  <div class="dropdown-section-row adjust-slider-row">
+                    <input type="range" id="filter-vibrance" class="adjust-slider" min="-100" max="100" step="1" value="0">
+                    <span id="filter-vibrance-value" class="adjust-value">0</span>
+                  </div>
+                </div>
+                <div class="dropdown-section">
+                  <div class="dropdown-section-title" data-i18n="filter.saturation">SATURATION</div>
+                  <div class="dropdown-section-row adjust-slider-row">
+                    <input type="range" id="filter-saturation" class="adjust-slider" min="-100" max="100" step="1" value="0">
+                    <span id="filter-saturation-value" class="adjust-value">0</span>
+                  </div>
+                </div>
+                <div class="dropdown-section adjust-reset-section">
+                  <button id="filter-reset-btn" class="action-btn" data-i18n="filter.reset">Reset</button>
+                </div>
+              </div>
+            </div>
+            <div class="toolbar-dropdown">
               <button id="tools-dropdown-btn" class="action-btn toolbar-dropdown-toggle" disabled>
                 <span data-i18n="toolbar.tools">TOOLS</span>
                 <svg class="toolbar-dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -95,6 +141,17 @@
                   <div class="dropdown-section-row">
                     <input type="range" id="opacity-slider" min="0" max="1" step="0.05" value="1">
                     <span id="opacity-value">100%</span>
+                  </div>
+                </div>
+                <div class="dropdown-section">
+                  <div class="dropdown-section-title" data-i18n="toolbar.sizing">SIZING</div>
+                  <div class="dropdown-section-row">
+                    <button id="fit-card-btn" class="action-btn canvas-tool-btn" data-i18n-title="toolbar.fitCard" title="Fit to card">
+                      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="7" y="5" width="10" height="14" rx="1" stroke-dasharray="2 2"/></svg>
+                    </button>
+                    <button id="fill-card-btn" class="action-btn canvas-tool-btn" data-i18n-title="toolbar.fillCard" title="Fill card">
+                      <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor" opacity="0.15"/></svg>
+                    </button>
                   </div>
                 </div>
               </div>

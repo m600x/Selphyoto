@@ -11,6 +11,7 @@ function makeMockCM(overrides: Partial<{
     locked: boolean;
     groupId?: string;
     originalDataUrl: string;
+    filters?: { exposure: number; contrast: number; clarity: number; vibrance: number; saturation: number };
   }>;
   groups: Array<{ id: string; name: string; visible: boolean }>;
   groupCounter: number;
@@ -27,7 +28,11 @@ function makeMockCM(overrides: Partial<{
   gridSizeMm: number;
   gridSnapEnabled: boolean;
 }> = {}): CanvasManager {
-  const images = (overrides.images ?? []).map(img => ({ type: 'image' as const, ...img }));
+  const images = (overrides.images ?? []).map(img => ({
+    type: 'image' as const,
+    filters: img.filters ?? { exposure: 0, contrast: 0, clarity: 0, vibrance: 0, saturation: 0 },
+    ...img,
+  }));
   const groups = overrides.groups ?? [];
   return {
     images,
@@ -155,6 +160,24 @@ describe('collectPageData', () => {
       width: 300,
     });
     expect(pageData.textCounter).toBe(1);
+  });
+
+  it('collectPageData includes image filters', () => {
+    const cm = makeMockCM({
+      images: [{
+        fabricImage: { left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0 },
+        filename: 'filtered.png',
+        visible: true,
+        locked: false,
+        originalDataUrl: 'data:image/png;base64,BBB',
+        filters: { exposure: 25, contrast: -10, clarity: 0, vibrance: 50, saturation: 0 },
+      }],
+    });
+
+    const pageData = collectPageData(cm);
+    expect(pageData.images[0].filters).toEqual({
+      exposure: 25, contrast: -10, clarity: 0, vibrance: 50, saturation: 0,
+    });
   });
 });
 

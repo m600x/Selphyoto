@@ -74,6 +74,7 @@ mock.module('fabric', () => {
     flipX = false; flipY = false; opacity = 1;
     width = 100; height = 100; visible = true;
     selectable = true; evented = true;
+    filters: unknown[] = [];
 
     constructor(opts?: Record<string, unknown>) {
       if (opts) Object.assign(this, opts);
@@ -83,6 +84,7 @@ mock.module('fabric', () => {
       else Object.assign(this, key);
     }
     setCoords() {}
+    applyFilters() {}
     getBoundingRect() {
       return {
         left: this.left,
@@ -90,6 +92,20 @@ mock.module('fabric', () => {
         width: this.width * this.scaleX,
         height: this.height * this.scaleY,
       };
+    }
+    getScaledWidth() { return this.width * this.scaleX; }
+    getScaledHeight() { return this.height * this.scaleY; }
+    scaleToWidth(value: number) {
+      const factor = this.getBoundingRect().width / this.getScaledWidth();
+      const s = value / this.width / factor;
+      this.scaleX = s;
+      this.scaleY = s;
+    }
+    scaleToHeight(value: number) {
+      const factor = this.getBoundingRect().height / this.getScaledHeight();
+      const s = value / this.height / factor;
+      this.scaleX = s;
+      this.scaleY = s;
     }
     toDataURL() { return 'data:image/png;base64,IMGDATA'; }
     static fromURL = mock().mockImplementation(async () => new MockFabricImage());
@@ -148,6 +164,12 @@ mock.module('fabric', () => {
     }
   }
 
+  class MockBrightness { brightness = 0; constructor(opts?: any) { if (opts) Object.assign(this, opts); } }
+  class MockContrast { contrast = 0; constructor(opts?: any) { if (opts) Object.assign(this, opts); } }
+  class MockSaturation { saturation = 0; constructor(opts?: any) { if (opts) Object.assign(this, opts); } }
+  class MockVibrance { vibrance = 0; constructor(opts?: any) { if (opts) Object.assign(this, opts); } }
+  class MockConvolute { matrix: number[] = []; constructor(opts?: any) { if (opts) Object.assign(this, opts); } }
+
   return {
     Canvas: MockCanvas,
     Rect: MockRect,
@@ -157,6 +179,13 @@ mock.module('fabric', () => {
     Textbox: MockTextbox,
     ActiveSelection: MockActiveSelection,
     Text: MockText,
+    filters: {
+      Brightness: MockBrightness,
+      Contrast: MockContrast,
+      Saturation: MockSaturation,
+      Vibrance: MockVibrance,
+      Convolute: MockConvolute,
+    },
   };
 });
 
@@ -1464,6 +1493,93 @@ describe('CanvasManager', () => {
     });
   });
 
+  describe('image filters', () => {
+    it('getImageFilters returns all-zero defaults for a new image', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      const f = cm.getImageFilters(0);
+      expect(f).toEqual({ exposure: 0, contrast: 0, clarity: 0, vibrance: 0, saturation: 0 });
+    });
+
+    it('setImageFilters applies partial updates', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.setImageFilters(0, { exposure: 50, contrast: -30 });
+      const f = cm.getImageFilters(0);
+      expect(f.exposure).toBe(50);
+      expect(f.contrast).toBe(-30);
+      expect(f.clarity).toBe(0);
+      expect(f.vibrance).toBe(0);
+      expect(f.saturation).toBe(0);
+    });
+
+    it('setImageFilters clamps values to [-100, 100]', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.setImageFilters(0, { exposure: 200, contrast: -150 });
+      const f = cm.getImageFilters(0);
+      expect(f.exposure).toBe(100);
+      expect(f.contrast).toBe(-100);
+    });
+
+    it('setImageFilters rebuilds fabric filters array', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.setImageFilters(0, { exposure: 50 });
+      const fi = cm.images[0].fabricImage as any;
+      expect(fi.filters.length).toBeGreaterThan(0);
+    });
+
+    it('setImageFilters does nothing for invalid index', () => {
+      expect(() => cm.setImageFilters(-1, { exposure: 50 })).not.toThrow();
+      expect(() => cm.setImageFilters(99, { exposure: 50 })).not.toThrow();
+    });
+
+    it('getImageFilters returns all-zero for invalid index', () => {
+      const f = cm.getImageFilters(-1);
+      expect(f).toEqual({ exposure: 0, contrast: 0, clarity: 0, vibrance: 0, saturation: 0 });
+    });
+
+    it('setImageFilters with all zeros produces empty filters array', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.setImageFilters(0, { exposure: 50 });
+      cm.setImageFilters(0, { exposure: 0 });
+      const fi = cm.images[0].fabricImage as any;
+      expect(fi.filters.length).toBe(0);
+    });
+
+    it('does not apply filters to text layers', () => {
+      cm.addText();
+      cm.setImageFilters(0, { exposure: 50 });
+      const f = cm.getImageFilters(0);
+      expect(f).toEqual({ exposure: 0, contrast: 0, clarity: 0, vibrance: 0, saturation: 0 });
+    });
+
+    it('clarity with negative value creates convolute filter', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.setImageFilters(0, { clarity: -50 });
+      const fi = cm.images[0].fabricImage as any;
+      expect(fi.filters.length).toBe(1);
+    });
+
+    it('all five filter types produce five fabric filters', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.setImageFilters(0, { exposure: 10, contrast: 20, clarity: 30, vibrance: 40, saturation: 50 });
+      const fi = cm.images[0].fabricImage as any;
+      expect(fi.filters.length).toBe(5);
+    });
+  });
+
   describe('snap to grid', () => {
     it('snap is disabled by default', () => {
       expect(cm.getGridSnapEnabled()).toBe(false);
@@ -1529,6 +1645,70 @@ describe('CanvasManager', () => {
       mockCanvas(cm).emit('object:moving', { target: fi });
       expect(fi.left).toBe(103);
       expect(fi.top).toBe(207);
+    });
+  });
+
+  describe('fit/fill to subframe', () => {
+    it('fitSelectedToSubframe scales image to fit within closest subframe', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 10, top: 10, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.selectImage(0);
+      cm.fitSelectedToSubframe();
+      const fi = cm.images[0].fabricImage;
+      const sf = cm.getSubframeBounds()[0];
+      const iw = fi.width ?? 1;
+      const ih = fi.height ?? 1;
+      const expectedScale = Math.min(sf.width / iw, sf.height / ih);
+      expect(fi.scaleX).toBeCloseTo(expectedScale, 5);
+      expect(fi.scaleY).toBeCloseTo(expectedScale, 5);
+      const cx = (fi.left ?? 0) + iw * expectedScale / 2;
+      const cy = (fi.top ?? 0) + ih * expectedScale / 2;
+      const sfCx = sf.left + sf.width / 2;
+      const sfCy = sf.top + sf.height / 2;
+      expect(cx).toBeCloseTo(sfCx, 0);
+      expect(cy).toBeCloseTo(sfCy, 0);
+    });
+
+    it('fillSelectedToSubframe scales image to cover closest subframe', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 10, top: 10, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.selectImage(0);
+      cm.fillSelectedToSubframe();
+      const fi = cm.images[0].fabricImage;
+      const sf = cm.getSubframeBounds()[0];
+      const iw = fi.width ?? 1;
+      const ih = fi.height ?? 1;
+      const expectedScale = Math.max(sf.width / iw, sf.height / ih);
+      expect(fi.scaleX).toBeCloseTo(expectedScale, 5);
+      expect(fi.scaleY).toBeCloseTo(expectedScale, 5);
+    });
+
+    it('fitSelectedToSubframe does nothing when no selection', () => {
+      expect(() => cm.fitSelectedToSubframe()).not.toThrow();
+    });
+
+    it('fillSelectedToSubframe does nothing when no selection', () => {
+      expect(() => cm.fillSelectedToSubframe()).not.toThrow();
+    });
+
+    it('fitSelectedToSubframe does nothing for text layers', async () => {
+      cm.addText();
+      cm.selectImage(0);
+      const fi = cm.images[0].fabricImage;
+      const origScale = fi.scaleX;
+      cm.fitSelectedToSubframe();
+      expect(fi.scaleX).toBe(origScale);
+    });
+
+    it('fillSelectedToSubframe does nothing for text layers', async () => {
+      cm.addText();
+      cm.selectImage(0);
+      const fi = cm.images[0].fabricImage;
+      const origScale = fi.scaleX;
+      cm.fillSelectedToSubframe();
+      expect(fi.scaleX).toBe(origScale);
     });
   });
 });

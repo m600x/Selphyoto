@@ -62,6 +62,23 @@ const textDropdownArrow = textDropdownBtn.querySelector('.toolbar-dropdown-arrow
 const stickerDropdownBtn = document.getElementById('sticker-dropdown-btn') as HTMLButtonElement;
 const stickerDropdownMenu = document.getElementById('sticker-dropdown-menu')!;
 const stickerDropdownArrow = stickerDropdownBtn.querySelector('.toolbar-dropdown-arrow')!;
+const adjustDropdownBtn = document.getElementById('adjust-dropdown-btn') as HTMLButtonElement;
+const adjustDropdownMenu = document.getElementById('adjust-dropdown-menu')!;
+const adjustDropdownArrow = adjustDropdownBtn.querySelector('.toolbar-dropdown-arrow')!;
+
+const filterExposure = document.getElementById('filter-exposure') as HTMLInputElement;
+const filterContrast = document.getElementById('filter-contrast') as HTMLInputElement;
+const filterClarity = document.getElementById('filter-clarity') as HTMLInputElement;
+const filterVibrance = document.getElementById('filter-vibrance') as HTMLInputElement;
+const filterSaturation = document.getElementById('filter-saturation') as HTMLInputElement;
+
+const filterExposureValue = document.getElementById('filter-exposure-value')!;
+const filterContrastValue = document.getElementById('filter-contrast-value')!;
+const filterClarityValue = document.getElementById('filter-clarity-value')!;
+const filterVibranceValue = document.getElementById('filter-vibrance-value')!;
+const filterSaturationValue = document.getElementById('filter-saturation-value')!;
+
+const filterResetBtn = document.getElementById('filter-reset-btn') as HTMLButtonElement;
 const stickerSearch = document.getElementById('sticker-search') as HTMLInputElement;
 const stickerCategoriesEl = document.getElementById('sticker-categories')!;
 const stickerGrid = document.getElementById('sticker-grid')!;
@@ -72,6 +89,8 @@ const undoBtn = document.getElementById('undo-btn') as HTMLButtonElement;
 const redoBtn = document.getElementById('redo-btn') as HTMLButtonElement;
 const flipHBtn = document.getElementById('flip-h-btn') as HTMLButtonElement;
 const flipVBtn = document.getElementById('flip-v-btn') as HTMLButtonElement;
+const fitCardBtn = document.getElementById('fit-card-btn') as HTMLButtonElement;
+const fillCardBtn = document.getElementById('fill-card-btn') as HTMLButtonElement;
 const opacitySlider = document.getElementById('opacity-slider') as HTMLInputElement;
 const opacityValue = document.getElementById('opacity-value') as HTMLSpanElement;
 const sfAlignBtns = {
@@ -264,6 +283,18 @@ flipVBtn.addEventListener('click', () => {
   scheduleSave();
 });
 
+fitCardBtn.addEventListener('click', () => {
+  pushSnapshot();
+  cm.fitSelectedToSubframe();
+  scheduleSave();
+});
+
+fillCardBtn.addEventListener('click', () => {
+  pushSnapshot();
+  cm.fillSelectedToSubframe();
+  scheduleSave();
+});
+
 opacitySlider.addEventListener('input', () => {
   const idx = cm.getSelectedIndex();
   if (idx < 0) return;
@@ -370,17 +401,56 @@ alignLeftBtn.addEventListener('click', () => setAlignment('left'));
 alignCenterBtn.addEventListener('click', () => setAlignment('center'));
 alignRightBtn.addEventListener('click', () => setAlignment('right'));
 
+const filterSliders = [
+  { slider: filterExposure, display: filterExposureValue, key: 'exposure' as const },
+  { slider: filterContrast, display: filterContrastValue, key: 'contrast' as const },
+  { slider: filterClarity, display: filterClarityValue, key: 'clarity' as const },
+  { slider: filterVibrance, display: filterVibranceValue, key: 'vibrance' as const },
+  { slider: filterSaturation, display: filterSaturationValue, key: 'saturation' as const },
+];
+
+for (const { slider, display, key } of filterSliders) {
+  slider.addEventListener('input', () => {
+    const idx = cm.getSelectedIndex();
+    if (idx < 0) return;
+    const val = parseInt(slider.value, 10);
+    cm.setImageFilters(idx, { [key]: val });
+    display.textContent = val > 0 ? `+${val}` : `${val}`;
+  });
+  slider.addEventListener('change', () => {
+    scheduleSave();
+  });
+}
+
+filterResetBtn.addEventListener('click', () => {
+  const idx = cm.getSelectedIndex();
+  if (idx < 0) return;
+  cm.setImageFilters(idx, { exposure: 0, contrast: 0, clarity: 0, vibrance: 0, saturation: 0 });
+  for (const { slider, display } of filterSliders) {
+    slider.value = '0';
+    display.textContent = '0';
+  }
+  scheduleSave();
+});
+
 function updateCanvasToolbar() {
   const idx = cm.getSelectedIndex();
   const hasSelection = idx >= 0;
   const selType = hasSelection ? cm.getSelectedType() : null;
   const isText = selType === 'text';
+  const isImage = selType === 'image';
 
   toolsDropdownBtn.disabled = !hasSelection;
 
   if (!hasSelection) {
     toolsDropdownMenu.classList.remove('open');
     toolsDropdownArrow.classList.remove('open');
+  }
+
+  adjustDropdownBtn.disabled = !isImage;
+  if (!isImage) {
+    adjustDropdownMenu.classList.remove('open');
+    adjustDropdownArrow.classList.remove('open');
   }
 
   fontSelect.disabled = !isText;
@@ -399,6 +469,20 @@ function updateCanvasToolbar() {
   } else {
     opacitySlider.value = '1';
     opacityValue.textContent = '100%';
+  }
+
+  if (isImage) {
+    const f = cm.getImageFilters(idx);
+    for (const { slider, display, key } of filterSliders) {
+      const val = f[key];
+      slider.value = `${val}`;
+      display.textContent = val > 0 ? `+${val}` : `${val}`;
+    }
+  } else {
+    for (const { slider, display } of filterSliders) {
+      slider.value = '0';
+      display.textContent = '0';
+    }
   }
 
   if (isText) {
@@ -1223,6 +1307,9 @@ async function handleSwitchPage(targetIndex: number) {
           flipY: img.flipY ?? false,
           opacity: img.opacity ?? 1,
         });
+        if (img.filters) {
+          cm.setImageFilters(cm.images.length - 1, img.filters);
+        }
       }
     } catch (err) {
       console.warn('Skipping corrupt layer on page switch:', img.filename, err);
@@ -1299,6 +1386,9 @@ async function handleDeletePage(index: number) {
               flipY: img.flipY ?? false,
               opacity: img.opacity ?? 1,
             });
+            if (img.filters) {
+              cm.setImageFilters(cm.images.length - 1, img.filters);
+            }
           }
         } catch (err) {
           console.warn('Skipping corrupt layer:', img.filename, err);
@@ -1453,6 +1543,9 @@ async function exportAllPagesAsZip(format: 'png' | 'jpeg') {
             flipY: img.flipY ?? false,
             opacity: img.opacity ?? 1,
           });
+          if (img.filters) {
+            cm.setImageFilters(cm.images.length - 1, img.filters);
+          }
         }
       }
       cm.restoreGroups(pageData.groups, pageData.groupCounter);
@@ -1512,6 +1605,9 @@ async function exportAllPagesAsZip(format: 'png' | 'jpeg') {
             flipY: img.flipY ?? false,
             opacity: img.opacity ?? 1,
           });
+          if (img.filters) {
+            cm.setImageFilters(cm.images.length - 1, img.filters);
+          }
         }
       }
       cm.restoreGroups(origData.groups, origData.groupCounter);
@@ -1566,6 +1662,7 @@ function closeAllDropdowns(except?: Element) {
     [toolsDropdownMenu, toolsDropdownArrow, toolsDropdownBtn],
     [textDropdownMenu, textDropdownArrow, textDropdownBtn],
     [stickerDropdownMenu, stickerDropdownArrow, stickerDropdownBtn],
+    [adjustDropdownMenu, adjustDropdownArrow, adjustDropdownBtn],
   ];
   for (const [menu, arrow] of pairs) {
     if (menu !== except) {
@@ -1604,6 +1701,7 @@ function setupDropdownToggle(btn: HTMLButtonElement, menu: Element, arrow: Eleme
 setupDropdownToggle(toolsDropdownBtn, toolsDropdownMenu, toolsDropdownArrow);
 setupDropdownToggle(textDropdownBtn, textDropdownMenu, textDropdownArrow);
 setupDropdownToggle(stickerDropdownBtn, stickerDropdownMenu, stickerDropdownArrow);
+setupDropdownToggle(adjustDropdownBtn, adjustDropdownMenu, adjustDropdownArrow);
 
 document.addEventListener('click', () => {
   closeAllDropdowns();
@@ -2172,6 +2270,9 @@ async function restoreAutoSave() {
             flipY: img.flipY ?? false,
             opacity: img.opacity ?? 1,
           });
+        }
+        if (img.filters) {
+          cm.setImageFilters(cm.images.length - 1, img.filters);
         }
       } catch (imgErr) {
         console.warn('Skipping corrupt auto-saved layer:', img.filename, imgErr);

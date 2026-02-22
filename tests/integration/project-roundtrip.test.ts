@@ -2,6 +2,7 @@ import { describe, it, expect, mock, spyOn, beforeEach } from 'bun:test';
 import JSZip from 'jszip';
 import { importProject, exportProject, type ProjectManifest, type ProjectSettings } from '../../src/project-io';
 import type { PageData } from '../../src/page-manager';
+import type { ImageFilters } from '../../src/canvas-manager';
 
 function makeMockCM() {
   const state = {
@@ -9,6 +10,7 @@ function makeMockCM() {
       type: string; filename: string; visible: boolean; locked: boolean; groupId?: string;
       left: number; top: number; scaleX: number; scaleY: number; angle: number;
       flipX: boolean; flipY: boolean; opacity: number;
+      filters: ImageFilters;
       text?: string; fontFamily?: string; fontSize?: number; fill?: string;
       fontWeight?: string; fontStyle?: string; width?: number;
     }>,
@@ -24,6 +26,7 @@ function makeMockCM() {
 
   return {
     state,
+    get images() { return state.images; },
     clearAll: mock(() => {
       state.images = [];
       state.groups = [];
@@ -43,6 +46,7 @@ function makeMockCM() {
         flipX: (props.flipX ?? false) as boolean,
         flipY: (props.flipY ?? false) as boolean,
         opacity: (props.opacity ?? 1) as number,
+        filters: { exposure: 0, contrast: 0, clarity: 0, vibrance: 0, saturation: 0 },
       });
     }),
     addTextLayer: mock((props: Record<string, unknown>) => {
@@ -60,6 +64,7 @@ function makeMockCM() {
         flipX: (props.flipX ?? false) as boolean,
         flipY: (props.flipY ?? false) as boolean,
         opacity: (props.opacity ?? 1) as number,
+        filters: { exposure: 0, contrast: 0, clarity: 0, vibrance: 0, saturation: 0 },
         text: props.text as string,
         fontFamily: props.fontFamily as string,
         fontSize: props.fontSize as number,
@@ -80,6 +85,15 @@ function makeMockCM() {
     setCenterLinesVisible: mock((v: boolean) => { state.centerLinesVisible = v; }),
     setTextCounter: mock((v: number) => { state.textCounter = v; }),
     getTextCounter: mock(() => state.textCounter),
+    setImageFilters: mock((index: number, f: ImageFilters) => {
+      if (state.images[index]) state.images[index].filters = { ...f };
+    }),
+    getImageFilters: mock((index: number) => state.images[index]?.filters ?? { exposure: 0, contrast: 0, clarity: 0, vibrance: 0, saturation: 0 }),
+    setCalibrationVisible: mock(() => {}),
+    setDesignRulerVisible: mock(() => {}),
+    setGridVisible: mock(() => {}),
+    setGridSizeMm: mock(() => {}),
+    setGridSnapEnabled: mock(() => {}),
     finalizeRestore: mock(() => {}),
   };
 }
@@ -112,6 +126,7 @@ function makeExportCM(overrides: Partial<{
     locked: boolean;
     groupId?: string;
     originalDataUrl: string;
+    filters?: ImageFilters;
   }>;
   groups: Array<{ id: string; name: string; visible: boolean }>;
   textCounter: number;
@@ -122,7 +137,10 @@ function makeExportCM(overrides: Partial<{
   outlineVisible: boolean;
   centerLinesVisible: boolean;
 }> = {}) {
-  const images = overrides.images ?? [];
+  const images = (overrides.images ?? []).map(img => ({
+    ...img,
+    filters: img.filters ?? { exposure: 0, contrast: 0, clarity: 0, vibrance: 0, saturation: 0 },
+  }));
   const groups = overrides.groups ?? [];
   return {
     images,
@@ -322,6 +340,7 @@ describe('project import', () => {
           fontStyle: 'italic',
           textAlign: 'right',
           width: 300,
+          filters: { exposure: 10, contrast: 0, clarity: 0, vibrance: 0, saturation: 0 },
         },
         {
           file: 'images/0_bg.png',
@@ -348,6 +367,7 @@ describe('project import', () => {
     expect(cm.state.images[0].fontFamily).toBe('Georgia');
     expect(cm.state.images[1].type).toBe('image');
     expect(cm.setTextCounter).toHaveBeenCalledWith(1);
+    expect(cm.setImageFilters).toHaveBeenCalledWith(0, { exposure: 10, contrast: 0, clarity: 0, vibrance: 0, saturation: 0 });
   });
 
   it('handles project with no images', async () => {
@@ -698,5 +718,69 @@ describe('project export', () => {
     );
 
     expect(manifest.images[0].file).toContain('.png');
+  });
+
+  it('exports image filters in manifest', async () => {
+    const customFilters: ImageFilters = { exposure: 10, contrast: -5, clarity: 3, vibrance: 7, saturation: -2 };
+    const cm = makeExportCM({
+      images: [
+        {
+          type: 'image',
+          fabricImage: makeFabricImage({ left: 0, top: 0 }),
+          filename: 'filtered.png',
+          visible: true,
+          locked: false,
+          originalDataUrl: 'data:image/png;base64,F',
+          filters: customFilters,
+        },
+      ],
+    });
+
+    const zip = await captureExportedZip(() =>
+      exportProject(cm as never, { exportFormat: 'png' }),
+    );
+
+    const manifest: ProjectManifest = JSON.parse(
+      await zip.file('project.json')!.async('string'),
+    );
+
+    expect(manifest.images[0].filters).toEqual(customFilters);
+  });
+});
+
+describe('project roundtrip', () => {
+  it('roundtrips image filters', async () => {
+    const customFilters: ImageFilters = { exposure: 15, contrast: -10, clarity: 5, vibrance: 8, saturation: -3 };
+
+    const cm = makeExportCM({
+      images: [
+        {
+          type: 'image',
+          fabricImage: makeFabricImage({ left: 10, top: 20 }),
+          filename: 'photo.png',
+          visible: true,
+          locked: false,
+          originalDataUrl: 'data:image/png;base64,ABC',
+          filters: customFilters,
+        },
+      ],
+    });
+
+    const zip = await captureExportedZip(() =>
+      exportProject(cm as never, { exportFormat: 'png' }),
+    );
+
+    const manifest: ProjectManifest = JSON.parse(
+      await zip.file('project.json')!.async('string'),
+    );
+    expect(manifest.images[0].filters).toEqual(customFilters);
+
+    const importCM = makeMockCM();
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const file = new File([blob], 'roundtrip.zip', { type: 'application/zip' });
+    await importProject(file, importCM as never, mock(() => {}));
+
+    expect(importCM.setImageFilters).toHaveBeenCalledWith(0, customFilters);
+    expect(importCM.state.images[0].filters).toEqual(customFilters);
   });
 });

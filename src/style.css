@@ -211,6 +211,38 @@ body {
   min-width: 238px;
 }
 
+.adjust-dropdown-menu {
+  min-width: 220px;
+}
+
+.adjust-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.adjust-slider {
+  flex: 1;
+  cursor: pointer;
+}
+
+.adjust-value {
+  min-width: 32px;
+  text-align: right;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.adjust-reset-section {
+  display: flex;
+  justify-content: center;
+  padding-top: 4px;
+}
+
+.adjust-reset-section .action-btn {
+  width: 100%;
+}
+
 .toolbar-dropdown-menu #opacity-slider {
   width: 100%;
   flex: 1;

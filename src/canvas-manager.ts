@@ -1,7 +1,19 @@
-import { Canvas, Rect, Line, FabricImage, FabricObject, Textbox, ActiveSelection, Text } from 'fabric';
+import { Canvas, Rect, Line, FabricImage, FabricObject, Textbox, ActiveSelection, Text, filters } from 'fabric';
+
+const { Brightness, Contrast: ContrastFilter, Convolute, Saturation: SaturationFilter, Vibrance: VibranceFilter } = filters;
 import * as C from './constants';
 import { t } from './i18n';
 import type { AutoSaveImage } from './auto-save';
+
+export interface ImageFilters {
+  exposure: number;
+  contrast: number;
+  clarity: number;
+  vibrance: number;
+  saturation: number;
+}
+
+const DEFAULT_FILTERS: ImageFilters = { exposure: 0, contrast: 0, clarity: 0, vibrance: 0, saturation: 0 };
 
 export interface ImageEntry {
   id: string;
@@ -12,6 +24,7 @@ export interface ImageEntry {
   locked: boolean;
   groupId?: string;
   originalDataUrl: string;
+  filters: ImageFilters;
 }
 
 export interface GroupEntry {
@@ -635,9 +648,10 @@ export class CanvasManager {
         top: C.CROP_Y + (C.CROP_H - ih * scale) / 2,
         originX: 'left',
         originY: 'top',
+        strokeWidth: 0,
       });
 
-      this._images.unshift({ id: this.generateImageId(), type: 'image', fabricImage: img, filename: file.name, visible: true, locked: false, originalDataUrl: dataUrl });
+      this._images.unshift({ id: this.generateImageId(), type: 'image', fabricImage: img, filename: file.name, visible: true, locked: false, originalDataUrl: dataUrl, filters: { ...DEFAULT_FILTERS } });
       this.canvas.add(img);
       this.rebuildZOrder();
       this.canvas.setActiveObject(img);
@@ -662,6 +676,7 @@ export class CanvasManager {
       top: C.CROP_Y + (C.CROP_H - ih * scale) / 2,
       originX: 'left',
       originY: 'top',
+      strokeWidth: 0,
     });
 
     this._images.unshift({
@@ -672,6 +687,7 @@ export class CanvasManager {
       visible: true,
       locked: false,
       originalDataUrl: svgDataUrl,
+      filters: { ...DEFAULT_FILTERS },
     });
     this.canvas.add(img);
     this.rebuildZOrder();
@@ -721,6 +737,44 @@ export class CanvasManager {
     active.set({ left: (active.left ?? 0) + dx, top: (active.top ?? 0) + dy });
     active.setCoords();
     this.canvas.requestRenderAll();
+  }
+
+  private scaleAndCenterInSubframe(mode: 'fit' | 'fill'): void {
+    const active = this.canvas.getActiveObject();
+    if (!active) return;
+    const idx = this._images.findIndex(e => e.fabricImage === active);
+    if (idx < 0 || this._images[idx].type !== 'image') return;
+
+    active.set({ strokeWidth: 0 });
+
+    const natW = active.width ?? 1;
+    const natH = active.height ?? 1;
+    const curSX = active.scaleX ?? 1;
+    const centerX = (active.left ?? 0) + natW * curSX / 2;
+    const sf = this.closestSubframe(centerX);
+
+    const scaleW = sf.width / natW;
+    const scaleH = sf.height / natH;
+    const s = mode === 'fit' ? Math.min(scaleW, scaleH) : Math.max(scaleW, scaleH);
+
+    const finalW = natW * s;
+    const finalH = natH * s;
+    active.set({
+      scaleX: s,
+      scaleY: s,
+      left: sf.left + (sf.width - finalW) / 2,
+      top: sf.top + (sf.height - finalH) / 2,
+    });
+    active.setCoords();
+    this.canvas.requestRenderAll();
+  }
+
+  fitSelectedToSubframe(): void {
+    this.scaleAndCenterInSubframe('fit');
+  }
+
+  fillSelectedToSubframe(): void {
+    this.scaleAndCenterInSubframe('fill');
   }
 
   toggleVisibility(index: number) {
@@ -1048,6 +1102,7 @@ export class CanvasManager {
       evented: !locked,
       originX: 'left',
       originY: 'top',
+      strokeWidth: 0,
     });
 
     this._images.push({
@@ -1059,6 +1114,7 @@ export class CanvasManager {
       locked,
       groupId: props.groupId,
       originalDataUrl: dataUrl,
+      filters: { ...DEFAULT_FILTERS },
     });
     this.canvas.add(img);
   }
@@ -1120,6 +1176,58 @@ export class CanvasManager {
     return this._images[index].fabricImage.opacity ?? 1;
   }
 
+  // ── Image filters ──
+
+  getImageFilters(index: number): ImageFilters {
+    const entry = this._images[index];
+    if (!entry) return { ...DEFAULT_FILTERS };
+    return { ...entry.filters };
+  }
+
+  setImageFilters(index: number, partial: Partial<ImageFilters>): void {
+    const entry = this._images[index];
+    if (!entry || entry.type !== 'image') return;
+
+    const f = entry.filters;
+    for (const [key, val] of Object.entries(partial) as [keyof ImageFilters, number][]) {
+      if (typeof val !== 'number') continue;
+      f[key] = Math.max(-100, Math.min(100, val));
+    }
+    this.applyFabricFilters(entry);
+  }
+
+  private applyFabricFilters(entry: ImageEntry): void {
+    const img = entry.fabricImage as FabricImage;
+    const f = entry.filters;
+    const fabFilters: InstanceType<typeof Brightness>[] = [];
+
+    if (f.exposure !== 0) {
+      fabFilters.push(new Brightness({ brightness: f.exposure / 100 }));
+    }
+    if (f.contrast !== 0) {
+      fabFilters.push(new ContrastFilter({ contrast: f.contrast / 100 }) as any);
+    }
+    if (f.clarity !== 0) {
+      const intensity = Math.abs(f.clarity) / 100;
+      const sign = f.clarity > 0 ? 1 : -1;
+      const center = 1 + 4 * intensity * sign;
+      const edge = -intensity * sign;
+      fabFilters.push(new Convolute({
+        matrix: [0, edge, 0, edge, center, edge, 0, edge, 0],
+      }) as any);
+    }
+    if (f.vibrance !== 0) {
+      fabFilters.push(new VibranceFilter({ vibrance: f.vibrance / 100 }) as any);
+    }
+    if (f.saturation !== 0) {
+      fabFilters.push(new SaturationFilter({ saturation: f.saturation / 100 }) as any);
+    }
+
+    img.filters = fabFilters;
+    img.applyFilters();
+    this.canvas.requestRenderAll();
+  }
+
   // ── Subframe alignment ──
 
   getSubframeBounds(): { left: number; top: number; width: number; height: number }[] {
@@ -1130,19 +1238,20 @@ export class CanvasManager {
 
     const iW = C.YOTO_WIDTH_MM * this.corrX;
     const iH = C.YOTO_HEIGHT_MM * this.corrY;
+    const sw = 1;
 
     return [
       {
         left: this.mmToCanvasX(this.paperToImageX(sfLeftX)),
         top: this.mmToCanvasY(this.paperToImageY(sfY)),
-        width: iW * C.DISPLAY_SCALE,
-        height: iH * C.DISPLAY_SCALE,
+        width: iW * C.DISPLAY_SCALE + sw,
+        height: iH * C.DISPLAY_SCALE + sw,
       },
       {
         left: this.mmToCanvasX(this.paperToImageX(sfRightX)),
         top: this.mmToCanvasY(this.paperToImageY(sfY)),
-        width: iW * C.DISPLAY_SCALE,
-        height: iH * C.DISPLAY_SCALE,
+        width: iW * C.DISPLAY_SCALE + sw,
+        height: iH * C.DISPLAY_SCALE + sw,
       },
     ];
   }
@@ -1223,6 +1332,7 @@ export class CanvasManager {
       visible: true,
       locked: false,
       originalDataUrl: '',
+      filters: { ...DEFAULT_FILTERS },
     });
 
     this.canvas.add(tb);
@@ -1287,6 +1397,7 @@ export class CanvasManager {
       locked,
       groupId: props.groupId,
       originalDataUrl: '',
+      filters: { ...DEFAULT_FILTERS },
     });
     this.canvas.add(tb);
   }

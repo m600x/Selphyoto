@@ -12,6 +12,7 @@ function makeFakeImage(overrides: Partial<ImageEntry> = {}): ImageEntry {
     visible: true,
     locked: false,
     originalDataUrl: 'data:image/png;base64,TEST',
+    filters: { exposure: 0, contrast: 0, clarity: 0, vibrance: 0, saturation: 0 },
     ...overrides,
   };
 }
