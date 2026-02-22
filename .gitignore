@@ -1,6 +1,7 @@
 node_modules
 dist
 *.local
+docs
 
 # Editor / OS
 .vscode

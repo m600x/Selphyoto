@@ -1475,5 +1475,60 @@ describe('CanvasManager', () => {
       cm.setGridSnapEnabled(false);
       expect(cm.getGridSnapEnabled()).toBe(false);
     });
+
+    it('snapToGrid returns input unchanged when snap is disabled', () => {
+      cm.setGridSnapEnabled(false);
+      const result = cm.snapToGrid(123, 456);
+      expect(result.left).toBe(123);
+      expect(result.top).toBe(456);
+    });
+
+    it('snapToGrid snaps to nearest grid point when enabled', () => {
+      cm.setGridSnapEnabled(true);
+      cm.setGridSizeMm(5);
+      const sf = cm.getSubframeBounds()[0];
+      const result = cm.snapToGrid(sf.left + 12, sf.top + 13);
+      const gridPx = 5 * 0.961 * 5;
+      expect(Math.abs(result.left - sf.left) % gridPx).toBeCloseTo(0, 1);
+      expect(Math.abs(result.top - sf.top) % gridPx).toBeCloseTo(0, 1);
+    });
+
+    it('snapToGrid snaps to right subframe when closer', () => {
+      cm.setGridSnapEnabled(true);
+      cm.setGridSizeMm(10);
+      const sf = cm.getSubframeBounds()[1];
+      const result = cm.snapToGrid(sf.left + 3, sf.top + 3);
+      expect(result.left).toBeCloseTo(sf.left, 0);
+      expect(result.top).toBeCloseTo(sf.top, 0);
+    });
+
+    it('object:moving event snaps object when snap is enabled', async () => {
+      cm.setGridSnapEnabled(true);
+      cm.setGridSizeMm(10);
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 100, top: 200, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      const fi = cm.images[0].fabricImage;
+      fi.set({ left: 103, top: 207 });
+      mockCanvas(cm).emit('object:moving', { target: fi });
+      const sf = cm.getSubframeBounds()[0];
+      const gridPx = 10 * 0.961 * 5;
+      const offsetX = (fi.left ?? 0) - sf.left;
+      const offsetY = (fi.top ?? 0) - sf.top;
+      expect(Math.round(offsetX / gridPx)).toBeCloseTo(offsetX / gridPx, 1);
+      expect(Math.round(offsetY / gridPx)).toBeCloseTo(offsetY / gridPx, 1);
+    });
+
+    it('object:moving event does nothing when snap is disabled', async () => {
+      cm.setGridSnapEnabled(false);
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 100, top: 200, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      const fi = cm.images[0].fabricImage;
+      fi.set({ left: 103, top: 207 });
+      mockCanvas(cm).emit('object:moving', { target: fi });
+      expect(fi.left).toBe(103);
+      expect(fi.top).toBe(207);
+    });
   });
 });
