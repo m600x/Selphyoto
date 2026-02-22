@@ -141,6 +141,19 @@ const hi: Record<LocaleKey, string> = {
 
   'settings.guides': 'गाइड',
   'settings.scalingHint': 'गाइड 50mm हैं।<br><br>नया स्केलिंग = वर्तमान × (अपेक्षित ÷ मापा)।<br><br>उदा. स्केलिंग 0.961 है और 50 की जगह 52 mm मापा: 0.961 × (50 ÷ 52) ≈ 0.924।',
+
+  'sticker.title': 'स्टिकर',
+  'sticker.search': 'स्टिकर खोजें…',
+  'sticker.loading': 'स्टिकर लोड हो रहे हैं…',
+  'sticker.empty': 'कोई स्टिकर नहीं मिला',
+  'sticker.loadMore': 'और दिखाएं ({{remaining}} शेष)',
+  'sticker.cat.all': 'सभी',
+  'sticker.cat.emoji': 'इमोजी',
+  'sticker.cat.animals': 'जानवर',
+  'sticker.cat.nature': 'प्रकृति',
+  'sticker.cat.people': 'लोग',
+  'sticker.cat.objects': 'वस्तुएँ',
+  'sticker.cat.symbols': 'प्रतीक',
 };
 
 export default hi;

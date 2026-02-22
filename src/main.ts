@@ -10,6 +10,12 @@ import { PageManager } from './page-manager';
 import { t, setLocale, getLocale, detectLocale, applyI18n, registerLocale } from './i18n';
 import { populateFontSelect, loadGoogleFont, isSystemFont } from './fonts';
 import { ContextMenu, ICONS, type MenuEntry } from './context-menu';
+import { loadStickers, getStickers, searchStickers, fetchSvgAsDataUrl, isLoaded, STICKER_CATEGORIES, STICKER_GRID_PAGE_SIZE, type StickerCategory } from './sticker-library';
+
+const stickerLoadPromise = loadStickers().catch((err) => {
+  console.error('Failed to prefetch sticker metadata:', err);
+  return [] as ReturnType<typeof getStickers>;
+});
 import fr from './locales/fr';
 import zh from './locales/zh';
 import hi from './locales/hi';
@@ -53,6 +59,12 @@ const toolsDropdownArrow = toolsDropdownBtn.querySelector('.toolbar-dropdown-arr
 const textDropdownBtn = document.getElementById('text-dropdown-btn') as HTMLButtonElement;
 const textDropdownMenu = document.getElementById('text-dropdown-menu')!;
 const textDropdownArrow = textDropdownBtn.querySelector('.toolbar-dropdown-arrow')!;
+const stickerDropdownBtn = document.getElementById('sticker-dropdown-btn') as HTMLButtonElement;
+const stickerDropdownMenu = document.getElementById('sticker-dropdown-menu')!;
+const stickerDropdownArrow = stickerDropdownBtn.querySelector('.toolbar-dropdown-arrow')!;
+const stickerSearch = document.getElementById('sticker-search') as HTMLInputElement;
+const stickerCategoriesEl = document.getElementById('sticker-categories')!;
+const stickerGrid = document.getElementById('sticker-grid')!;
 const canvasContainer = document.getElementById('canvas-container')!;
 const bgButtons = document.querySelectorAll<HTMLButtonElement>('.bg-btn');
 const langSelect = document.getElementById('lang-select') as HTMLSelectElement;
@@ -1472,6 +1484,7 @@ function closeAllDropdowns(except?: Element) {
   const pairs: [Element, Element, Element][] = [
     [toolsDropdownMenu, toolsDropdownArrow, toolsDropdownBtn],
     [textDropdownMenu, textDropdownArrow, textDropdownBtn],
+    [stickerDropdownMenu, stickerDropdownArrow, stickerDropdownBtn],
   ];
   for (const [menu, arrow] of pairs) {
     if (menu !== except) {
@@ -1509,9 +1522,116 @@ function setupDropdownToggle(btn: HTMLButtonElement, menu: Element, arrow: Eleme
 
 setupDropdownToggle(toolsDropdownBtn, toolsDropdownMenu, toolsDropdownArrow);
 setupDropdownToggle(textDropdownBtn, textDropdownMenu, textDropdownArrow);
+setupDropdownToggle(stickerDropdownBtn, stickerDropdownMenu, stickerDropdownArrow);
 
 document.addEventListener('click', () => {
   closeAllDropdowns();
+});
+
+// ── Sticker panel ──
+
+let activeStickerCategory: StickerCategory = 'all';
+
+function renderStickerCategories() {
+  stickerCategoriesEl.innerHTML = '';
+  for (const cat of STICKER_CATEGORIES) {
+    const btn = document.createElement('button');
+    btn.className = 'sticker-cat-btn' + (cat === activeStickerCategory ? ' active' : '');
+    btn.textContent = t(`sticker.cat.${cat}`);
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      activeStickerCategory = cat;
+      stickerSearch.value = '';
+      renderStickerCategories();
+      renderStickerGrid(getStickers(cat));
+    });
+    stickerCategoriesEl.appendChild(btn);
+  }
+}
+
+let stickerGridOffset = 0;
+
+function renderStickerGrid(stickers: ReturnType<typeof getStickers>, append = false) {
+  if (!append) {
+    stickerGrid.innerHTML = '';
+    stickerGridOffset = 0;
+  }
+  if (!isLoaded()) {
+    const loading = document.createElement('div');
+    loading.className = 'sticker-empty';
+    loading.textContent = t('sticker.loading');
+    stickerGrid.appendChild(loading);
+    return;
+  }
+  if (stickers.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'sticker-empty';
+    empty.textContent = t('sticker.empty');
+    stickerGrid.appendChild(empty);
+    return;
+  }
+
+  const batch = stickers.slice(stickerGridOffset, stickerGridOffset + STICKER_GRID_PAGE_SIZE);
+  stickerGridOffset += batch.length;
+
+  for (const sticker of batch) {
+    const item = document.createElement('button');
+    item.className = 'sticker-item';
+    item.title = sticker.name;
+    const img = document.createElement('img');
+    img.src = sticker.url;
+    img.alt = sticker.name;
+    img.loading = 'lazy';
+    img.draggable = false;
+    item.appendChild(img);
+    item.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      item.disabled = true;
+      try {
+        pushSnapshot();
+        const dataUrl = await fetchSvgAsDataUrl(sticker.url);
+        await cm.addSticker(dataUrl, sticker.name);
+        refreshLayers();
+        scheduleSave();
+      } catch (err) {
+        console.error('Failed to add sticker:', err);
+      } finally {
+        item.disabled = false;
+      }
+    });
+    stickerGrid.appendChild(item);
+  }
+
+  const existingMore = stickerGrid.querySelector('.sticker-load-more');
+  if (existingMore) existingMore.remove();
+
+  if (stickerGridOffset < stickers.length) {
+    const moreBtn = document.createElement('button');
+    moreBtn.className = 'sticker-load-more action-btn';
+    moreBtn.textContent = t('sticker.loadMore', { remaining: stickers.length - stickerGridOffset });
+    moreBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      renderStickerGrid(stickers, true);
+    });
+    stickerGrid.appendChild(moreBtn);
+  }
+}
+
+stickerSearch.addEventListener('input', () => {
+  const query = stickerSearch.value;
+  if (query.trim()) {
+    activeStickerCategory = 'all';
+    renderStickerCategories();
+    renderStickerGrid(searchStickers(query));
+  } else {
+    renderStickerGrid(getStickers(activeStickerCategory));
+  }
+});
+
+renderStickerCategories();
+renderStickerGrid(getStickers('all'));
+stickerLoadPromise.then(() => {
+  renderStickerGrid(getStickers(activeStickerCategory));
 });
 
 // ── Drag & drop on canvas ──

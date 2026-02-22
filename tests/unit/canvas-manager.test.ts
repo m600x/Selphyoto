@@ -356,6 +356,14 @@ describe('CanvasManager', () => {
       expect(cm.getCenterLinesVisible()).toBe(false);
     });
 
+    it('setRulerVisible toggles state', () => {
+      expect(cm.getRulerVisible()).toBe(false);
+      cm.setRulerVisible(true);
+      expect(cm.getRulerVisible()).toBe(true);
+      cm.setRulerVisible(false);
+      expect(cm.getRulerVisible()).toBe(false);
+    });
+
     it('getBackgroundColor returns default white', () => {
       expect(cm.getBackgroundColor()).toBe('#ffffff');
     });
@@ -1358,6 +1366,44 @@ describe('CanvasManager', () => {
       expect(aResult.top).toBe(200);
       expect(bResult.left).toBe(300);
       expect(bResult.top).toBe(400);
+    });
+  });
+
+  describe('addSticker', () => {
+    it('adds a sticker image to the canvas', async () => {
+      await cm.addSticker('data:image/svg+xml;base64,SVG', 'Grinning Face');
+      expect(cm.images).toHaveLength(1);
+      expect(cm.images[0].filename).toBe('Grinning Face');
+      expect(cm.images[0].type).toBe('image');
+      expect(cm.images[0].originalDataUrl).toBe('data:image/svg+xml;base64,SVG');
+    });
+
+    it('sets the sticker as active object', async () => {
+      await cm.addSticker('data:image/svg+xml;base64,SVG', 'Star');
+      const active = cm.images[0].fabricImage;
+      expect(active).toBeDefined();
+    });
+
+    it('scales sticker to fit 80px target', async () => {
+      await cm.addSticker('data:image/svg+xml;base64,SVG', 'Big');
+      const img = cm.images[0].fabricImage;
+      const targetPx = 80;
+      const expectedScale = Math.min(targetPx / 100, targetPx / 100);
+      expect(img.scaleX).toBe(expectedScale);
+      expect(img.scaleY).toBe(expectedScale);
+    });
+
+    it('calls onListChange callback', async () => {
+      const cb = mock(() => {});
+      cm.onListChange = cb;
+      await cm.addSticker('data:image/svg+xml;base64,SVG', 'Smile');
+      expect(cb).toHaveBeenCalledTimes(1);
+    });
+
+    it('assigns a unique id', async () => {
+      await cm.addSticker('data:image/svg+xml;base64,A', 'A');
+      await cm.addSticker('data:image/svg+xml;base64,B', 'B');
+      expect(cm.images[0].id).not.toBe(cm.images[1].id);
     });
   });
 });

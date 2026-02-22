@@ -141,6 +141,19 @@ const fr: Record<LocaleKey, string> = {
 
   'settings.guides': 'Guides',
   'settings.scalingHint': 'Les guides font 50mm.<br><br>Nouvelle échelle = actuelle × (attendu ÷ mesuré).<br><br>Ex. si échelle = 0.961 et vous mesurez 52 mm au lieu de 50 : 0.961 × (50 ÷ 52) ≈ 0.924.',
+
+  'sticker.title': 'STICKERS',
+  'sticker.search': 'Rechercher des stickers…',
+  'sticker.loading': 'Chargement des stickers…',
+  'sticker.empty': 'Aucun sticker trouvé',
+  'sticker.loadMore': 'Voir plus ({{remaining}} restants)',
+  'sticker.cat.all': 'Tous',
+  'sticker.cat.emoji': 'Émoji',
+  'sticker.cat.animals': 'Animaux',
+  'sticker.cat.nature': 'Nature',
+  'sticker.cat.people': 'Personnes',
+  'sticker.cat.objects': 'Objets',
+  'sticker.cat.symbols': 'Symboles',
 };
 
 export default fr;

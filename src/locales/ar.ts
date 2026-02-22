@@ -141,6 +141,19 @@ const ar: Record<LocaleKey, string> = {
 
   'settings.guides': 'الأدلة',
   'settings.scalingHint': 'الأدلة 50 مم.<br><br>التحجيم الجديد = الحالي × (المتوقع ÷ المقاس).<br><br>مثال: إذا كان التحجيم 0.961 وقست 52 مم بدلاً من 50: 0.961 × (50 ÷ 52) ≈ 0.924.',
+
+  'sticker.title': 'ملصقات',
+  'sticker.search': 'بحث عن ملصقات…',
+  'sticker.loading': 'جارٍ تحميل الملصقات…',
+  'sticker.empty': 'لم يتم العثور على ملصقات',
+  'sticker.loadMore': 'عرض المزيد ({{remaining}} متبقي)',
+  'sticker.cat.all': 'الكل',
+  'sticker.cat.emoji': 'إيموجي',
+  'sticker.cat.animals': 'حيوانات',
+  'sticker.cat.nature': 'طبيعة',
+  'sticker.cat.people': 'أشخاص',
+  'sticker.cat.objects': 'أشياء',
+  'sticker.cat.symbols': 'رموز',
 };
 
 export default ar;

@@ -480,6 +480,37 @@ export class CanvasManager {
     }
   }
 
+  async addSticker(svgDataUrl: string, name: string): Promise<void> {
+    const img = await FabricImage.fromURL(svgDataUrl);
+    const iw = img.width ?? 1;
+    const ih = img.height ?? 1;
+    const targetPx = 80;
+    const scale = Math.min(targetPx / iw, targetPx / ih);
+
+    img.set({
+      scaleX: scale,
+      scaleY: scale,
+      left: C.CROP_X + (C.CROP_W - iw * scale) / 2,
+      top: C.CROP_Y + (C.CROP_H - ih * scale) / 2,
+      originX: 'left',
+      originY: 'top',
+    });
+
+    this._images.unshift({
+      id: this.generateImageId(),
+      type: 'image',
+      fabricImage: img,
+      filename: name,
+      visible: true,
+      locked: false,
+      originalDataUrl: svgDataUrl,
+    });
+    this.canvas.add(img);
+    this.rebuildZOrder();
+    this.canvas.setActiveObject(img);
+    this.onListChange?.();
+  }
+
   private static fileToDataURL(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();

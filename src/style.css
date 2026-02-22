@@ -230,6 +230,128 @@ body {
   width: 100%;
 }
 
+/* ─── Sticker Dropdown ─── */
+
+.sticker-dropdown-menu {
+  min-width: 272px;
+  max-height: 380px;
+  overflow: hidden;
+  display: none;
+  flex-direction: column;
+}
+
+.sticker-dropdown-menu.open {
+  display: flex;
+}
+
+.sticker-search-row {
+  padding-bottom: 6px;
+}
+
+.sticker-search-input {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text-bright);
+  font-size: 12px;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.sticker-search-input:focus {
+  border-color: var(--accent);
+}
+
+.sticker-search-input::placeholder {
+  color: var(--text-dim);
+}
+
+.sticker-categories {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding-bottom: 8px;
+}
+
+.sticker-cat-btn {
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.sticker-cat-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.sticker-cat-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.sticker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  overflow-y: auto;
+  max-height: 260px;
+  scrollbar-width: thin;
+}
+
+.sticker-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  cursor: pointer;
+  padding: 6px;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.sticker-item:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+  transform: scale(1.08);
+}
+
+.sticker-item svg,
+.sticker-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.sticker-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 12px;
+  padding: 16px 0;
+}
+
+.sticker-load-more {
+  grid-column: 1 / -1;
+  padding: 8px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
 .tool-group {
   display: flex;
   align-items: center;

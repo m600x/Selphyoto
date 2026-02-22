@@ -139,6 +139,19 @@ const en = {
 
   'settings.guides': 'Guides',
   'settings.scalingHint': 'Guides are 50mm.<br><br>New scaling = current × (expected ÷ measured).<br><br>E.g. if scaling is 0.961 and you measure 52 mm instead of 50: 0.961 × (50 ÷ 52) ≈ 0.924.',
+
+  'sticker.title': 'STICKERS',
+  'sticker.search': 'Search stickers…',
+  'sticker.loading': 'Loading stickers…',
+  'sticker.empty': 'No stickers found',
+  'sticker.loadMore': 'Show more ({{remaining}} left)',
+  'sticker.cat.all': 'All',
+  'sticker.cat.emoji': 'Emoji',
+  'sticker.cat.animals': 'Animals',
+  'sticker.cat.nature': 'Nature',
+  'sticker.cat.people': 'People',
+  'sticker.cat.objects': 'Objects',
+  'sticker.cat.symbols': 'Symbols',
 } as const;
 
 export type LocaleKey = keyof typeof en;

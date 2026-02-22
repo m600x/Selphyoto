@@ -56,5 +56,9 @@ export function applyI18n(): void {
     const key = el.dataset.i18nTitle as LocaleKey;
     el.title = t(key);
   });
+  document.querySelectorAll<HTMLInputElement>('[data-i18n-placeholder]').forEach((el) => {
+    const key = el.dataset.i18nPlaceholder as LocaleKey;
+    el.placeholder = t(key);
+  });
   document.documentElement.lang = currentLocale;
 }

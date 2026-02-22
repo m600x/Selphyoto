@@ -141,6 +141,19 @@ const zh: Record<LocaleKey, string> = {
 
   'settings.guides': '参考线',
   'settings.scalingHint': '参考线为 50mm。<br><br>新缩放 = 当前值 × (预期 ÷ 测量)。<br><br>例：缩放为 0.961，测量 52mm 而非 50mm：0.961 × (50 ÷ 52) ≈ 0.924。',
+
+  'sticker.title': '贴纸',
+  'sticker.search': '搜索贴纸…',
+  'sticker.loading': '正在加载贴纸…',
+  'sticker.empty': '未找到贴纸',
+  'sticker.loadMore': '加载更多（还有 {{remaining}} 个）',
+  'sticker.cat.all': '全部',
+  'sticker.cat.emoji': '表情',
+  'sticker.cat.animals': '动物',
+  'sticker.cat.nature': '自然',
+  'sticker.cat.people': '人物',
+  'sticker.cat.objects': '物品',
+  'sticker.cat.symbols': '符号',
 };
 
 export default zh;

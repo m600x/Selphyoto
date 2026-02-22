@@ -141,6 +141,19 @@ const es: Record<LocaleKey, string> = {
 
   'settings.guides': 'Guías',
   'settings.scalingHint': 'Las guías miden 50mm.<br><br>Nueva escala = actual × (esperado ÷ medido).<br><br>Ej. si escala = 0.961 y mides 52 mm en vez de 50: 0.961 × (50 ÷ 52) ≈ 0.924.',
+
+  'sticker.title': 'STICKERS',
+  'sticker.search': 'Buscar stickers…',
+  'sticker.loading': 'Cargando stickers…',
+  'sticker.empty': 'No se encontraron stickers',
+  'sticker.loadMore': 'Ver más ({{remaining}} restantes)',
+  'sticker.cat.all': 'Todos',
+  'sticker.cat.emoji': 'Emoji',
+  'sticker.cat.animals': 'Animales',
+  'sticker.cat.nature': 'Naturaleza',
+  'sticker.cat.people': 'Personas',
+  'sticker.cat.objects': 'Objetos',
+  'sticker.cat.symbols': 'Símbolos',
 };
 
 export default es;

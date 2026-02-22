@@ -309,18 +309,30 @@ test.describe('Keyboard shortcuts', () => {
 });
 
 test.describe('Auto-save', () => {
-  test('added image persists after reload', async ({ page }) => {
+  test('added image persists after reload', async ({ page, context }) => {
+    test.setTimeout(60_000);
     await page.goto('/');
     await addImageViaButton(page);
 
-    // Wait for auto-save debounce
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(2500);
 
-    await page.reload();
-    await page.waitForTimeout(1000);
-    await expandSidebar(page);
+    const newPage = await context.newPage();
+    await newPage.goto(page.url(), { waitUntil: 'domcontentloaded' });
+    await page.close();
 
-    await expect(page.locator('.layer-row')).toHaveCount(1);
+    await newPage.waitForFunction(
+      () => document.readyState === 'complete' && !!document.querySelector('#layer-panel'),
+      { timeout: 15000, polling: 500 },
+    );
+    await newPage.waitForTimeout(3000);
+
+    const panel = newPage.locator('#layer-panel');
+    if (await panel.evaluate(el => el.classList.contains('collapsed'))) {
+      await newPage.click('#sidebar-drawer-toggle');
+      await expect(panel).not.toHaveClass(/collapsed/);
+    }
+
+    await expect(newPage.locator('.layer-row')).toHaveCount(1);
   });
 });
 

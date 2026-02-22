@@ -112,6 +112,13 @@ describe('i18n', () => {
       expect(el.title).toBe('Flip horizontal');
     });
 
+    it('sets placeholder on elements with data-i18n-placeholder', () => {
+      document.body.innerHTML = '<input data-i18n-placeholder="sticker.search" placeholder="" />';
+      applyI18n();
+      const el = document.querySelector('[data-i18n-placeholder="sticker.search"]') as HTMLInputElement;
+      expect(el.placeholder).toBeTruthy();
+    });
+
     it('sets document language', () => {
       applyI18n();
       expect(document.documentElement.lang).toBe('en');
