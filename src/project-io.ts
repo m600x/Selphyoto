@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import type { Textbox } from 'fabric';
-import type { CanvasManager, GroupEntry, ImageFilters } from './canvas-manager';
+import type { CanvasManager, GroupEntry, ImageFilters, ImageEffects } from './canvas-manager';
 import type { PageData } from './page-manager';
 import type { AutoSaveImage } from './auto-save';
 import { timestamp, sanitizeFilename } from './utils';
@@ -29,6 +29,7 @@ export interface ProjectImageEntry {
   textAlign?: string;
   width?: number;
   filters?: ImageFilters;
+  effects?: ImageEffects;
 }
 
 export interface ProjectSettings {
@@ -111,6 +112,7 @@ function serializeCanvasPage(
         textAlign: (tb.textAlign as string) ?? 'center',
         width: tb.width ?? 200,
         filters: entry.filters,
+        effects: entry.effects,
       });
       continue;
     }
@@ -144,6 +146,7 @@ function serializeCanvasPage(
       flipY: fi.flipY ?? false,
       opacity: fi.opacity ?? 1,
       filters: entry.filters,
+      effects: entry.effects,
     });
   }
 
@@ -190,6 +193,7 @@ function serializePageData(
         textAlign: img.textAlign ?? 'center',
         width: img.width ?? 200,
         filters: img.filters,
+        effects: img.effects,
       });
       continue;
     }
@@ -219,6 +223,7 @@ function serializePageData(
       flipY: img.flipY ?? false,
       opacity: img.opacity ?? 1,
       filters: img.filters,
+      effects: img.effects,
     });
   }
 
@@ -457,6 +462,7 @@ async function loadPageFromManifest(
         textAlign: imgEntry.textAlign ?? 'center',
         width: imgEntry.width ?? 200,
         filters: imgEntry.filters,
+        effects: imgEntry.effects,
       });
       continue;
     }
@@ -486,6 +492,7 @@ async function loadPageFromManifest(
       flipY: imgEntry.flipY ?? false,
       opacity: imgEntry.opacity ?? 1,
       filters: imgEntry.filters,
+      effects: imgEntry.effects,
     });
   }
 
@@ -520,6 +527,9 @@ async function loadImagesIntoCanvas(cm: CanvasManager, page: PageData): Promise<
       if (img.filters) {
         cm.setImageFilters(cm.images.length - 1, img.filters);
       }
+      if (img.effects) {
+        cm.setImageEffects(cm.images.length - 1, img.effects);
+      }
       continue;
     }
 
@@ -540,6 +550,9 @@ async function loadImagesIntoCanvas(cm: CanvasManager, page: PageData): Promise<
     });
     if (img.filters) {
       cm.setImageFilters(cm.images.length - 1, img.filters);
+    }
+    if (img.effects) {
+      cm.setImageEffects(cm.images.length - 1, img.effects);
     }
   }
 

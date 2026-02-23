@@ -12,6 +12,7 @@ function makeMockCM(overrides: Partial<{
     groupId?: string;
     originalDataUrl: string;
     filters?: { exposure: number; contrast: number; clarity: number; vibrance: number; saturation: number };
+    effects?: { borderColor: string; borderWidth: number; shadowColor: string; shadowBlur: number; shadowOffsetX: number; shadowOffsetY: number };
   }>;
   groups: Array<{ id: string; name: string; visible: boolean }>;
   groupCounter: number;
@@ -31,6 +32,7 @@ function makeMockCM(overrides: Partial<{
   const images = (overrides.images ?? []).map(img => ({
     type: 'image' as const,
     filters: img.filters ?? { exposure: 0, contrast: 0, clarity: 0, vibrance: 0, saturation: 0 },
+    effects: img.effects ?? { borderColor: '#ffffff', borderWidth: 0, shadowColor: '#000000', shadowBlur: 0, shadowOffsetX: 0, shadowOffsetY: 0 },
     ...img,
   }));
   const groups = overrides.groups ?? [];
@@ -160,6 +162,24 @@ describe('collectPageData', () => {
       width: 300,
     });
     expect(pageData.textCounter).toBe(1);
+  });
+
+  it('collectPageData includes image effects', () => {
+    const cm = makeMockCM({
+      images: [{
+        fabricImage: { left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0 },
+        filename: 'bordered.png',
+        visible: true,
+        locked: false,
+        originalDataUrl: 'data:image/png;base64,CCC',
+        effects: { borderColor: '#ff0000', borderWidth: 5, shadowColor: '#333333', shadowBlur: 10, shadowOffsetX: 3, shadowOffsetY: 4 },
+      }],
+    });
+
+    const pageData = collectPageData(cm);
+    expect(pageData.images[0].effects).toEqual({
+      borderColor: '#ff0000', borderWidth: 5, shadowColor: '#333333', shadowBlur: 10, shadowOffsetX: 3, shadowOffsetY: 4,
+    });
   });
 
   it('collectPageData includes image filters', () => {

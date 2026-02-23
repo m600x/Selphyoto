@@ -215,6 +215,53 @@ body {
   min-width: 220px;
 }
 
+.effects-dropdown-menu {
+  min-width: 260px;
+}
+
+.effect-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.effect-color-picker {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  background: none;
+  flex-shrink: 0;
+}
+
+.effect-num-input {
+  width: 48px;
+  padding: 2px 4px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-panel);
+  color: var(--text);
+  font-size: 12px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.effect-num-input::-webkit-inner-spin-button,
+.effect-num-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.effect-label {
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  width: 14px;
+  flex-shrink: 0;
+}
+
 .adjust-slider-row {
   display: flex;
   align-items: center;

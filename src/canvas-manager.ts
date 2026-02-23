@@ -15,6 +15,24 @@ export interface ImageFilters {
 
 const DEFAULT_FILTERS: ImageFilters = { exposure: 0, contrast: 0, clarity: 0, vibrance: 0, saturation: 0 };
 
+export interface ImageEffects {
+  borderColor: string;
+  borderWidth: number;
+  shadowColor: string;
+  shadowBlur: number;
+  shadowOffsetX: number;
+  shadowOffsetY: number;
+}
+
+export const DEFAULT_EFFECTS: ImageEffects = {
+  borderColor: '#ffffff',
+  borderWidth: 0,
+  shadowColor: '#000000',
+  shadowBlur: 0,
+  shadowOffsetX: 0,
+  shadowOffsetY: 0,
+};
+
 export interface ImageEntry {
   id: string;
   type: 'image' | 'text';
@@ -25,6 +43,9 @@ export interface ImageEntry {
   groupId?: string;
   originalDataUrl: string;
   filters: ImageFilters;
+  effects: ImageEffects;
+  _borderLayer?: FabricObject;
+  _shadowLayer?: FabricObject;
 }
 
 export interface GroupEntry {
@@ -564,7 +585,13 @@ export class CanvasManager {
   private rebuildZOrder() {
     const ordered: FabricObject[] = [
       this.bgRect,
-      ...this._images.slice().reverse().map((e) => e.fabricImage),
+      ...this._images.slice().reverse().flatMap((e) => {
+        const layers: FabricObject[] = [];
+        if (e._shadowLayer) layers.push(e._shadowLayer);
+        if (e._borderLayer) layers.push(e._borderLayer);
+        layers.push(e.fabricImage);
+        return layers;
+      }),
       ...this.gridObjects,
       ...this.calibrationObjects,
       ...this.designRulerObjects,
@@ -575,13 +602,20 @@ export class CanvasManager {
       ...this.guidelineObjects,
     ];
 
+    const activeObj = this.canvas.getActiveObject();
     const prev = this.canvas.renderOnAddRemove;
     this.canvas.renderOnAddRemove = false;
+    this._suppressSelectionEvents = true;
 
     const existing = [...this.canvas.getObjects()];
     existing.forEach((obj) => this.canvas.remove(obj));
     ordered.forEach((obj) => this.canvas.add(obj));
 
+    if (activeObj && ordered.includes(activeObj)) {
+      this.canvas.setActiveObject(activeObj);
+    }
+
+    this._suppressSelectionEvents = false;
     this.canvas.renderOnAddRemove = prev;
     this.canvas.requestRenderAll();
   }
@@ -651,7 +685,7 @@ export class CanvasManager {
         strokeWidth: 0,
       });
 
-      this._images.unshift({ id: this.generateImageId(), type: 'image', fabricImage: img, filename: file.name, visible: true, locked: false, originalDataUrl: dataUrl, filters: { ...DEFAULT_FILTERS } });
+      this._images.unshift({ id: this.generateImageId(), type: 'image', fabricImage: img, filename: file.name, visible: true, locked: false, originalDataUrl: dataUrl, filters: { ...DEFAULT_FILTERS }, effects: { ...DEFAULT_EFFECTS } });
       this.canvas.add(img);
       this.rebuildZOrder();
       this.canvas.setActiveObject(img);
@@ -688,6 +722,7 @@ export class CanvasManager {
       locked: false,
       originalDataUrl: svgDataUrl,
       filters: { ...DEFAULT_FILTERS },
+      effects: { ...DEFAULT_EFFECTS },
     });
     this.canvas.add(img);
     this.rebuildZOrder();
@@ -710,6 +745,8 @@ export class CanvasManager {
     if (this.canvas.getActiveObject() === entry.fabricImage) {
       this.canvas.discardActiveObject();
     }
+    if (entry._borderLayer) this.canvas.remove(entry._borderLayer);
+    if (entry._shadowLayer) this.canvas.remove(entry._shadowLayer);
     this.canvas.remove(entry.fabricImage);
     this._images.splice(index, 1);
     this.rebuildZOrder();
@@ -1057,6 +1094,8 @@ export class CanvasManager {
   clearAll() {
     this.canvas.discardActiveObject();
     for (const entry of this._images) {
+      if (entry._borderLayer) this.canvas.remove(entry._borderLayer);
+      if (entry._shadowLayer) this.canvas.remove(entry._shadowLayer);
       this.canvas.remove(entry.fabricImage);
     }
     this._images.length = 0;
@@ -1115,6 +1154,7 @@ export class CanvasManager {
       groupId: props.groupId,
       originalDataUrl: dataUrl,
       filters: { ...DEFAULT_FILTERS },
+      effects: { ...DEFAULT_EFFECTS },
     });
     this.canvas.add(img);
   }
@@ -1194,6 +1234,152 @@ export class CanvasManager {
       f[key] = Math.max(-100, Math.min(100, val));
     }
     this.applyFabricFilters(entry);
+  }
+
+  getImageEffects(index: number): ImageEffects {
+    const entry = this._images[index];
+    if (!entry) return { ...DEFAULT_EFFECTS };
+    return { ...entry.effects };
+  }
+
+  setImageEffects(index: number, partial: Partial<ImageEffects>): void {
+    const entry = this._images[index];
+    if (!entry || entry.type !== 'image') return;
+    for (const [key, val] of Object.entries(partial)) {
+      if (typeof val === 'string') {
+        (entry.effects as unknown as Record<string, unknown>)[key] = val;
+      } else if (typeof val === 'number') {
+        let clamped = val;
+        if (key === 'borderWidth' || key === 'shadowBlur') clamped = Math.max(0, Math.min(50, val));
+        if (key === 'shadowOffsetX' || key === 'shadowOffsetY') clamped = Math.max(-25, Math.min(25, val));
+        (entry.effects as unknown as Record<string, number>)[key] = clamped;
+      }
+    }
+    this.applyEffectLayers(entry);
+  }
+
+  private buildSilhouetteExpansion(
+    sourceImg: FabricImage,
+    expandPx: number,
+    color: string,
+    cutoutCenter = true,
+  ): HTMLCanvasElement | null {
+    const el = sourceImg.getElement() as HTMLImageElement | HTMLCanvasElement;
+    if (!el) return null;
+    const w = sourceImg.width ?? 0;
+    const h = sourceImg.height ?? 0;
+    if (w === 0 || h === 0) return null;
+
+    const pad = expandPx;
+    const outW = w + pad * 2;
+    const outH = h + pad * 2;
+
+    const srcCanvas = document.createElement('canvas');
+    srcCanvas.width = w;
+    srcCanvas.height = h;
+    const srcCtx = srcCanvas.getContext('2d')!;
+    srcCtx.drawImage(el, 0, 0, w, h);
+
+    const silCanvas = document.createElement('canvas');
+    silCanvas.width = w;
+    silCanvas.height = h;
+    const silCtx = silCanvas.getContext('2d')!;
+    silCtx.fillStyle = color;
+    silCtx.fillRect(0, 0, w, h);
+    silCtx.globalCompositeOperation = 'destination-in';
+    silCtx.drawImage(srcCanvas, 0, 0);
+
+    const outCanvas = document.createElement('canvas');
+    outCanvas.width = outW;
+    outCanvas.height = outH;
+    const outCtx = outCanvas.getContext('2d')!;
+
+    for (let dy = -pad; dy <= pad; dy++) {
+      for (let dx = -pad; dx <= pad; dx++) {
+        if (dx * dx + dy * dy <= pad * pad) {
+          outCtx.drawImage(silCanvas, pad + dx, pad + dy);
+        }
+      }
+    }
+
+    if (cutoutCenter) {
+      outCtx.globalCompositeOperation = 'destination-out';
+      outCtx.drawImage(srcCanvas, pad, pad);
+    }
+
+    return outCanvas;
+  }
+
+  private applyEffectLayers(entry: ImageEntry): void {
+    if (entry.type !== 'image') return;
+    const img = entry.fabricImage as FabricImage;
+
+    if (entry._borderLayer) {
+      this.canvas.remove(entry._borderLayer);
+      entry._borderLayer = undefined;
+    }
+    if (entry._shadowLayer) {
+      this.canvas.remove(entry._shadowLayer);
+      entry._shadowLayer = undefined;
+    }
+
+    const fx = entry.effects;
+
+    if (fx.shadowBlur > 0) {
+      const silPad = Math.ceil(fx.shadowBlur);
+      const silCanvas = this.buildSilhouetteExpansion(img, silPad, fx.shadowColor, false);
+      if (silCanvas) {
+        const blurMargin = Math.ceil(fx.shadowBlur * 3);
+        const blurCanvas = document.createElement('canvas');
+        blurCanvas.width = silCanvas.width + blurMargin * 2;
+        blurCanvas.height = silCanvas.height + blurMargin * 2;
+        const bCtx = blurCanvas.getContext('2d')!;
+        bCtx.filter = `blur(${fx.shadowBlur}px)`;
+        bCtx.drawImage(silCanvas, blurMargin, blurMargin);
+
+        const shadowImg = new FabricImage(blurCanvas);
+        const totalPad = silPad + blurMargin;
+        shadowImg.set({
+          left: (img.left ?? 0) - totalPad * (img.scaleX ?? 1) + fx.shadowOffsetX,
+          top: (img.top ?? 0) - totalPad * (img.scaleY ?? 1) + fx.shadowOffsetY,
+          scaleX: img.scaleX,
+          scaleY: img.scaleY,
+          angle: img.angle,
+          originX: 'left',
+          originY: 'top',
+          selectable: false,
+          evented: false,
+          strokeWidth: 0,
+        });
+        entry._shadowLayer = shadowImg;
+        this.canvas.add(shadowImg);
+      }
+    }
+
+    if (fx.borderWidth > 0) {
+      const borderCanvas = this.buildSilhouetteExpansion(img, fx.borderWidth, fx.borderColor);
+      if (borderCanvas) {
+        const borderImg = new FabricImage(borderCanvas);
+        const pad = fx.borderWidth;
+        borderImg.set({
+          left: (img.left ?? 0) - pad * (img.scaleX ?? 1),
+          top: (img.top ?? 0) - pad * (img.scaleY ?? 1),
+          scaleX: img.scaleX,
+          scaleY: img.scaleY,
+          angle: img.angle,
+          originX: 'left',
+          originY: 'top',
+          selectable: false,
+          evented: false,
+          strokeWidth: 0,
+        });
+        entry._borderLayer = borderImg;
+        this.canvas.add(borderImg);
+      }
+    }
+
+    this.rebuildZOrder();
+    this.canvas.requestRenderAll();
   }
 
   private applyFabricFilters(entry: ImageEntry): void {
@@ -1333,6 +1519,7 @@ export class CanvasManager {
       locked: false,
       originalDataUrl: '',
       filters: { ...DEFAULT_FILTERS },
+      effects: { ...DEFAULT_EFFECTS },
     });
 
     this.canvas.add(tb);
@@ -1398,6 +1585,7 @@ export class CanvasManager {
       groupId: props.groupId,
       originalDataUrl: '',
       filters: { ...DEFAULT_FILTERS },
+      effects: { ...DEFAULT_EFFECTS },
     });
     this.canvas.add(tb);
   }
@@ -1719,8 +1907,11 @@ export class CanvasManager {
 
   // ── Selection events ──
 
+  private _suppressSelectionEvents = false;
+
   private setupSelectionEvents() {
     const notify = () => {
+      if (this._suppressSelectionEvents) return;
       this.onSelectionChange?.(this.getSelectedIndex());
     };
     this.canvas.on('selection:created', notify);
@@ -1734,6 +1925,40 @@ export class CanvasManager {
       const snapped = this.snapToGrid(obj.left ?? 0, obj.top ?? 0);
       obj.set({ left: snapped.left, top: snapped.top });
     });
+
+    const syncEffectLayers = (e: { target?: FabricObject }) => {
+      const obj = e.target;
+      if (!obj) return;
+      const entry = this._images.find(en => en.fabricImage === obj);
+      if (!entry) return;
+      const fx = entry.effects;
+      if (entry._borderLayer) {
+        const pad = fx.borderWidth;
+        entry._borderLayer.set({
+          left: (obj.left ?? 0) - pad * (obj.scaleX ?? 1),
+          top: (obj.top ?? 0) - pad * (obj.scaleY ?? 1),
+          scaleX: obj.scaleX,
+          scaleY: obj.scaleY,
+          angle: obj.angle,
+        });
+        (entry._borderLayer as any).setCoords?.();
+      }
+      if (entry._shadowLayer) {
+        const totalPad = Math.ceil(fx.shadowBlur) + Math.ceil(fx.shadowBlur * 3);
+        entry._shadowLayer.set({
+          left: (obj.left ?? 0) - totalPad * (obj.scaleX ?? 1) + fx.shadowOffsetX,
+          top: (obj.top ?? 0) - totalPad * (obj.scaleY ?? 1) + fx.shadowOffsetY,
+          scaleX: obj.scaleX,
+          scaleY: obj.scaleY,
+          angle: obj.angle,
+        });
+        (entry._shadowLayer as any).setCoords?.();
+      }
+    };
+
+    this.canvas.on('object:moving', syncEffectLayers);
+    this.canvas.on('object:scaling', syncEffectLayers);
+    this.canvas.on('object:rotating', syncEffectLayers);
 
     this.canvas.on('text:editing:exited', () => {
       const active = this.canvas.getActiveObject();

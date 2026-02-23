@@ -53,6 +53,12 @@ const zh: Record<LocaleKey, string> = {
   'filter.vibrance': '自然饱和度',
   'filter.saturation': '饱和度',
   'filter.reset': '重置',
+  'toolbar.effects': '效果',
+  'effect.border': '边框',
+  'effect.shadow': '阴影',
+  'effect.offsetX': 'X',
+  'effect.offsetY': 'Y',
+  'effect.reset': '重置',
 
   'color.white': '白色',
   'color.grey': '灰色',

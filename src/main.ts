@@ -66,6 +66,22 @@ const adjustDropdownBtn = document.getElementById('adjust-dropdown-btn') as HTML
 const adjustDropdownMenu = document.getElementById('adjust-dropdown-menu')!;
 const adjustDropdownArrow = adjustDropdownBtn.querySelector('.toolbar-dropdown-arrow')!;
 
+const effectsDropdownBtn = document.getElementById('effects-dropdown-btn') as HTMLButtonElement;
+const effectsDropdownMenu = document.getElementById('effects-dropdown-menu')!;
+const effectsDropdownArrow = effectsDropdownBtn.querySelector('.toolbar-dropdown-arrow')!;
+
+const effectBorderColor = document.getElementById('effect-border-color') as HTMLInputElement;
+const effectBorderWidth = document.getElementById('effect-border-width') as HTMLInputElement;
+const effectBorderWidthNum = document.getElementById('effect-border-width-num') as HTMLInputElement;
+const effectShadowColor = document.getElementById('effect-shadow-color') as HTMLInputElement;
+const effectShadowBlur = document.getElementById('effect-shadow-blur') as HTMLInputElement;
+const effectShadowBlurNum = document.getElementById('effect-shadow-blur-num') as HTMLInputElement;
+const effectShadowOx = document.getElementById('effect-shadow-ox') as HTMLInputElement;
+const effectShadowOxNum = document.getElementById('effect-shadow-ox-num') as HTMLInputElement;
+const effectShadowOy = document.getElementById('effect-shadow-oy') as HTMLInputElement;
+const effectShadowOyNum = document.getElementById('effect-shadow-oy-num') as HTMLInputElement;
+const effectResetBtn = document.getElementById('effect-reset-btn') as HTMLButtonElement;
+
 const filterExposure = document.getElementById('filter-exposure') as HTMLInputElement;
 const filterContrast = document.getElementById('filter-contrast') as HTMLInputElement;
 const filterClarity = document.getElementById('filter-clarity') as HTMLInputElement;
@@ -433,6 +449,119 @@ filterResetBtn.addEventListener('click', () => {
   scheduleSave();
 });
 
+// ── Effects sliders ──
+
+let effectDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+function applyEffect(partial: Record<string, unknown>) {
+  const idx = cm.getSelectedIndex();
+  if (idx < 0) return;
+  if (effectDebounceTimer) clearTimeout(effectDebounceTimer);
+  effectDebounceTimer = setTimeout(() => {
+    cm.setImageEffects(idx, partial as any);
+  }, 100);
+}
+
+function applyEffectImmediate(partial: Record<string, unknown>) {
+  const idx = cm.getSelectedIndex();
+  if (idx < 0) return;
+  if (effectDebounceTimer) clearTimeout(effectDebounceTimer);
+  cm.setImageEffects(idx, partial as any);
+  scheduleSave();
+}
+
+effectBorderColor.addEventListener('input', () => {
+  applyEffect({ borderColor: effectBorderColor.value });
+});
+effectBorderColor.addEventListener('change', () => {
+  applyEffectImmediate({ borderColor: effectBorderColor.value });
+});
+
+effectBorderWidth.addEventListener('input', () => {
+  effectBorderWidthNum.value = effectBorderWidth.value;
+  applyEffect({ borderWidth: Number(effectBorderWidth.value) });
+});
+effectBorderWidth.addEventListener('change', () => {
+  applyEffectImmediate({ borderWidth: Number(effectBorderWidth.value) });
+});
+effectBorderWidthNum.addEventListener('change', () => {
+  const v = Math.max(0, Math.min(50, Number(effectBorderWidthNum.value) || 0));
+  effectBorderWidthNum.value = String(v);
+  effectBorderWidth.value = String(v);
+  applyEffectImmediate({ borderWidth: v });
+});
+
+effectShadowColor.addEventListener('input', () => {
+  applyEffect({ shadowColor: effectShadowColor.value });
+});
+effectShadowColor.addEventListener('change', () => {
+  applyEffectImmediate({ shadowColor: effectShadowColor.value });
+});
+
+effectShadowBlur.addEventListener('input', () => {
+  effectShadowBlurNum.value = effectShadowBlur.value;
+  applyEffect({ shadowBlur: Number(effectShadowBlur.value) });
+});
+effectShadowBlur.addEventListener('change', () => {
+  applyEffectImmediate({ shadowBlur: Number(effectShadowBlur.value) });
+});
+effectShadowBlurNum.addEventListener('change', () => {
+  const v = Math.max(0, Math.min(50, Number(effectShadowBlurNum.value) || 0));
+  effectShadowBlurNum.value = String(v);
+  effectShadowBlur.value = String(v);
+  applyEffectImmediate({ shadowBlur: v });
+});
+
+effectShadowOx.addEventListener('input', () => {
+  effectShadowOxNum.value = effectShadowOx.value;
+  applyEffect({ shadowOffsetX: Number(effectShadowOx.value) });
+});
+effectShadowOx.addEventListener('change', () => {
+  applyEffectImmediate({ shadowOffsetX: Number(effectShadowOx.value) });
+});
+effectShadowOxNum.addEventListener('change', () => {
+  const v = Math.max(-25, Math.min(25, Number(effectShadowOxNum.value) || 0));
+  effectShadowOxNum.value = String(v);
+  effectShadowOx.value = String(v);
+  applyEffectImmediate({ shadowOffsetX: v });
+});
+
+effectShadowOy.addEventListener('input', () => {
+  effectShadowOyNum.value = effectShadowOy.value;
+  applyEffect({ shadowOffsetY: Number(effectShadowOy.value) });
+});
+effectShadowOy.addEventListener('change', () => {
+  applyEffectImmediate({ shadowOffsetY: Number(effectShadowOy.value) });
+});
+effectShadowOyNum.addEventListener('change', () => {
+  const v = Math.max(-25, Math.min(25, Number(effectShadowOyNum.value) || 0));
+  effectShadowOyNum.value = String(v);
+  effectShadowOy.value = String(v);
+  applyEffectImmediate({ shadowOffsetY: v });
+});
+
+effectResetBtn.addEventListener('click', () => {
+  const idx = cm.getSelectedIndex();
+  if (idx < 0) return;
+  pushSnapshot();
+  cm.setImageEffects(idx, { borderColor: '#ffffff', borderWidth: 0, shadowColor: '#000000', shadowBlur: 0, shadowOffsetX: 0, shadowOffsetY: 0 });
+  syncEffectsUI(idx);
+  scheduleSave();
+});
+
+function syncEffectsUI(idx: number) {
+  const fx = cm.getImageEffects(idx);
+  effectBorderColor.value = fx.borderColor;
+  effectBorderWidth.value = String(fx.borderWidth);
+  effectBorderWidthNum.value = String(fx.borderWidth);
+  effectShadowColor.value = fx.shadowColor;
+  effectShadowBlur.value = String(fx.shadowBlur);
+  effectShadowBlurNum.value = String(fx.shadowBlur);
+  effectShadowOx.value = String(fx.shadowOffsetX);
+  effectShadowOxNum.value = String(fx.shadowOffsetX);
+  effectShadowOy.value = String(fx.shadowOffsetY);
+  effectShadowOyNum.value = String(fx.shadowOffsetY);
+}
+
 function updateCanvasToolbar() {
   const idx = cm.getSelectedIndex();
   const hasSelection = idx >= 0;
@@ -451,6 +580,12 @@ function updateCanvasToolbar() {
   if (!isImage) {
     adjustDropdownMenu.classList.remove('open');
     adjustDropdownArrow.classList.remove('open');
+  }
+
+  effectsDropdownBtn.disabled = !isImage;
+  if (!isImage) {
+    effectsDropdownMenu.classList.remove('open');
+    effectsDropdownArrow.classList.remove('open');
   }
 
   fontSelect.disabled = !isText;
@@ -478,11 +613,22 @@ function updateCanvasToolbar() {
       slider.value = `${val}`;
       display.textContent = val > 0 ? `+${val}` : `${val}`;
     }
+    syncEffectsUI(idx);
   } else {
     for (const { slider, display } of filterSliders) {
       slider.value = '0';
       display.textContent = '0';
     }
+    effectBorderColor.value = '#ffffff';
+    effectBorderWidth.value = '0';
+    effectBorderWidthNum.value = '0';
+    effectShadowColor.value = '#000000';
+    effectShadowBlur.value = '0';
+    effectShadowBlurNum.value = '0';
+    effectShadowOx.value = '0';
+    effectShadowOxNum.value = '0';
+    effectShadowOy.value = '0';
+    effectShadowOyNum.value = '0';
   }
 
   if (isText) {
@@ -1310,6 +1456,9 @@ async function handleSwitchPage(targetIndex: number) {
         if (img.filters) {
           cm.setImageFilters(cm.images.length - 1, img.filters);
         }
+        if (img.effects) {
+          cm.setImageEffects(cm.images.length - 1, img.effects);
+        }
       }
     } catch (err) {
       console.warn('Skipping corrupt layer on page switch:', img.filename, err);
@@ -1388,6 +1537,9 @@ async function handleDeletePage(index: number) {
             });
             if (img.filters) {
               cm.setImageFilters(cm.images.length - 1, img.filters);
+            }
+            if (img.effects) {
+              cm.setImageEffects(cm.images.length - 1, img.effects);
             }
           }
         } catch (err) {
@@ -1546,6 +1698,9 @@ async function exportAllPagesAsZip(format: 'png' | 'jpeg') {
           if (img.filters) {
             cm.setImageFilters(cm.images.length - 1, img.filters);
           }
+          if (img.effects) {
+            cm.setImageEffects(cm.images.length - 1, img.effects);
+          }
         }
       }
       cm.restoreGroups(pageData.groups, pageData.groupCounter);
@@ -1608,6 +1763,9 @@ async function exportAllPagesAsZip(format: 'png' | 'jpeg') {
           if (img.filters) {
             cm.setImageFilters(cm.images.length - 1, img.filters);
           }
+          if (img.effects) {
+            cm.setImageEffects(cm.images.length - 1, img.effects);
+          }
         }
       }
       cm.restoreGroups(origData.groups, origData.groupCounter);
@@ -1663,6 +1821,7 @@ function closeAllDropdowns(except?: Element) {
     [textDropdownMenu, textDropdownArrow, textDropdownBtn],
     [stickerDropdownMenu, stickerDropdownArrow, stickerDropdownBtn],
     [adjustDropdownMenu, adjustDropdownArrow, adjustDropdownBtn],
+    [effectsDropdownMenu, effectsDropdownArrow, effectsDropdownBtn],
   ];
   for (const [menu, arrow] of pairs) {
     if (menu !== except) {
@@ -1702,6 +1861,7 @@ setupDropdownToggle(toolsDropdownBtn, toolsDropdownMenu, toolsDropdownArrow);
 setupDropdownToggle(textDropdownBtn, textDropdownMenu, textDropdownArrow);
 setupDropdownToggle(stickerDropdownBtn, stickerDropdownMenu, stickerDropdownArrow);
 setupDropdownToggle(adjustDropdownBtn, adjustDropdownMenu, adjustDropdownArrow);
+setupDropdownToggle(effectsDropdownBtn, effectsDropdownMenu, effectsDropdownArrow);
 
 document.addEventListener('click', () => {
   closeAllDropdowns();
@@ -2273,6 +2433,9 @@ async function restoreAutoSave() {
         }
         if (img.filters) {
           cm.setImageFilters(cm.images.length - 1, img.filters);
+        }
+        if (img.effects) {
+          cm.setImageEffects(cm.images.length - 1, img.effects);
         }
       } catch (imgErr) {
         console.warn('Skipping corrupt auto-saved layer:', img.filename, imgErr);

@@ -53,6 +53,12 @@ const fr: Record<LocaleKey, string> = {
   'filter.vibrance': 'VIBRANCE',
   'filter.saturation': 'SATURATION',
   'filter.reset': 'Réinitialiser',
+  'toolbar.effects': 'EFFETS',
+  'effect.border': 'BORDURE',
+  'effect.shadow': 'OMBRE',
+  'effect.offsetX': 'X',
+  'effect.offsetY': 'Y',
+  'effect.reset': 'Réinitialiser',
 
   'color.white': 'Blanc',
   'color.grey': 'Gris',

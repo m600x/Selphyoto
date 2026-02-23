@@ -53,6 +53,12 @@ const ar: Record<LocaleKey, string> = {
   'filter.vibrance': 'الحيوية',
   'filter.saturation': 'التشبع',
   'filter.reset': 'إعادة تعيين',
+  'toolbar.effects': 'تأثيرات',
+  'effect.border': 'حدود',
+  'effect.shadow': 'ظل',
+  'effect.offsetX': 'X',
+  'effect.offsetY': 'Y',
+  'effect.reset': 'إعادة تعيين',
 
   'color.white': 'أبيض',
   'color.grey': 'رمادي',

@@ -97,6 +97,43 @@
               </div>
             </div>
             <div class="toolbar-dropdown">
+              <button id="effects-dropdown-btn" class="action-btn toolbar-dropdown-toggle" disabled>
+                <span data-i18n="toolbar.effects">EFFECTS</span>
+                <svg class="toolbar-dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div id="effects-dropdown-menu" class="toolbar-dropdown-menu effects-dropdown-menu">
+                <div class="dropdown-section">
+                  <div class="dropdown-section-title" data-i18n="effect.border">BORDER</div>
+                  <div class="dropdown-section-row effect-row">
+                    <input type="color" id="effect-border-color" value="#ffffff" class="effect-color-picker">
+                    <input type="range" id="effect-border-width" class="adjust-slider" min="0" max="50" step="1" value="0">
+                    <input type="number" id="effect-border-width-num" class="effect-num-input" min="0" max="50" value="0">
+                  </div>
+                </div>
+                <div class="dropdown-section">
+                  <div class="dropdown-section-title" data-i18n="effect.shadow">SHADOW</div>
+                  <div class="dropdown-section-row effect-row">
+                    <input type="color" id="effect-shadow-color" value="#000000" class="effect-color-picker">
+                    <input type="range" id="effect-shadow-blur" class="adjust-slider" min="0" max="50" step="1" value="0">
+                    <input type="number" id="effect-shadow-blur-num" class="effect-num-input" min="0" max="50" value="0">
+                  </div>
+                  <div class="dropdown-section-row effect-row">
+                    <label class="effect-label" data-i18n="effect.offsetX">X</label>
+                    <input type="range" id="effect-shadow-ox" class="adjust-slider" min="-25" max="25" step="1" value="0">
+                    <input type="number" id="effect-shadow-ox-num" class="effect-num-input" min="-25" max="25" value="0">
+                  </div>
+                  <div class="dropdown-section-row effect-row">
+                    <label class="effect-label" data-i18n="effect.offsetY">Y</label>
+                    <input type="range" id="effect-shadow-oy" class="adjust-slider" min="-25" max="25" step="1" value="0">
+                    <input type="number" id="effect-shadow-oy-num" class="effect-num-input" min="-25" max="25" value="0">
+                  </div>
+                </div>
+                <div class="dropdown-section adjust-reset-section">
+                  <button id="effect-reset-btn" class="action-btn" data-i18n="effect.reset">Reset</button>
+                </div>
+              </div>
+            </div>
+            <div class="toolbar-dropdown">
               <button id="tools-dropdown-btn" class="action-btn toolbar-dropdown-toggle" disabled>
                 <span data-i18n="toolbar.tools">TOOLS</span>
                 <svg class="toolbar-dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>

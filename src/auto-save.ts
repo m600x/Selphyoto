@@ -1,5 +1,5 @@
 import type { Textbox } from 'fabric';
-import type { CanvasManager, GroupEntry, ImageFilters } from './canvas-manager';
+import type { CanvasManager, GroupEntry, ImageFilters, ImageEffects } from './canvas-manager';
 import type { PageData } from './page-manager';
 
 export interface AutoSaveImage {
@@ -18,6 +18,7 @@ export interface AutoSaveImage {
   flipY: boolean;
   opacity: number;
   filters?: ImageFilters;
+  effects?: ImageEffects;
   text?: string;
   fontFamily?: string;
   fontSize?: number;
@@ -167,6 +168,7 @@ export function collectPageData(cm: CanvasManager, backgroundColor?: string, mar
         flipY: e.fabricImage.flipY ?? false,
         opacity: e.fabricImage.opacity ?? 1,
         filters: e.filters,
+        effects: e.effects,
       };
       if (e.type === 'text') {
         const tb = e.fabricImage as unknown as Textbox;

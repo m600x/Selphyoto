@@ -2,7 +2,7 @@ import { describe, it, expect, mock, spyOn, beforeEach } from 'bun:test';
 import JSZip from 'jszip';
 import { importProject, exportProject, type ProjectManifest, type ProjectSettings } from '../../src/project-io';
 import type { PageData } from '../../src/page-manager';
-import type { ImageFilters } from '../../src/canvas-manager';
+import type { ImageFilters, ImageEffects } from '../../src/canvas-manager';
 
 function makeMockCM() {
   const state = {
@@ -11,6 +11,7 @@ function makeMockCM() {
       left: number; top: number; scaleX: number; scaleY: number; angle: number;
       flipX: boolean; flipY: boolean; opacity: number;
       filters: ImageFilters;
+      effects: ImageEffects;
       text?: string; fontFamily?: string; fontSize?: number; fill?: string;
       fontWeight?: string; fontStyle?: string; width?: number;
     }>,
@@ -47,6 +48,7 @@ function makeMockCM() {
         flipY: (props.flipY ?? false) as boolean,
         opacity: (props.opacity ?? 1) as number,
         filters: { exposure: 0, contrast: 0, clarity: 0, vibrance: 0, saturation: 0 },
+        effects: { borderColor: '#ffffff', borderWidth: 0, shadowColor: '#000000', shadowBlur: 0, shadowOffsetX: 0, shadowOffsetY: 0 },
       });
     }),
     addTextLayer: mock((props: Record<string, unknown>) => {
@@ -65,6 +67,7 @@ function makeMockCM() {
         flipY: (props.flipY ?? false) as boolean,
         opacity: (props.opacity ?? 1) as number,
         filters: { exposure: 0, contrast: 0, clarity: 0, vibrance: 0, saturation: 0 },
+        effects: { borderColor: '#ffffff', borderWidth: 0, shadowColor: '#000000', shadowBlur: 0, shadowOffsetX: 0, shadowOffsetY: 0 },
         text: props.text as string,
         fontFamily: props.fontFamily as string,
         fontSize: props.fontSize as number,
@@ -89,6 +92,10 @@ function makeMockCM() {
       if (state.images[index]) state.images[index].filters = { ...f };
     }),
     getImageFilters: mock((index: number) => state.images[index]?.filters ?? { exposure: 0, contrast: 0, clarity: 0, vibrance: 0, saturation: 0 }),
+    setImageEffects: mock((index: number, e: Partial<ImageEffects>) => {
+      if (state.images[index]) state.images[index].effects = { ...state.images[index].effects, ...e };
+    }),
+    getImageEffects: mock((index: number) => state.images[index]?.effects ?? { borderColor: '#ffffff', borderWidth: 0, shadowColor: '#000000', shadowBlur: 0, shadowOffsetX: 0, shadowOffsetY: 0 }),
     setCalibrationVisible: mock(() => {}),
     setDesignRulerVisible: mock(() => {}),
     setGridVisible: mock(() => {}),
@@ -127,6 +134,7 @@ function makeExportCM(overrides: Partial<{
     groupId?: string;
     originalDataUrl: string;
     filters?: ImageFilters;
+    effects?: ImageEffects;
   }>;
   groups: Array<{ id: string; name: string; visible: boolean }>;
   textCounter: number;
@@ -140,6 +148,7 @@ function makeExportCM(overrides: Partial<{
   const images = (overrides.images ?? []).map(img => ({
     ...img,
     filters: img.filters ?? { exposure: 0, contrast: 0, clarity: 0, vibrance: 0, saturation: 0 },
+    effects: img.effects ?? { borderColor: '#ffffff', borderWidth: 0, shadowColor: '#000000', shadowBlur: 0, shadowOffsetX: 0, shadowOffsetY: 0 },
   }));
   const groups = overrides.groups ?? [];
   return {
@@ -341,6 +350,7 @@ describe('project import', () => {
           textAlign: 'right',
           width: 300,
           filters: { exposure: 10, contrast: 0, clarity: 0, vibrance: 0, saturation: 0 },
+          effects: { borderColor: '#ff0000', borderWidth: 3, shadowColor: '#000000', shadowBlur: 0, shadowOffsetX: 0, shadowOffsetY: 0 },
         },
         {
           file: 'images/0_bg.png',
@@ -368,6 +378,7 @@ describe('project import', () => {
     expect(cm.state.images[1].type).toBe('image');
     expect(cm.setTextCounter).toHaveBeenCalledWith(1);
     expect(cm.setImageFilters).toHaveBeenCalledWith(0, { exposure: 10, contrast: 0, clarity: 0, vibrance: 0, saturation: 0 });
+    expect(cm.setImageEffects).toHaveBeenCalledWith(0, { borderColor: '#ff0000', borderWidth: 3, shadowColor: '#000000', shadowBlur: 0, shadowOffsetX: 0, shadowOffsetY: 0 });
   });
 
   it('handles project with no images', async () => {
@@ -782,5 +793,40 @@ describe('project roundtrip', () => {
 
     expect(importCM.setImageFilters).toHaveBeenCalledWith(0, customFilters);
     expect(importCM.state.images[0].filters).toEqual(customFilters);
+  });
+
+  it('roundtrips image effects', async () => {
+    const customEffects: ImageEffects = { borderColor: '#ff0000', borderWidth: 5, shadowColor: '#333333', shadowBlur: 10, shadowOffsetX: 3, shadowOffsetY: 4 };
+
+    const cm = makeExportCM({
+      images: [
+        {
+          type: 'image',
+          fabricImage: makeFabricImage({ left: 10, top: 20 }),
+          filename: 'bordered.png',
+          visible: true,
+          locked: false,
+          originalDataUrl: 'data:image/png;base64,ABC',
+          effects: customEffects,
+        },
+      ],
+    });
+
+    const zip = await captureExportedZip(() =>
+      exportProject(cm as never, { exportFormat: 'png' }),
+    );
+
+    const manifest: ProjectManifest = JSON.parse(
+      await zip.file('project.json')!.async('string'),
+    );
+    expect(manifest.images[0].effects).toEqual(customEffects);
+
+    const importCM = makeMockCM();
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const file = new File([blob], 'roundtrip-effects.zip', { type: 'application/zip' });
+    await importProject(file, importCM as never, mock(() => {}));
+
+    expect(importCM.setImageEffects).toHaveBeenCalledWith(0, customEffects);
+    expect(importCM.state.images[0].effects).toEqual(customEffects);
   });
 });

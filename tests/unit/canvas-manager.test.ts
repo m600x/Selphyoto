@@ -85,6 +85,9 @@ mock.module('fabric', () => {
     }
     setCoords() {}
     applyFilters() {}
+    getElement() {
+      return { width: this.width, height: this.height };
+    }
     getBoundingRect() {
       return {
         left: this.left,
@@ -191,6 +194,46 @@ mock.module('fabric', () => {
 
 import { CanvasManager } from '../../src/canvas-manager';
 import type { Canvas } from 'fabric';
+
+if (typeof document !== 'undefined') {
+  const origCreate = document.createElement.bind(document);
+  document.createElement = ((tag: string) => {
+    if (tag === 'canvas') {
+      const c: Record<string, unknown> = {
+        width: 0,
+        height: 0,
+        getContext: () => ({
+          drawImage: () => {},
+          fillRect: () => {},
+          fillStyle: '',
+          globalCompositeOperation: '',
+          filter: '',
+        }),
+      };
+      return c;
+    }
+    return origCreate(tag);
+  }) as typeof document.createElement;
+} else {
+  (globalThis as any).document = {
+    createElement: (tag: string) => {
+      if (tag === 'canvas') {
+        return {
+          width: 0,
+          height: 0,
+          getContext: () => ({
+            drawImage: () => {},
+            fillRect: () => {},
+            fillStyle: '',
+            globalCompositeOperation: '',
+            filter: '',
+          }),
+        };
+      }
+      return {};
+    },
+  };
+}
 
 interface MockCanvasWithEmit extends Canvas {
   emit(event: string, data?: unknown): void;
@@ -1577,6 +1620,219 @@ describe('CanvasManager', () => {
       cm.setImageFilters(0, { exposure: 10, contrast: 20, clarity: 30, vibrance: 40, saturation: 50 });
       const fi = cm.images[0].fabricImage as any;
       expect(fi.filters.length).toBe(5);
+    });
+  });
+
+  describe('image effects', () => {
+    it('getImageEffects returns defaults for a new image', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      const e = cm.getImageEffects(0);
+      expect(e).toEqual({
+        borderColor: '#ffffff', borderWidth: 0,
+        shadowColor: '#000000', shadowBlur: 0, shadowOffsetX: 0, shadowOffsetY: 0,
+      });
+    });
+
+    it('setImageEffects applies partial updates', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.setImageEffects(0, { borderWidth: 10, borderColor: '#ff0000' });
+      const e = cm.getImageEffects(0);
+      expect(e.borderWidth).toBe(10);
+      expect(e.borderColor).toBe('#ff0000');
+      expect(e.shadowBlur).toBe(0);
+    });
+
+    it('setImageEffects clamps borderWidth to [0, 50]', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.setImageEffects(0, { borderWidth: 999 });
+      expect(cm.getImageEffects(0).borderWidth).toBe(50);
+      cm.setImageEffects(0, { borderWidth: -5 });
+      expect(cm.getImageEffects(0).borderWidth).toBe(0);
+    });
+
+    it('setImageEffects clamps shadowBlur to [0, 50]', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.setImageEffects(0, { shadowBlur: 100 });
+      expect(cm.getImageEffects(0).shadowBlur).toBe(50);
+    });
+
+    it('setImageEffects clamps shadowOffset to [-25, 25]', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.setImageEffects(0, { shadowOffsetX: 50, shadowOffsetY: -50 });
+      expect(cm.getImageEffects(0).shadowOffsetX).toBe(25);
+      expect(cm.getImageEffects(0).shadowOffsetY).toBe(-25);
+    });
+
+    it('setImageEffects does nothing for invalid index', () => {
+      expect(() => cm.setImageEffects(-1, { borderWidth: 5 })).not.toThrow();
+      expect(() => cm.setImageEffects(99, { borderWidth: 5 })).not.toThrow();
+    });
+
+    it('getImageEffects returns defaults for invalid index', () => {
+      const e = cm.getImageEffects(-1);
+      expect(e).toEqual({
+        borderColor: '#ffffff', borderWidth: 0,
+        shadowColor: '#000000', shadowBlur: 0, shadowOffsetX: 0, shadowOffsetY: 0,
+      });
+    });
+
+    it('setImageEffects does nothing for text layers', () => {
+      cm.addText();
+      cm.setImageEffects(0, { borderWidth: 10 });
+      expect(cm.getImageEffects(0).borderWidth).toBe(0);
+    });
+
+    it('setImageEffects skips non-number numeric fields', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 0, top: 0, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.setImageEffects(0, { borderWidth: undefined as any });
+      expect(cm.getImageEffects(0).borderWidth).toBe(0);
+    });
+
+    it('setImageEffects with borderWidth > 0 creates _borderLayer', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 10, top: 20, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.setImageEffects(0, { borderWidth: 5, borderColor: '#ff0000' });
+      expect(cm.images[0]._borderLayer).toBeDefined();
+    });
+
+    it('setImageEffects with borderWidth 0 removes _borderLayer', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 10, top: 20, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.setImageEffects(0, { borderWidth: 5 });
+      expect(cm.images[0]._borderLayer).toBeDefined();
+      cm.setImageEffects(0, { borderWidth: 0 });
+      expect(cm.images[0]._borderLayer).toBeUndefined();
+    });
+
+    it('setImageEffects with shadowBlur > 0 creates _shadowLayer', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 10, top: 20, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.setImageEffects(0, { shadowBlur: 10 });
+      expect(cm.images[0]._shadowLayer).toBeDefined();
+    });
+
+    it('setImageEffects with shadowBlur 0 removes _shadowLayer', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 10, top: 20, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.setImageEffects(0, { shadowBlur: 10 });
+      expect(cm.images[0]._shadowLayer).toBeDefined();
+      cm.setImageEffects(0, { shadowBlur: 0 });
+      expect(cm.images[0]._shadowLayer).toBeUndefined();
+    });
+
+    it('removeImage also removes effect layers', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 10, top: 20, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.setImageEffects(0, { borderWidth: 5, shadowBlur: 10 });
+      cm.removeImage(0);
+      expect(cm.images.length).toBe(0);
+    });
+
+    it('clearAll removes effect layers', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 10, top: 20, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.setImageEffects(0, { borderWidth: 5 });
+      cm.clearAll();
+      expect(cm.images.length).toBe(0);
+    });
+
+    it('effect layer transforms sync on object:moving', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 10, top: 20, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.setImageEffects(0, { borderWidth: 5 });
+      const borderLayer = cm.images[0]._borderLayer as any;
+      expect(borderLayer).toBeDefined();
+
+      const img = cm.images[0].fabricImage;
+      img.set({ left: 50, top: 60 });
+      (cm as any).canvas.emit('object:moving', { target: img });
+      expect(borderLayer.left).toBe(50 - 5 * 1);
+      expect(borderLayer.top).toBe(60 - 5 * 1);
+    });
+
+    it('effect layer transforms sync on object:scaling', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 10, top: 20, scaleX: 2, scaleY: 2, angle: 0,
+      });
+      cm.setImageEffects(0, { borderWidth: 5 });
+      const borderLayer = cm.images[0]._borderLayer as any;
+
+      const img = cm.images[0].fabricImage;
+      img.set({ scaleX: 3, scaleY: 3 });
+      (cm as any).canvas.emit('object:scaling', { target: img });
+      expect(borderLayer.scaleX).toBe(3);
+      expect(borderLayer.scaleY).toBe(3);
+    });
+
+    it('effect layer transforms sync on object:rotating', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 10, top: 20, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.setImageEffects(0, { borderWidth: 5 });
+      const borderLayer = cm.images[0]._borderLayer as any;
+
+      const img = cm.images[0].fabricImage;
+      img.set({ angle: 45 });
+      (cm as any).canvas.emit('object:rotating', { target: img });
+      expect(borderLayer.angle).toBe(45);
+    });
+
+    it('shadow layer has offset applied', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 10, top: 20, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.setImageEffects(0, { shadowBlur: 10, shadowOffsetX: 5, shadowOffsetY: -3 });
+      const shadowLayer = cm.images[0]._shadowLayer as any;
+      expect(shadowLayer).toBeDefined();
+      const totalPad = Math.ceil(10) + Math.ceil(10 * 3);
+      expect(shadowLayer.left).toBe(10 - totalPad * 1 + 5);
+      expect(shadowLayer.top).toBe(20 - totalPad * 1 + (-3));
+    });
+
+    it('shadow offset syncs on object:moving', async () => {
+      await cm.addImageFromDataURL('data:image/png;base64,TEST', {
+        filename: 'img.png', visible: true, left: 10, top: 20, scaleX: 1, scaleY: 1, angle: 0,
+      });
+      cm.setImageEffects(0, { shadowBlur: 10, shadowOffsetX: 5, shadowOffsetY: -3 });
+      const shadowLayer = cm.images[0]._shadowLayer as any;
+
+      const img = cm.images[0].fabricImage;
+      img.set({ left: 100, top: 200 });
+      (cm as any).canvas.emit('object:moving', { target: img });
+      const totalPad = Math.ceil(10) + Math.ceil(10 * 3);
+      expect(shadowLayer.left).toBe(100 - totalPad * 1 + 5);
+      expect(shadowLayer.top).toBe(200 - totalPad * 1 + (-3));
+    });
+
+    it('syncEffectLayers ignores non-image targets', () => {
+      expect(() => {
+        (cm as any).canvas.emit('object:moving', { target: {} });
+      }).not.toThrow();
+    });
+
+    it('syncEffectLayers ignores events with no target', () => {
+      expect(() => {
+        (cm as any).canvas.emit('object:moving', {});
+      }).not.toThrow();
     });
   });
 

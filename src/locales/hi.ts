@@ -53,6 +53,12 @@ const hi: Record<LocaleKey, string> = {
   'filter.vibrance': 'वाइब्रेंस',
   'filter.saturation': 'संतृप्ति',
   'filter.reset': 'रीसेट',
+  'toolbar.effects': 'प्रभाव',
+  'effect.border': 'बॉर्डर',
+  'effect.shadow': 'छाया',
+  'effect.offsetX': 'X',
+  'effect.offsetY': 'Y',
+  'effect.reset': 'रीसेट',
 
   'color.white': 'सफ़ेद',
   'color.grey': 'धूसर',

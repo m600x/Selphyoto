@@ -51,6 +51,12 @@ const en = {
   'filter.vibrance': 'VIBRANCE',
   'filter.saturation': 'SATURATION',
   'filter.reset': 'Reset',
+  'toolbar.effects': 'EFFECTS',
+  'effect.border': 'BORDER',
+  'effect.shadow': 'SHADOW',
+  'effect.offsetX': 'X',
+  'effect.offsetY': 'Y',
+  'effect.reset': 'Reset',
 
   'color.white': 'White',
   'color.grey': 'Grey',
